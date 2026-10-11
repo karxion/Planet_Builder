@@ -614,8 +614,11 @@ const expansionismMap: Record<string, () => number> = {
   Heresy: () => gauss(1, 0.5, 0, 5, 1)
 };
 
+import { ADMINISTRATIVE_ONLY, clearReligions } from "./administration-policy";
+
 class ReligionsModule {
   generate() {
+    if (ADMINISTRATIVE_ONLY) return clearReligions(pack);
     TIME && console.time("generateReligions");
     const lockedReligions = pack.religions?.filter(r => r.i && r.lock && !r.removed) || [];
 
@@ -1006,6 +1009,7 @@ class ReligionsModule {
   }
 
   add(center: number) {
+    if (ADMINISTRATIVE_ONLY) return;
     const { cells, cultures, religions } = pack;
     const religionId = cells.religion[center];
     const i = religions.length;

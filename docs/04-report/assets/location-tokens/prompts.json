@@ -1,0 +1,142 @@
+[
+  {
+    "id": "city",
+    "prompt": "Create ONE premium fantasy RPG map settlement token: a large WALLED MEDIEVAL CITY, viewed in clean elevated isometric perspective, many clustered red tiled rooftops, pale limestone perimeter walls with four watchtowers, prominent arched gate, a central blue-roof keep. Painterly hand-crafted tabletop campaign-map miniature art, crisp strong readable silhouette and broad color shapes for readability at 32 pixels, rich but restrained colors, fine architectural detail visible at full size, light from upper left. A compact circular grassy stone base, very thin weathered bronze edge, no badge symbols or writing. Everything comfortably inside square frame with 10 percent empty margin, centered subject. Transparent background outside token, no backdrop, no text, no watermark, no extra objects, no interface, single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-0494850c-d8cd-4732-811e-2df2b8a85610.png"
+  },
+  {
+    "id": "village",
+    "prompt": "ONE premium fantasy RPG map token of a SMALL VILLAGE: three medieval timber-and-plaster cottages with warm red clay roofs surrounding a tiny well, one tall leafy tree, neat footpath and little fence. Clean elevated isometric view, highly crafted painterly miniature illustration, crisp silhouette, strong broad readable shapes at small map scale, fine detail at large resolution. Compact circular grassy base with a very thin weathered bronze edge. Centered, square frame, ample transparent margin around entire miniature, no background, no text, no banner, no watermark, no UI. Single asset, not a collage. Visually charming but realistic materials, neutral daylight from upper left.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-fd038d85-c7b5-413c-b680-1cc887863225.png"
+  },
+  {
+    "id": "capital",
+    "prompt": "ONE premium fantasy RPG map settlement token: a magnificent royal CAPITAL CITADEL, a tall blue-roof limestone castle with five distinctive towers, a red royal flag, a compact ring of rich town houses, imposing gate and terraced fortified base. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistic materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. A compact circular grassy stone base with a very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent background outside the token. No text, no watermark, no UI, no backdrop, no other tokens, single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-2d3918ef-22c9-4778-ba37-faa9199dff8b.png"
+  },
+  {
+    "id": "hamlet",
+    "prompt": "ONE premium fantasy RPG map settlement token: a tiny rural HAMLET, exactly one cozy thatched-roof timber cottage with a smoking stone chimney, a vegetable patch and wooden fence, no other large buildings. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistic materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. A compact circular grassy stone base with a very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent background outside the token. No text, no watermark, no UI, no backdrop, no other tokens, single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-f8ec83fe-a8dc-4c41-99e6-dff64e2e6da4.png"
+  },
+  {
+    "id": "town",
+    "prompt": "ONE premium fantasy RPG map token depicting a prosperous MARKET TOWN, seven medieval timber and plaster houses of varied height with warm red tiled roofs around one colorful red-and-cream striped market canopy and stone well, modest wooden palisade, no castle. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistic stone and wood, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular stone-and-grass base with very thin weathered bronze edge. Daylight from upper left, dark subject interior only. Centered square composition with generous transparent margin, transparent outside the token. No text, letters, UI, background, watermark or other tokens, single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-4b25f793-977f-413a-9371-c417ba201e7a.png"
+  },
+  {
+    "id": "dungeon",
+    "prompt": "ONE premium fantasy RPG map token depicting an ominous DUNGEON ENTRANCE, massive cracked gray stone arch with descending stairs vanishing into darkness, two amber flame torches, a little iron grate and moss, readable entrance silhouette. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistic stone and wood, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular stone-and-grass base with very thin weathered bronze edge. Daylight from upper left, dark subject interior only. Centered square composition with generous transparent margin, transparent outside the token. No text, letters, UI, background, watermark or other tokens, single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-d4e4443e-f4ba-41e1-8817-c70765508df6.png"
+  },
+  {
+    "id": "ruins",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting ANCIENT RUINS: three crumbling pale stone columns and a broken arch, fallen carved masonry, ivy and moss, archaeological ruin unmistakable silhouette. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-88a8cc34-94e8-4d36-ab38-40189d64a8bf.png"
+  },
+  {
+    "id": "tower",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a WIZARD TOWER: one tall slender blue-purple roofed stone tower with spiral exterior stairs, a turquoise glowing window, a tiny crystal at the apex, magical but grounded architecture. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-e9f532c3-a3e6-4b57-9263-a330aaa0dff5.png"
+  },
+  {
+    "id": "portal",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting an ARCANE PORTAL: one weathered upright stone ring with a luminous turquoise swirling magical surface filling its center, three clearly visible violet crystals around the base, ancient magical doorway. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-21949c8f-6028-4e00-9cb8-21752fc27465.png"
+  },
+  {
+    "id": "mine",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a MINE ENTRANCE: rocky hillside tunnel with sturdy timber support beams, short iron minecart rails leading out to a wooden ore cart, one crossed pickaxe beside the entrance, dark tunnel with warm lamp. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-3c55d166-ec6d-4f88-9a37-d4c628ee3def.png"
+  },
+  {
+    "id": "bridge",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a STONE BRIDGE: a graceful three-arch medieval gray stone bridge crossing a narrow bright turquoise river, low stone parapets and mossy banks, no houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-e84b410b-f616-4ccf-8f93-c0f6e27e539b.png"
+  },
+  {
+    "id": "inn",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a medieval INN: one welcoming two-story timber-and-plaster tavern with deep red tile roof, large wooden front door, hanging tankard-shaped sign WITHOUT letters, barrel by porch, warm amber windows. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-0ee0ca8e-994b-41e5-b164-a7447e17a739.png"
+  },
+  {
+    "id": "lighthouse",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a LIGHTHOUSE: tall white stone coastal beacon tower with a bold red horizontal stripe and a bright golden lantern room, rocky promontory and small turquoise waves, no houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-3bc33804-2c5e-4e17-8327-f922b74ebab2.png"
+  },
+  {
+    "id": "waterfall",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a WATERFALL: bright white and turquoise water cascading down a tall gray mossy cliff into a clear turquoise pool, two evergreen trees on top, unmistakable waterfall silhouette. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-2c99a50f-34c2-478c-bb82-628a80760667.png"
+  },
+  {
+    "id": "battlefield",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a BATTLEFIELD memorial marker: two large crossed steel swords behind a battered red round shield, a broken spear and torn crimson pennant planted in earth, no people or gore. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-e00169be-6ad8-4d1b-8a72-d6050e65eb87.png"
+  },
+  {
+    "id": "camp",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting an ENCAMPMENT: two tan canvas triangular tents around a bright orange campfire, rolled bedroll and logs, small pine tree and dirt footpath, no permanent houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-25c59d74-5391-4c41-ac74-60e361407507.png"
+  },
+  {
+    "id": "spring",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a FRESHWATER SPRING: clear bright turquoise water bubbling from a smooth gray rock into a small round natural pool, green reeds, tiny white flowers and moss, no waterfall or buildings. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-35d33787-6309-4ccb-b128-303d3f2121b0.png"
+  },
+  {
+    "id": "market",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a MARKET STALL: one vivid red-and-cream striped canvas canopy supported by four dark timber poles, under it baskets of vegetables, fruit and a wooden counter, no other houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-dc3e591a-0244-46f6-a913-a29f70473ff7.png"
+  },
+  {
+    "id": "library",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a FANTASY LIBRARY: compact pale stone building with teal tiled roof and broad arched doorway, an oversized open cream parchment book on a small stone lectern prominently in front, blank pages, no lettering. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-c9aadfd1-c5df-4021-87a1-c414ca3d92a0.png"
+  },
+  {
+    "id": "tomb",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting an ANCIENT TOMB: low moss-covered burial mound with a monumental gray stone lintel doorway and descending steps, sealed dark entrance, small weathered blank grave stele, no religious symbols. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-af93d4e7-5be8-4aa1-a367-dd91213a3aa6.png"
+  },
+  {
+    "id": "monster-lair",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a CREATURE LAIR: dark jagged rocky cave mouth with two small glowing amber eyes deep inside, three massive ivory fangs framing the cave entrance and scattered old bones outside, no visible creature and no gore. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-efa834a8-4e57-4712-8e79-444d17ad6539.png"
+  },
+  {
+    "id": "shipwreck",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a SHIPWRECK: broken wooden medieval sailing ship hull tilted on a gray rock in a turquoise pool, one snapped mast with torn cream sail and exposed wooden ribs, unmistakable wreck silhouette. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-9fee03b5-5007-45fd-858f-22e31a971753.png"
+  },
+  {
+    "id": "monument",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting an ancient MONUMENT: a tall single pale gray stone obelisk on a three-tier carved square pedestal, small laurel bushes on both sides, blank worn geometric carvings only, no writing or religious symbols. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-d3ef169e-3fd0-4d44-9dc7-0b79bc30d295.png"
+  },
+  {
+    "id": "volcano",
+    "prompt": "ONE premium fantasy RPG map landmark token depicting a VOLCANO: a compact dark basalt volcanic cone with a clearly open glowing orange-red crater, three bright molten lava streams running down the sides, small smoke plume above, no forest or houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-00314bc1-c3f4-427b-887f-017df9202980.png"
+  },
+  {
+    "id": "fort",
+    "prompt": "ONE premium fantasy RPG map settlement token depicting a FORTRESS: sturdy compact gray stone military keep with four squat square crenellated towers, high enclosing walls, heavy iron-banded gate, one deep red pennant, no civilian houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-87e2d720-f3b7-41a0-83e6-cd2046c88510.png"
+  },
+  {
+    "id": "outpost",
+    "prompt": "ONE premium fantasy RPG map settlement token depicting a WATCH POST: a single tall timber watchtower on four strong wooden legs, steep ladder, a roofed observation platform with a dark blue peaked roof, one red pennant, no houses. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-ecebd1cd-db1d-454e-bf83-abd151cbc11e.png"
+  },
+  {
+    "id": "harbor",
+    "prompt": "ONE premium fantasy RPG map settlement token depicting a HARBOR settlement: two cozy red-roof medieval timber houses beside a wooden pier, one small cream-sailed merchant boat moored at the pier on bright turquoise water, rope coils and barrels, no large castle. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-f55ae9c1-9f86-4908-bf81-f0ceb6acd8c9.png"
+  },
+  {
+    "id": "caravan",
+    "prompt": "ONE premium fantasy RPG map settlement token depicting a CARAVANSERAI: three ochre-and-red canvas merchant tents with a covered wooden wagon, crates and rolled carpets around a compact campsite, dry grassy earth, no modern elements or animals. Clean elevated isometric view, painterly hand-crafted tabletop miniature illustration, realistically textured materials, crisp silhouette and broad color shapes readable at 32 pixels, intricate detail at full resolution. Compact circular rocky grassy base with very thin weathered bronze edge. Neutral daylight upper left. Centered square composition with generous transparent margin, transparent outside token. No text, letters, UI, background, watermark, other tokens or characters. Single individual asset not a sheet.",
+    "path": "C:\\Users\\GEM12\\.codex\\generated_images\\019f54b7-6e3b-7f00-85bd-4d897c05d6eb\\exec-d7002895-2171-458d-ad08-0cf6b840fbf7.png"
+  }
+]

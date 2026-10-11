@@ -15,6 +15,7 @@ import {
   rw,
   trimVowels
 } from "../utils";
+import { koreanStateFullName } from "./korean-world-names";
 import type { Regiment } from "./military-generator";
 
 declare global {
@@ -75,7 +76,7 @@ const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
 class StatesModule {
   private createStates() {
-    const states: State[] = [{ i: 0, name: "Neutrals", salesTax: 0, pollTax: 0, treasury: 0 } as State];
+    const states: State[] = [{ i: 0, name: "무소속", salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
     const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber;
 
@@ -85,7 +86,7 @@ class StatesModule {
       const expansionism = rn(Math.random() * sizeVariety + 1, 1);
       const basename = burg.name!.length < 9 && each5th(burg.cell) ? burg.name! : Names.getCultureShort(burg.culture!);
       const name = Names.getState(basename, burg.culture!);
-      const type = pack.cultures[burg.culture!].type;
+      const type = pack.cultures[burg.culture!]?.type ?? "Generic";
       const coa = COA.generate(null, null, null, type);
       coa.shield = COA.getShield(burg.culture!);
       states.push({
@@ -178,7 +179,7 @@ class StatesModule {
 
       const capitalCell = burgs[state.capital].cell;
       cells.state[capitalCell] = state.i;
-      const cultureCenter = cultures[state.culture].center!;
+      const cultureCenter = cultures[state.culture]?.center ?? state.center;
       const b = cells.biome[cultureCenter]; // state native biome
       queue.push({ e: state.center, p: 0, s: state.i, b }, 0);
       cost[state.center] = 1;
@@ -554,8 +555,8 @@ class StatesModule {
     const states = pack.states.filter(s => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
 
-    const generic = { Monarchy: 25, Republic: 2, Union: 1 };
-    const naval = { Monarchy: 25, Republic: 8, Union: 3 };
+    const generic = { Monarchy: 25, Republic: 5, Union: 2, Theocracy: 3 };
+    const naval = { Monarchy: 25, Republic: 8, Union: 3, Theocracy: 3 };
 
     const medianState = median(pack.states.map(s => s.area))!;
     const empireMin = states.map(s => s.area).sort((a = 0, b = 0) => b - a)[
@@ -607,18 +608,13 @@ class StatesModule {
       if (list && !list.includes(s.i)) continue;
       const tier = expTiers[s.i];
 
-      const religion = pack.cells.religion[s.center];
-      const isTheocracy =
-        (religion && pack.religions[religion].expansion === "state") ||
-        (P(0.1) && ["Organized", "Cult"].includes(pack.religions[religion].type));
       const isAnarchy = P(0.01 - tier / 500);
 
-      if (isTheocracy) s.form = "Theocracy";
-      else if (isAnarchy) s.form = "Anarchy";
+      if (isAnarchy) s.form = "Anarchy";
       else s.form = s.type === "Naval" ? rw(naval) : rw(generic);
 
       const selectForm = (s: any, tier: number) => {
-        const base = pack.cultures[s.culture].base;
+        const base = pack.cultures[s.culture]?.base ?? 0;
 
         if (s.form === "Monarchy") {
           const form = monarchy[tier];
@@ -703,6 +699,7 @@ class StatesModule {
   }
 
   getFullName(state: State) {
+    if (/[가-힣]/.test(state.name)) return koreanStateFullName(state);
     // state forms requiring Adjective + Name, all other forms use scheme Form + Of + Name
     const adjForms = [
       "Empire",

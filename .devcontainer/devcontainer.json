@@ -1,0 +1,13 @@
+{
+  "name": "Fantasy Planet Builder",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-bookworm",
+  "remoteUser": "node",
+  "postCreateCommand": "npm ci",
+  "forwardPorts": [5173],
+  "portsAttributes": {
+    "5173": {
+      "label": "Fantasy Planet Builder",
+      "onAutoForward": "notify"
+    }
+  }
+}

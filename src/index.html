@@ -1,45 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Azgaar's Fantasy Map Generator</title>
-    <meta name="application-name" content="Azgaar's Fantasy Map Generator" />
-    <meta name="author" content="Azgaar" />
+    <title>판타지 행성 빌더</title>
+    <meta name="application-name" content="판타지 행성 빌더" />
+    <meta name="author" content="Fantasy Planet Builder contributors; based on Azgaar FMG" />
     <meta
       name="description"
-      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+      content="TRPG GM과 세계관 작가를 위한 2D 지도 편집 및 3D 판타지 행성 제작 도구"
     />
-    <meta property="og:url" content="https://azgaar.github.io/Fantasy-Map-Generator" />
-    <meta property="og:title" content="Azgaar's Fantasy Map Generator" />
+    <meta property="og:title" content="판타지 행성 빌더" />
     <meta
       property="og:description"
-      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+      content="지형, 기후, 문명을 생성하고 3D 행성으로 확인하세요"
     />
     <meta property="og:image" content="images/preview.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta property="twitter:domain" content="azgaar.github.io" />
-    <meta property="twitter:url" content="https://azgaar.github.io/Fantasy-Map-Generator/" />
-    <meta name="twitter:title" content="Azgaar's Fantasy Map Generator" />
+    <meta name="twitter:title" content="판타지 행성 빌더" />
     <meta
       name="twitter:description"
-      content="Free web app that helps fantasy writers, game masters, and cartographers create and edit fantasy maps"
+      content="지형, 기후, 문명을 생성하고 3D 행성으로 확인하는 세계 제작 도구"
     />
     <meta name="twitter:image" content="images/preview.png" />
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VJL3J26W7R"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-VJL3J26W7R");
-    </script>
     <link rel="icon" type="image/png" href="images/icons/favicon-32x32.png" sizes="32x32" />
     <link rel="icon" type="image/png" href="images/icons/favicon-16x16.png" sizes="16x16" />
     <link rel="apple-touch-icon" href="images/icons/maskable_icon_x192.png" />
-    <link rel="canonical" href="https://azgaar.github.io/Fantasy-Map-Generator/" />
     <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="planet-builder.css" />
     <!-- inline css for loading screen -->
     <style type="text/css">
       body {
@@ -348,10 +336,10 @@
         <use href="#defs-compass-rose" x="50%" y="50%" />
       </svg>
       <div id="loading-typography">
-        <div id="titleName">Azgaar's</div>
-        <div id="title">Fantasy Map Generator</div>
+        <div id="titleName">판타지</div>
+        <div id="title">행성 빌더</div>
         <div id="versionText">‎ ‎</div>
-        <p id="loading-text">LOADING<span>.</span><span>.</span><span>.</span></p>
+        <p id="loading-text">행성을 구성하는 중<span>.</span><span>.</span><span>.</span></p>
       </div>
     </div>
     <div id="optionsContainer" style="opacity: 0">
@@ -2002,15 +1990,14 @@
               <td></td>
             </tr>
             <tr
-              data-tip="Load Google Translate and select language. Note that automatic translation can break some page functional. In this case reset the language back to English or refresh the page"
+              data-tip="Language"
             >
               <td>
-                <i data-tip="Reset language to English" id="resetLanguage" class="icon-ccw"></i>
+                <i class="icon-globe" aria-hidden="true"></i>
               </td>
               <td>Language</td>
               <td>
-                <button id="loadGoogleTranslateButton">Init Google Translate</button>
-                <div id="google_translate_element"></div>
+                <select id="fpb-legacy-language" data-fpb-language data-fpb-preference aria-label="언어 / Language"><option value="ko">한국어</option><option value="en">English</option></select>
               </td>
               <td></td>
             </tr>
@@ -4227,7 +4214,7 @@
           <div data-tip="State form name" class="label">Form name:</div>
           <select id="stateNameEditorSelectForm" style="width: 11em">
             <option value="">blank</option>
-            <optgroup label="Monarchy">
+            <optgroup label="Monarchic Government" data-government="Monarchy">
               <option value="Beylik">Beylik</option>
               <option value="Despotate">Despotate</option>
               <option value="Dominion">Dominion</option>
@@ -4249,7 +4236,7 @@
               <option value="Ulus">Ulus</option>
               <option value="Viceroyalty">Viceroyalty</option>
             </optgroup>
-            <optgroup label="Republic">
+            <optgroup label="Republican Government" data-government="Republic">
               <option value="Chancellery">Chancellery</option>
               <option value="City-state">City-state</option>
               <option value="Diarchy">Diarchy</option>
@@ -4263,7 +4250,7 @@
               <option value="Trade Company">Trade Company</option>
               <option value="Triumvirate">Triumvirate</option>
             </optgroup>
-            <optgroup label="Union">
+            <optgroup label="Federal Government" data-government="Union">
               <option value="Confederacy">Confederacy</option>
               <option value="Confederation">Confederation</option>
               <option value="Conglomerate">Conglomerate</option>
@@ -4277,7 +4264,7 @@
               <option value="United States">United States</option>
               <option value="United Tribes">United Tribes</option>
             </optgroup>
-            <optgroup label="Theocracy">
+            <optgroup label="Theocratic Government" data-government="Theocracy">
               <option value="Bishopric">Bishopric</option>
               <option value="Brotherhood">Brotherhood</option>
               <option value="Caliphate">Caliphate</option>
@@ -4294,7 +4281,7 @@
               <option value="Patriarchate">Patriarchate</option>
               <option value="Theocracy">Theocracy</option>
             </optgroup>
-            <optgroup label="Anarchy">
+            <optgroup label="Autonomous Government" data-government="Anarchy">
               <option value="Commune">Commune</option>
               <option value="Community">Community</option>
               <option value="Council">Council</option>

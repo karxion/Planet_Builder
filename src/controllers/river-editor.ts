@@ -2,7 +2,7 @@ import { drag, pointer, select } from "d3";
 import { Controllers } from "@/controllers";
 import type { River } from "@/generators/river-generator";
 import type { Point } from "@/generators/voronoi";
-import { ensureEl, getPackPolygon, getSegmentId, rand, rn } from "../utils";
+import { ensureEl, getPackPolygon, getSegmentId, rn } from "../utils";
 
 const DIALOG_HTML = /* html */ `
   <div id="riverBody" style="padding-bottom: 0.3em">
@@ -267,7 +267,7 @@ function generateNameCulture(): void {
 
 function generateNameRandom(): void {
   const r = getRiver();
-  if (r) r.name = ensureEl<HTMLInputElement>("riverName").value = Names.getBase(rand(nameBases.length - 1));
+  if (r) r.name = ensureEl<HTMLInputElement>("riverName").value = Names.getDefault();
 }
 
 function changeParent(this: HTMLInputElement): void {

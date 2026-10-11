@@ -67,6 +67,7 @@ function editHeightmap(options) {
     ensureEl("customizationMenu").style.display = "block";
     ensureEl("toolsTab").classList.add("active");
     heightmapEditMode.innerHTML = mode;
+    heightmapEditMode.dataset.mode = mode;
 
     if (mode === "erase") {
       undraw();
@@ -189,7 +190,7 @@ function editHeightmap(options) {
     document.getElementById("preview")?.remove();
     if (document.getElementById("canvas3d")) window.Controllers.View3d.enterStandard();
 
-    const mode = heightmapEditMode.innerHTML;
+    const mode = heightmapEditMode.dataset.mode;
     if (mode === "erase") regenerateErasedData();
     else if (mode === "keep") restoreKeptData();
     else if (mode === "risk") restoreRiskedData();
@@ -913,7 +914,7 @@ function editHeightmap(options) {
     }
 
     function cellTypeFilterChange() {
-      if (cellTypeFilter.value === "land" && heightmapEditMode.innerHTML === "keep") {
+      if (cellTypeFilter.value === "land" && heightmapEditMode.dataset.mode === "keep") {
         tip("You cannot change the coastline in 'Keep' edit mode", false, "error");
         cellTypeFilter.value = "all";
       }

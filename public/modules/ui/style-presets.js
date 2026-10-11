@@ -394,12 +394,10 @@ function addStylePreset() {
     const styleName = customPresetPrefix + styleSaverName.value;
 
     const isSystem = systemPresets.includes(styleName) || systemPresets.includes(styleSaverName.value);
-    if (isSystem) return (styleSaverTip.innerHTML = "default");
-
     const isExisting = Array.from(stylePreset.options).some(option => option.value == styleName);
-    if (isExisting) return (styleSaverTip.innerHTML = "existing");
-
-    styleSaverTip.innerHTML = "new";
+    const status = isSystem ? "default" : isExisting ? "existing" : "new";
+    styleSaverTip.dataset.presetState = status;
+    styleSaverTip.textContent = status;
   }
 
   function saveStyle() {
@@ -409,7 +407,7 @@ function addStylePreset() {
     if (!styleJSON) return tip("Please provide a style JSON", false, "error");
     if (!JSON.isValid(styleJSON)) return tip("JSON string is not valid, please check the format", false, "error");
     if (!desiredName) return tip("Please provide a preset name", false, "error");
-    if (styleSaverTip.innerHTML === "default")
+    if (styleSaverTip.dataset.presetState === "default")
       return tip("You cannot overwrite default preset, please change the name", false, "error");
 
     const presetName = customPresetPrefix + desiredName;

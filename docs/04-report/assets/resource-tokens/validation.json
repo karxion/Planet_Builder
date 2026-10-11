@@ -1,0 +1,114 @@
+[
+  {
+    "id": "wood",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 400484,
+    "bytes": 33802
+  },
+  {
+    "id": "stone",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 396520,
+    "bytes": 35702
+  },
+  {
+    "id": "ore",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 397683,
+    "bytes": 37592
+  },
+  {
+    "id": "gold",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 393912,
+    "bytes": 36470
+  },
+  {
+    "id": "grain",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 397500,
+    "bytes": 40068
+  },
+  {
+    "id": "fish",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 390900,
+    "bytes": 39292
+  },
+  {
+    "id": "livestock",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 391432,
+    "bytes": 34388
+  },
+  {
+    "id": "gems",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 396809,
+    "bytes": 35740
+  },
+  {
+    "id": "herbs",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 394115,
+    "bytes": 38076
+  },
+  {
+    "id": "silk",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 395748,
+    "bytes": 33278
+  },
+  {
+    "id": "salt",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 388832,
+    "bytes": 35738
+  },
+  {
+    "id": "crate",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 394854,
+    "bytes": 35290
+  },
+  {
+    "id": "horses",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 397122,
+    "bytes": 32650
+  },
+  {
+    "id": "honey",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 397690,
+    "bytes": 33824
+  },
+  {
+    "id": "coal",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 396768,
+    "bytes": 35036
+  },
+  {
+    "id": "oil",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 393396,
+    "bytes": 35588
+  }
+]

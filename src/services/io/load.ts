@@ -1,4 +1,5 @@
 import { Services } from "@/services";
+import { removeLegacyDivisions } from "@/generators/administration-policy";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -455,6 +456,15 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.deals = data[43] ? JSON.parse(data[43]) : [];
     pack.cells.market = data[44] ? Uint16Array.from(data[44].split(","), Number) : new Uint16Array(pack.cells.i.length);
 
+    const removedMarkers = new Set(removeLegacyDivisions(pack));
+    notes = notes.filter(note => !removedMarkers.has(note.id));
+    removedMarkers.forEach(id => document.getElementById(id)?.remove());
+    for (const unit of options.military || []) {
+      delete unit.cultures;
+      delete unit.religions;
+    }
+    for (const id of ["cults", "relig", "zones"]) document.getElementById(id)?.replaceChildren();
+
     if (data[31]) {
       const namesDL = data[31].split("/");
       namesDL.forEach((d, i) => {
@@ -586,17 +596,17 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ERROR && console.error("[Data integrity] Invalid province", p, "is assigned to cells", invalidCells);
       });
 
-      const invalidCultures = [...new Set(cells.culture)].filter(c => !pack.cultures[c] || pack.cultures[c].removed);
+      const invalidCultures = [...new Set(cells.culture)].filter(c => c && (!pack.cultures[c] || pack.cultures[c].removed));
       invalidCultures.forEach(c => {
         const invalidCells = cells.i.filter(i => cells.culture[i] === c);
         invalidCells.forEach(i => {
-          cells.province[i] = 0;
+          cells.culture[i] = 0;
         });
         ERROR && console.error("[Data integrity] Invalid culture", c, "is assigned to cells", invalidCells);
       });
 
       const invalidReligions = [...new Set(cells.religion)].filter(
-        r => !pack.religions[r] || pack.religions[r].removed
+        r => r && (!pack.religions[r] || pack.religions[r].removed)
       );
       invalidReligions.forEach(r => {
         const invalidCells = cells.i.filter(i => cells.religion[i] === r);
@@ -802,9 +812,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     if (rulers && layerIsOn("toggleRulers")) rulers.draw();
     if (layerIsOn("toggleGrid")) drawGrid();
     if (typeof window.restoreDefaultEvents === "function") restoreDefaultEvents();
+    window.dispatchEvent(new CustomEvent("map:loaded", { detail: { version: mapVersion, mapId } }));
+    fitMapToScreen(true);
     focusOn(); // based on searchParams focus on point, cell or burg
     invokeActiveZooming();
-    fitMapToScreen();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
     showStatistics();

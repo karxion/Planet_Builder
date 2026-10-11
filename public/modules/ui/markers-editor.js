@@ -53,7 +53,7 @@ function editMarker(markerI) {
   ];
 
   function getElement(markerI, event) {
-    if (event) {
+    if (event && markerI === undefined) {
       const element = event.target?.closest("svg");
       const marker = pack.markers.find(({i}) => Number(element.id.slice(6)) === i);
       return [element, marker];
@@ -95,17 +95,14 @@ function editMarker(markerI) {
   }
 
   function updateInputs() {
-    ensureEl("markerIcon").innerHTML =
-      marker.icon.startsWith("http") || marker.icon.startsWith("data:image")
-        ? `<img src="${marker.icon}" style="width: 1em; height: 1em;">`
-        : marker.icon;
+    ensureEl("markerIcon").innerHTML = window.rpgIconPreview(marker.icon);
 
     markerType.value = marker.type || "";
-    markerIconSize.value = marker.px || 12;
+    markerIconSize.value = marker.px ?? (marker.icon.startsWith("#rpg-") ? 26 : 12);
     markerIconShiftX.value = marker.dx || 50;
     markerIconShiftY.value = marker.dy || 50;
     markerSize.value = marker.size || 30;
-    markerPin.value = marker.pin || "bubble";
+    markerPin.value = marker.pin || (marker.icon.startsWith("#rpg-") ? "no" : "bubble");
     markerFill.value = marker.fill || "#ffffff";
     markerStroke.value = marker.stroke || "#000000";
 
@@ -117,14 +114,16 @@ function editMarker(markerI) {
   }
 
   function changeMarkerIcon() {
-    selectIcon(marker.icon, value => {
-      const isExternal = value.startsWith("http") || value.startsWith("data:image");
-      ensureEl("markerIcon").innerHTML = isExternal ? `<img src="${value}" style="width: 1em; height: 1em;">` : value;
+    window.selectRpgIcon(marker.icon, value => {
+      ensureEl("markerIcon").innerHTML = window.rpgIconPreview(value);
 
       getSameTypeMarkers().forEach(marker => {
         marker.icon = value;
+        marker.px = value.startsWith("#rpg-") ? 26 : 12;
         redrawIcon(marker);
+        redrawPin(marker);
       });
+      updateInputs();
     });
   }
 
@@ -194,30 +193,14 @@ function editMarker(markerI) {
     });
   }
 
-  function redrawIcon({i, hidden, icon, dx = 50, dy = 50, px = 12}) {
-    const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
-
-    const iconText = !hidden && document.querySelector(`#marker${i} > text`);
-    if (iconText) {
-      iconText.innerHTML = isExternal ? "" : icon;
-      iconText.setAttribute("x", dx + "%");
-      iconText.setAttribute("y", dy + "%");
-      iconText.setAttribute("font-size", px + "px");
-    }
-
-    const iconImage = !hidden && document.querySelector(`#marker${i} > image`);
-    if (iconImage) {
-      iconImage.setAttribute("x", dx / 2 + "%");
-      iconImage.setAttribute("y", dy / 2 + "%");
-      iconImage.setAttribute("width", px + "px");
-      iconImage.setAttribute("height", px + "px");
-      iconImage.setAttribute("href", isExternal ? icon : "");
-    }
+  function redrawIcon(marker) {
+    const glyph = !marker.hidden && document.querySelector(`#marker${marker.i} > .fpb-marker-glyph`);
+    if (glyph) glyph.innerHTML = renderMarkerGlyph(marker);
   }
 
-  function redrawPin({i, hidden, pin = "bubble", fill = "#fff", stroke = "#000"}) {
+  function redrawPin({i, hidden, icon, pin, fill = "#fff", stroke = "#000"}) {
     const pinGroup = !hidden && document.querySelector(`#marker${i} > g`);
-    if (pinGroup) pinGroup.innerHTML = getPin(pin, fill, stroke);
+    if (pinGroup) pinGroup.innerHTML = getPin(pin || (icon.startsWith("#rpg-") ? "no" : "bubble"), fill, stroke);
   }
 
   function editMarkerLegend() {

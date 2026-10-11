@@ -9,6 +9,12 @@
 /test-results
 /_bmad
 /_bmad-output
+/.sites-publish
+/.sites-publish-*
+/.bkit
+.env
+.env.*
+!.env.example
 /memory
 .github/agents/bmad-*
 .github/prompts/bmad-*

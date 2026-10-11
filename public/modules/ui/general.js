@@ -2,6 +2,10 @@
 // Module to store generic UI functions
 
 window.addEventListener("resize", function (e) {
+  if (document.getElementById("fpb-shell")) {
+    fitMapToScreen();
+    return;
+  }
   if (stored("mapWidth") && stored("mapHeight")) return;
   mapWidthInput.value = window.innerWidth;
   mapHeightInput.value = window.innerHeight;

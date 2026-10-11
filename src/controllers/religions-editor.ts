@@ -16,6 +16,7 @@ const $body = insertEditorHtml();
 addListeners();
 
 function open(): void {
+  if (!pack.religions.length) return;
   if (customization) return;
   closeDialogs("#religionsEditor, .stable");
   if (!layerIsOn("toggleReligions")) toggleReligions();

@@ -2,18 +2,17 @@ import { color, drag, interpolateString, max, pack as packLayout, pointer, selec
 import { Controllers } from "@/controllers";
 import type { Province } from "@/generators/provinces-generator";
 import type { State } from "@/generators/states-generator";
+import { t } from "@/services/ui-language";
 import {
   ensureEl,
   findAllCellsInRadius,
   formatPrice,
-  getAdjective,
   getMixedColor,
   getPackPolygon,
   getRandomColor,
   isLand,
   P,
   ra,
-  rand,
   rn,
   si
 } from "../utils";
@@ -260,7 +259,7 @@ function statesEditorAddLines(): void {
       data-population=${population}
       data-burgs=${s.burgs}
       data-treasury="${s.treasury}"
-      data-culture=${pack.cultures[s.culture].name}
+      data-culture=""
       data-type=${s.type}
       data-expansionism=${s.expansionism}
     >
@@ -450,8 +449,7 @@ function editStateName(state: number): void {
   }
 
   function regenerateShortNameRandom() {
-    const base = rand(nameBases.length - 1);
-    const name = Names.getState(Names.getBase(base), undefined as unknown as number, base);
+    const name = Names.getDefault();
     ensureEl<HTMLInputElement>("stateNameEditorShort").value = name;
   }
 
@@ -467,16 +465,10 @@ function editStateName(state: number): void {
   function regenerateFullName() {
     const short = ensureEl<HTMLInputElement>("stateNameEditorShort").value;
     const form = ensureEl<HTMLSelectElement>("stateNameEditorSelectForm").value;
-    ensureEl<HTMLInputElement>("stateNameEditorFull").value = getFullName();
-
-    function getFullName() {
-      if (!form) return short;
-      if (!short && form) return `The ${form}`;
-      const $regen = ensureEl("stateNameEditorFullRegenerate");
-      const tick = +$regen.dataset.tick!;
-      $regen.dataset.tick = String(tick + 1);
-      return tick % 2 ? `${getAdjective(short)} ${form}` : `${form} of ${short}`;
-    }
+    ensureEl<HTMLInputElement>("stateNameEditorFull").value = States.getFullName({
+      name: short,
+      formName: form
+    } as any);
   }
 
   function applyNameChange(s: any) {
@@ -491,7 +483,7 @@ function editStateName(state: number): void {
 
     if (formChanged) {
       const selected = formSelect.selectedOptions[0];
-      const form = selected.parentElement?.getAttribute("label") || null;
+      const form = selected.parentElement?.dataset.government || null;
       if (form) s.form = form;
     }
 
@@ -1259,7 +1251,7 @@ function adjustProvinces(affectedProvinces: number[]): void {
       burg: burgId,
       name,
       formName,
-      fullName: `${name} ${formName}`,
+      fullName: `${name} 영지`,
       color,
       coa
     });
@@ -1360,6 +1352,10 @@ function addState(this: SVGElement, event: MouseEvent): void {
     return;
   }
 
+  if (!burgId && Burgs.isTooClose(point as [number, number])) {
+    tip(t("Settlements are too close. Please select a more distant location"), false, "error");
+    return;
+  }
   if (!burgId) burgId = Burgs.add(point as [number, number]);
 
   const oldState = cells.state[center];
@@ -1378,7 +1374,7 @@ function addState(this: SVGElement, event: MouseEvent): void {
   const color = getRandomColor();
 
   // generate emblem
-  const cultureType = pack.cultures[culture].type;
+  const cultureType = pack.cultures[culture]?.type ?? "Generic";
   const coa = COA.generate(burgs[burgId].coa, 0.4, null, cultureType);
   coa.shield = COA.getShield(culture, undefined);
 

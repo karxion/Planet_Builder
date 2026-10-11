@@ -1,11 +1,13 @@
 // UI module stub to control map layers
 "use strict";
 
+const retiredMapLayers = new Set(["toggleCompass", "togglePrecipitation", "togglePopulation", "toggleRulers", "toggleIce"]);
+
 let presets = {}; // global object
 restoreCustomPresets(); // run on-load
 
 function getDefaultPresets() {
-  return {
+  const defaults = {
     political: [
       "toggleBorders",
       "toggleBurgIcons",
@@ -75,14 +77,11 @@ function getDefaultPresets() {
     goods: [
       "toggleBorders",
       "toggleBurgIcons",
-      "toggleCells",
       "toggleGoods",
-      "toggleMarketsLayer",
       "toggleLakes",
       "toggleRivers",
       "toggleRoutes",
       "toggleScaleBar",
-      "toggleTrade",
       "toggleVignette"
     ],
     trade: [
@@ -122,6 +121,7 @@ function getDefaultPresets() {
     ],
     landmass: ["toggleScaleBar"]
   };
+  return Object.fromEntries(Object.entries(defaults).map(([name, layers]) => [name, layers.filter(id => !retiredMapLayers.has(id))]));
 }
 
 function restoreCustomPresets() {
@@ -134,7 +134,7 @@ function restoreCustomPresets() {
     layersPreset.add(new Option(preset, preset));
   }
 
-  presets = storedPresets;
+  presets = Object.fromEntries(Object.entries(storedPresets).map(([name, layers]) => [name, layers.filter(id => !retiredMapLayers.has(id))]));
 }
 
 // run on map generation
@@ -145,7 +145,7 @@ function applyLayersPreset() {
 
   const layers = presets[preset]; // layers to be turned on
   document.querySelectorAll("#mapLayers > li").forEach(el => {
-    const shouldBeOn = layers.includes(el.id);
+    const shouldBeOn = !retiredMapLayers.has(el.id) && layers.includes(el.id);
     if (shouldBeOn) el.classList.remove("buttonoff");
     else el.classList.add("buttonoff");
   });
@@ -167,7 +167,7 @@ function handleLayersPresetChange(preset) {
   const layers = presets[preset]; // layers to be turned on
   document.querySelectorAll("#mapLayers > li").forEach(el => {
     const isOn = layerIsOn(el.id);
-    const shouldBeOn = layers.includes(el.id);
+    const shouldBeOn = !retiredMapLayers.has(el.id) && layers.includes(el.id);
     if (shouldBeOn && !isOn) el.click();
     if (isOn && !shouldBeOn) el.click();
   });
@@ -316,6 +316,7 @@ function drawBiomes() {
 }
 
 function togglePrecipitation(event) {
+  if (retiredMapLayers.has("togglePrecipitation")) return;
   if (!prec.selectAll("circle").size()) {
     turnButtonOn("togglePrecipitation");
     drawPrecipitation();
@@ -359,6 +360,7 @@ function drawPrecipitation() {
 }
 
 function togglePopulation(event) {
+  if (retiredMapLayers.has("togglePopulation")) return;
   if (!population.selectAll("line").size()) {
     turnButtonOn("togglePopulation");
     drawPopulation();
@@ -451,6 +453,7 @@ function drawCells() {
 }
 
 function toggleIce(event) {
+  if (retiredMapLayers.has("toggleIce")) return;
   if (!layerIsOn("toggleIce")) {
     turnButtonOn("toggleIce");
     $("#ice").fadeIn();
@@ -478,6 +481,7 @@ function toggleCultures(event) {
 }
 
 function drawCultures() {
+  if (!pack.cultures.length) return ensureEl("cults").replaceChildren();
   TIME && console.time("drawCultures");
   const { cells, cultures } = pack;
 
@@ -507,6 +511,7 @@ function toggleReligions(event) {
 }
 
 function drawReligions() {
+  if (!pack.religions.length) return ensureEl("relig").replaceChildren();
   TIME && console.time("drawReligions");
   const { cells, religions } = pack;
 
@@ -731,6 +736,7 @@ function drawCoordinates() {
 }
 
 function toggleCompass(event) {
+  if (retiredMapLayers.has("toggleCompass")) return;
   if (!layerIsOn("toggleCompass")) {
     turnButtonOn("toggleCompass");
     if (!compass.select("use").size()) compass.append("use").attr("xlink:href", "#defs-compass-rose");
@@ -938,6 +944,7 @@ function toggleBurgIcons(event) {
 }
 
 function toggleRulers(event) {
+  if (retiredMapLayers.has("toggleRulers")) return;
   if (!layerIsOn("toggleRulers")) {
     turnButtonOn("toggleRulers");
     if (event && isCtrlClick(event)) editStyle("ruler");
@@ -1024,6 +1031,7 @@ function getGappedFillPaths(elementName, fill, waterGap, color, index) {
 }
 
 function layerIsOn(el) {
+  if (retiredMapLayers.has(el)) return false;
   return ensureEl(el).classList.contains("buttonoff") ? false : true;
 }
 
@@ -1033,6 +1041,7 @@ function turnButtonOff(el) {
 }
 
 function turnButtonOn(el) {
+  if (retiredMapLayers.has(el)) return;
   ensureEl(el).classList.remove("buttonoff");
   getCurrentPreset();
 }

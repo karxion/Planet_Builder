@@ -1,6 +1,7 @@
 "use strict";
 
 function editZones() {
+  if (document.body.classList.contains("fpb-ready")) return;
   closeDialogs("#zonesEditor, .stable");
   if (!layerIsOn("toggleZones")) toggleZones();
   const body = ensureEl("zonesBodySection");

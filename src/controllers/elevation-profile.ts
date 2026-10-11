@@ -266,8 +266,8 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
       const pop = pack.cells.pop[cell] + (burgId ? ((pack.burgs[burgId] as Burg).population ?? 0) * urbanization : 0);
       const provinceName = province ? (pack.provinces[province] as Province).name : null;
       const stateName = (pack.states[pack.cells.state[cell]] as State).name;
-      const religionName = (pack.religions[pack.cells.religion[cell]] as { name: string }).name;
-      const cultureName = (pack.cultures[pack.cells.culture[cell]] as { name: string }).name;
+      const religionName = "";
+      const cultureName = "";
       const dataTip = [
         biomesData.name[biome],
         provinceName,
@@ -503,10 +503,10 @@ function open(cells: number[], routeLen: number, isRiver: boolean): void {
         burgPop,
         biomesData.name[pack.cells.biome[cell]],
         biomesData.color[pack.cells.biome[cell]],
-        culture.name,
-        culture.color,
-        religion.name,
-        religion.color,
+        culture?.name || "",
+        culture?.color || "",
+        religion?.name || "",
+        religion?.color || "",
         province ? province.name : "",
         province ? province.color : "",
         state.name,

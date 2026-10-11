@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { max } from "d3";
-import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand, rw } from "../utils";
+import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand } from "../utils";
 
 declare global {
   var Provinces: ProvinceModule;
@@ -107,7 +107,6 @@ class ProvinceModule {
       if (stateBurgs.length < 2) return; // at least 2 provinces are required
 
       const provincesNumber = Math.max(Math.ceil((stateBurgs.length * provincesRatio) / 100), 2);
-      const form = Object.assign({}, this.forms[s.form!]);
 
       for (let i = 0; i < provincesNumber; i++) {
         const provinceId = provinces.length;
@@ -116,8 +115,7 @@ class ProvinceModule {
         const c = stateBurgs[i].culture!;
         const nameByBurg = P(0.5);
         const name = nameByBurg ? stateBurgs[i].name! : Names.getState(Names.getCultureShort(c), c);
-        const formName = rw(form);
-        form[formName] += 10;
+        const formName = "영지";
         const fullName = `${name} ${formName}`;
         const color = getMixedColor(s.color!);
         const kinship = nameByBurg ? 0.8 : 0.4;
@@ -207,7 +205,7 @@ class ProvinceModule {
 
         const index = rand(colonyNamePool.length - 1);
         const spliced = colonyNamePool.splice(index, 1);
-        return spliced[0] ? `New ${spliced[0]}` : null;
+        return spliced[0] ? `새${spliced[0]}` : null;
       };
 
       let stateNoProvince = noProvince.filter(i => cells.state[i] === s.i && !provinceIds[i]);
@@ -259,12 +257,7 @@ class ProvinceModule {
           return Names.getState(Names.getCultureShort(c), c);
         })();
 
-        const formName = (() => {
-          if (singleIsle) return "Island";
-          if (isleGroup) return "Islands";
-          if (colony) return "Colony";
-          return rw(this.forms.Wild);
-        })();
+        const formName = "영지";
 
         const fullName = `${name} ${formName}`;
 

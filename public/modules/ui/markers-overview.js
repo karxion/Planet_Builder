@@ -46,12 +46,12 @@ function overviewMarkers() {
   const types = [{ type: "empty", icon: "❓" }, ...Markers.getConfig()];
   types.forEach(({ icon, type }) => {
     const option = document.createElement("button");
-    option.textContent = `${icon} ${type}`;
+    option.innerHTML = `${window.rpgIconPreview(icon)} <span>${type}</span>`;
     markerTypeSelectMenu.appendChild(option);
 
     listeners.push(
       listen(option, "click", () => {
-        markerTypeSelector.textContent = icon;
+        markerTypeSelector.innerHTML = window.rpgIconPreview(icon);
         markerTypeInput.value = type;
         changeMarkerType();
         toggleMarkerTypeMenu();
@@ -86,9 +86,7 @@ function overviewMarkers() {
         return /* html */ `
           <div class="states" data-i=${i} data-type="${type}">
             ${
-              icon.startsWith("http") || icon.startsWith("data:image")
-                ? `<img src="${icon}" data-tip="Marker icon" style="width:1.2em; height:1.2em; vertical-align: middle;">`
-                : `<span data-tip="Marker icon" style="width:1.2em">${icon}</span>`
+              `<span data-tip="Marker icon" class="fpb-overview-icon">${window.rpgIconPreview(icon)}</span>`
             }
             <div data-tip="Marker type" style="width:10em">${type}</div>
             <span style="padding-right:.1em" data-tip="Edit marker" class="icon-pencil"></span>

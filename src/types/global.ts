@@ -154,7 +154,7 @@ declare global {
   var getCellPopulation: (i: number) => [number, number];
   var getCurrentPreset: () => void;
   var focusOn: () => void;
-  var fitMapToScreen: () => void;
+  var fitMapToScreen: (reset?: boolean) => void;
   var cleanupData: () => void;
   var regenerateMap: (reason?: string) => void;
   var generateMapOnLoad: () => void;

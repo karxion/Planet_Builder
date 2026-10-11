@@ -1,11 +1,21 @@
 import { Controllers } from "@/controllers";
+import { getRpgResourceIcon, RPG_MAP_ASSETS } from "@/data/rpg-map-assets";
+import { getUiLanguage } from "@/services/ui-language";
 import { CULTURE_TYPES } from "../generators/cultures-generator";
 import type { DemandCategory, Good } from "../generators/goods-generator";
 import { DEMAND_CATEGORY_ICONS, DEMAND_PRIORITY } from "../generators/goods-generator";
 import { ensureEl, getRandomColor, unique } from "../utils";
 
 function open(editedGood?: Good, onUpdate?: () => void) {
-  const icons = Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id);
+  const icons = [
+    ...RPG_MAP_ASSETS.filter(asset => asset.category === "resources").map(asset => asset.id),
+    ...Array.from(ensureEl("good-icons").querySelectorAll("symbol")).map(el => el.id)
+  ];
+  const currentIcon = editedGood ? getRpgResourceIcon(editedGood.icon).replace(/^#/, "") : "rpg-crate";
+  const iconName = (id: string) => {
+    const asset = RPG_MAP_ASSETS.find(asset => asset.id === id);
+    return asset ? asset[getUiLanguage()] : id;
+  };
   const demandCoverageState: Partial<Record<DemandCategory, number>> = { ...(editedGood?.demandCoverage || {}) };
   const biomeOutputState: Partial<Record<number, number>> = { ...(editedGood?.biomeOutput || {}) };
 
@@ -22,12 +32,8 @@ function open(editedGood?: Good, onUpdate?: () => void) {
   };
 
   const multipliers: { [K in MultiplierDimKey]?: Partial<Record<string, number>> } = {
-    cultureType: { ...(editedGood?.multipliers?.cultureType ?? {}) },
-    culture: { ...(editedGood?.multipliers?.culture ?? {}) },
     state: { ...(editedGood?.multipliers?.state ?? {}) },
-    religion: { ...(editedGood?.multipliers?.religion ?? {}) },
-    biome: { ...(editedGood?.multipliers?.biome ?? {}) },
-    zone: { ...(editedGood?.multipliers?.zone ?? {}) }
+    biome: { ...(editedGood?.multipliers?.biome ?? {}) }
   };
 
   const multiplierSummary = (dim: MultiplierDimKey): string => {
@@ -94,10 +100,10 @@ function open(editedGood?: Good, onUpdate?: () => void) {
 
           <label for="newGoodIcon">Icon*</label>
           <div class="ge-inline">
-            <select id="newGoodIcon" class="ge-icon-select">${icons.map(icon => `<option value="${icon}" ${editedGood?.icon === icon ? "selected" : ""}>${icon}</option>`).join("")}</select>
+            <select id="newGoodIcon" class="ge-icon-select">${icons.map(icon => `<option value="${icon}" ${currentIcon === icon ? "selected" : ""}>${iconName(icon)}</option>`).join("")}</select>
             <svg class="ge-icon-preview" width="2em" height="2em">
               <circle id="newGoodIconCircle" cx="50%" cy="50%" r="42%" fill="${editedGood?.color || "#ff5959"}" stroke="${Goods.getStroke(editedGood?.color || "#ff5959")}"/>
-              <use id="newGoodIconPreview" href="#${editedGood?.icon || "good-unknown"}" x="10%" y="10%" width="80%" height="80%"/>
+              <use id="newGoodIconPreview" href="#${currentIcon}" x="10%" y="10%" width="80%" height="80%"/>
             </svg>
             <button id="newGoodUploadIconRaster" class="icon-upload" data-tip="Upload raster icon"></button>
             <button id="newGoodUploadIconVector" class="icon-upload-cloud" data-tip="Upload vector (SVG) icon"></button>
@@ -144,12 +150,8 @@ function open(editedGood?: Good, onUpdate?: () => void) {
           <span data-tip="Per-dimension production multipliers. 1 = no effect, 0 = fully suppressed.">Multipliers</span>
         </div>
         <div class="ge-grid ge-grid--top">
-          ${renderMultiplierRow("cultureType", "Culture Type")}
-          ${renderMultiplierRow("culture", "Culture")}
           ${renderMultiplierRow("state", "State")}
-          ${renderMultiplierRow("religion", "Religion")}
           ${renderMultiplierRow("biome", "Biome")}
-          ${renderMultiplierRow("zone", "Zone")}
         </div>
       </div>
 

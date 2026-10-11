@@ -20,6 +20,8 @@ interface ZoneConfig {
   generate: ZoneGenerator;
 }
 
+import { ADMINISTRATIVE_ONLY } from "./administration-policy";
+
 class ZonesModule {
   private config: Record<string, ZoneConfig>;
 
@@ -40,6 +42,10 @@ class ZonesModule {
   }
 
   generate(globalModifier = 1) {
+    if (ADMINISTRATIVE_ONLY) {
+      pack.zones = [];
+      return;
+    }
     TIME && console.time("generateZones");
 
     const usedCells = new Uint8Array(pack.cells.i.length);

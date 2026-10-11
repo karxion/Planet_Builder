@@ -335,12 +335,12 @@ function recreateStates() {
     const nomadic = [1, 2, 3, 4].includes(pack.cells.biome[capital.cell]);
     const type = nomadic
       ? "Nomadic"
-      : pack.cultures[culture].type === "Nomadic"
+      : pack.cultures[culture]?.type === "Nomadic"
         ? "Generic"
-        : pack.cultures[culture].type;
+        : pack.cultures[culture]?.type || "Generic";
     const expansionism = rn(Math.random() * ensureEl("sizeVariety").value + 1, 1);
 
-    const cultureType = pack.cultures[culture].type;
+    const cultureType = pack.cultures[culture]?.type || "Generic";
     const coa = COA.generate(capital.coa, 0.3, null, cultureType);
     coa.shield = capital.coa.shield;
 
@@ -430,7 +430,7 @@ function regenerateBurgs() {
   }
 
   const score = new Int16Array(cells.s.map(s => s * Math.random())); // cell score for capitals placement
-  const sorted = cells.i.filter(i => score[i] > 0 && cells.culture[i]).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
+  const sorted = cells.i.filter(i => score[i] > 0 && cells.h[i] >= 20).sort((a, b) => score[b] - score[a]); // filtered and sorted array of indexes
   const existingStatesCount = states.filter(s => s.i && !s.removed).length;
   const burgsCount =
     (manorsInput.value === "1000" ? rn(sorted.length / 5 / (grid.points.length / 10000) ** 0.8) : +manorsInput.value) +
@@ -440,9 +440,10 @@ function regenerateBurgs() {
   for (let i = 0; i < sorted.length && newBurgs.length < burgsCount; i++) {
     const id = newBurgs.length;
     const cell = sorted[i];
+    if (cells.burg[cell]) continue;
     const [x, y] = cells.p[cell];
 
-    const s = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make the placement not uniform
+    const s = Math.max(Burgs.minimumSpacing, spacing * gauss(1, 0.3, 0.2, 2, 2));
     if (burgsTree.find(x, y, s) !== undefined) continue; // to close to existing burg
 
     const stateId = cells.state[cell];
@@ -467,7 +468,7 @@ function regenerateBurgs() {
     .filter(s => s.i && !s.removed && !s.capital)
     .forEach(s => {
       const [x, y] = cells.p[s.center];
-      const burgId = Burgs.add([x, y]);
+      const burgId = cells.burg[s.center] || Burgs.add([x, y]);
       s.capital = burgId;
       s.center = pack.burgs[burgId].cell;
 
@@ -541,7 +542,7 @@ function regenerateEmblems() {
   // generate new emblems
   pack.states.forEach(state => {
     if (!state.i || state.removed) return;
-    const cultureType = pack.cultures[state.culture].type;
+    const cultureType = pack.cultures[state.culture]?.type || "Generic";
     state.coa = COA.generate(null, null, null, cultureType);
     state.coa.shield = COA.getShield(state.culture, null);
   });
@@ -897,7 +898,7 @@ function addRiverOnClick() {
   }
 }
 
-function toggleAddMarker() {
+function toggleAddMarker(assetIcon) {
   const pressed = findEl("addMarker")?.classList.contains("pressed");
   if (pressed) {
     unpressClickToAddButton();
@@ -906,6 +907,8 @@ function toggleAddMarker() {
 
   addFeature.querySelectorAll("button.pressed").forEach(b => b.classList.remove("pressed"));
   addMarker.classList.add("pressed");
+  if (typeof assetIcon === "string") addMarker.dataset.assetIcon = assetIcon;
+  else delete addMarker.dataset.assetIcon;
   markersAddFromOverview.classList.add("pressed");
 
   viewbox.style("cursor", "crosshair").on("click", addMarkerOnClick);
@@ -929,16 +932,18 @@ function addMarkerOnClick() {
   const selectedType = ensureEl("addedMarkerType").value;
   const selectedConfig = Markers.getConfig().find(({ type }) => type === selectedType);
 
-  const baseMarker = selectedMarker || selectedConfig || { icon: "❓" };
+  const assetIcon = ensureEl("addMarker").dataset.assetIcon;
+  const baseMarker = assetIcon ? { icon: assetIcon, type: assetIcon === "#rpg-dungeon" ? "dungeons" : assetIcon.startsWith("#rpg-") ? assetIcon.slice(1) : "custom", pin: "no", px: 26, dx: 50, dy: 50 } : selectedMarker || selectedConfig || { icon: "#rpg-monument" };
   const marker = Markers.add({ ...baseMarker, x, y, cell });
 
-  if (selectedConfig && selectedConfig.add) {
+  if (!assetIcon && selectedConfig && selectedConfig.add) {
     selectedConfig.add("marker" + marker.i, cell);
   }
 
   const markersElement = ensureEl("markers");
   const rescale = +markersElement.getAttribute("rescale");
   markersElement.insertAdjacentHTML("beforeend", drawMarker(marker, rescale));
+  window.dispatchEvent(new Event("project:changed"));
 
   if (d3.event.shiftKey === false) {
     ensureEl("markerAdd").classList.remove("pressed");
@@ -961,15 +966,10 @@ function configMarkersGeneration() {
     </tr></thead>`;
 
     const lines = config.map(({ type, icon, multiplier }) => {
-      const isExternal = icon.startsWith("http") || icon.startsWith("data:image");
-
       return /* html */ `<tr>
         <td><input class="type" value="${type}" /></td>
         <td style="position: relative">
-          <img class="image" src="${isExternal ? icon : ""}" ${
-            isExternal ? "" : "hidden"
-          } style="width:1.2em; height:1.2em; vertical-align: middle;">
-          <span class="emoji" style="font-size:1.2em">${isExternal ? "" : icon}</span>
+          <span class="fpb-config-icon" data-icon="${encodeURIComponent(icon)}">${window.rpgIconPreview(icon)}</span>
           <button class="changeIcon icon-pencil"></button>
         </td>
         <td><input class="multiplier" type="number" min="0" max="100" step="0.1" value="${multiplier}" /></td>
@@ -982,15 +982,12 @@ function configMarkersGeneration() {
 
     alertMessage.querySelectorAll("button.changeIcon").forEach(selectIconButton => {
       selectIconButton.addEventListener("click", function () {
-        const image = this.parentElement.querySelector(".image");
-        const emoji = this.parentElement.querySelector(".emoji");
-        const icon = image.getAttribute("src") || emoji.textContent;
+        const preview = this.parentElement.querySelector(".fpb-config-icon");
+        const icon = decodeURIComponent(preview.dataset.icon);
 
-        selectIcon(icon, value => {
-          const isExternal = value.startsWith("http") || value.startsWith("data:image");
-          image.setAttribute("src", isExternal ? value : "");
-          image.hidden = !isExternal;
-          emoji.textContent = isExternal ? "" : value;
+        window.selectRpgIcon(icon, value => {
+          preview.dataset.icon = encodeURIComponent(value);
+          preview.innerHTML = window.rpgIconPreview(value);
         });
       });
     });
@@ -1001,9 +998,7 @@ function configMarkersGeneration() {
     const rowsData = Array.from(rows).map(row => {
       const type = row.querySelector(".type").value;
 
-      const image = row.querySelector(".image");
-      const emoji = row.querySelector(".emoji");
-      const icon = image.getAttribute("src") || emoji.textContent;
+      const icon = decodeURIComponent(row.querySelector(".fpb-config-icon").dataset.icon);
 
       const multiplier = parseFloat(row.querySelector(".multiplier").value);
       return { type, icon, multiplier };

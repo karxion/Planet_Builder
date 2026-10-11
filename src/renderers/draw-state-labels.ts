@@ -89,8 +89,9 @@ const stateLabelsRenderer = (list?: number[]): void => {
 
   function checkExampleLetterLength(): number {
     const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
-    const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text("Example");
-    const letterLength = (testLabel.node() as SVGTextElement).getComputedTextLength() / 7; // approximate length of 1 letter
+    const sample = states.some(state => /[가-힣]/.test(state.name)) ? "가나다라마바" : "Example";
+    const testLabel = textGroup.append("text").attr("x", 0).attr("y", 0).text(sample);
+    const letterLength = (testLabel.node() as SVGTextElement).getComputedTextLength() / sample.length;
     testLabel.remove();
 
     return letterLength;

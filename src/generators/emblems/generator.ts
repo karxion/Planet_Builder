@@ -429,8 +429,7 @@ class EmblemGeneratorModule {
     if (shapeGroup !== "Diversiform") return emblemShape.value;
 
     if (emblemShape.value === "state" && state && pack.states[state].coa) return pack.states[state].coa!.shield!;
-    if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
-    ERROR && console.error("Shield shape is not defined on culture level", pack.cultures[culture]);
+    if (pack.cultures[culture]?.shield) return pack.cultures[culture].shield;
     return "heater";
   }
 

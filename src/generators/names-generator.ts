@@ -1,4 +1,5 @@
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
+import { generateKoreanName } from "./korean-world-names";
 
 declare global {
   var Names: NamesGenerator;
@@ -158,21 +159,27 @@ class NamesGenerator {
 
   // generate name for culture
   getCulture(culture: number, min?: number, max?: number, dupl?: string): string {
+    if (!pack.cultures?.length) return this.getDefault();
     if (culture === undefined) {
       ERROR && console.error("Please define a culture");
       return "ERROR";
     }
-    const base = pack.cultures[culture].base;
+    const base = pack.cultures[culture]?.base ?? 0;
     return this.getBase(base, min, max, dupl);
   }
 
   // generate short name for culture
   getCultureShort(culture: number): string {
+    if (!pack.cultures?.length) return this.getDefault();
     if (culture === undefined) {
       ERROR && console.error("Please define a culture");
       return "ERROR";
     }
-    return this.getBaseShort(pack.cultures[culture].base);
+    return this.getBaseShort(pack.cultures[culture]?.base ?? 0);
+  }
+
+  getDefault(): string {
+    return generateKoreanName();
   }
 
   // generate short name for base
@@ -201,6 +208,7 @@ class NamesGenerator {
 
   // generate state name based on capital or random name and culture-specific suffix
   getState(name: string, culture: number, base?: number): string {
+    if (/[가-힣]/.test(name)) return name;
     if (name === undefined) {
       ERROR && console.error("Please define a base name");
       return "ERROR";
@@ -209,7 +217,7 @@ class NamesGenerator {
       ERROR && console.error("Please define a culture");
       return "ERROR";
     }
-    if (base === undefined) base = pack.cultures[culture].base;
+    if (base === undefined) base = pack.cultures[culture]?.base ?? 0;
 
     // exclude endings inappropriate for states name
     if (name.includes(" ")) name = capitalize(name.replace(/ /g, "").toLowerCase()); // don't allow multiword state names
@@ -281,6 +289,10 @@ class NamesGenerator {
   getMapName(force: boolean) {
     if (!force && locked("mapName")) return;
     if (force && locked("mapName")) unlock("mapName");
+    if (!pack.cultures?.length) {
+      mapName.value = this.getDefault();
+      return;
+    }
     const base = P(0.7) ? 2 : P(0.5) ? rand(0, 6) : rand(0, 31);
     if (!nameBases[base]) {
       tip("Namebase is not found", false, "error");

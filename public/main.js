@@ -366,7 +366,7 @@ async function generateMapOnLoad() {
   await generate(); // generate map
   applyLayersPreset(); // apply saved layers preset and reder layers
   drawLayers();
-  fitMapToScreen();
+  fitMapToScreen(true);
   focusOn(); // based on searchParams focus on point, cell or burg from MFCG
   toggleAssistant();
 }
@@ -418,29 +418,9 @@ function focusOn() {
   }
 }
 
-let isAssistantLoaded = false;
 function toggleAssistant() {
-  const showAssistant = document.getElementById("azgaarAssistant")?.value === "show";
-  if (showAssistant) {
-    if (isAssistantLoaded) {
-      const assistantContainer = document.getElementById("chat-widget-container");
-      if (assistantContainer) assistantContainer.style.display = "block";
-    } else {
-      import("./libs/openwidget.min.js").then(() => {
-        isAssistantLoaded = true;
-        setTimeout(() => {
-          const bubble = document.getElementById("chat-widget-minimized");
-          if (bubble) {
-            bubble.dataset.tip = "Click to open the Assistant";
-            bubble.on("mouseover", showDataTip);
-          }
-        }, 5000);
-      });
-    }
-  } else if (isAssistantLoaded) {
-    const assistantContainer = document.getElementById("chat-widget-container");
-    if (assistantContainer) assistantContainer.style.display = "none";
-  }
+  // The upstream assistant is tied to Azgaar's hosted support account.
+  // Branded deployments keep it disabled unless they add their own integration.
 }
 
 function initTourPromptButton() {
@@ -527,13 +507,23 @@ function findBurgForMFCG(params) {
 
 // Zoom to a specific point
 function zoomTo(x, y, z = 8, d = 2000) {
-  const transform = d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
-  svg.transition().duration(d).call(zoom.transform, transform);
+  const planetView = Boolean(document.getElementById("fpb-shell"));
+  if (planetView) z = Math.max(z, zoom.scaleExtent()[0]);
+  let transform = d3.zoomIdentity.translate(x * -z + svgWidth / 2, y * -z + svgHeight / 2).scale(z);
+  if (planetView) {
+    transform = zoom.constrain()(transform, [[0, 0], [svgWidth, svgHeight]], zoom.translateExtent());
+  }
+  svg.interrupt().transition().duration(d).call(zoom.transform, transform);
 }
 
 // Reset zoom to initial
 function resetZoom(d = 1000) {
-  svg.transition().duration(d).call(zoom.transform, d3.zoomIdentity);
+  let transform = d3.zoomIdentity;
+  if (document.getElementById("fpb-shell")) {
+    const fit = window.getMapFitTransform(graphWidth, graphHeight, svgWidth, svgHeight);
+    transform = transform.translate(fit.x, fit.y).scale(fit.k);
+  }
+  svg.interrupt().transition().duration(d).call(zoom.transform, transform);
 }
 
 // active zooming feature
@@ -1319,7 +1309,7 @@ const regenerateMap = debounce(async function (config) {
   if (options.threeD.isOn) window.Controllers.View3d.redraw();
   if ($("#worldConfigurator").is(":visible")) editWorld();
 
-  fitMapToScreen();
+  fitMapToScreen(true);
   shouldShowLoading && hideLoading();
   clearMainTip();
 }, 250);

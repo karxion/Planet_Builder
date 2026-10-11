@@ -1,5 +1,6 @@
 import { quadtree } from "d3-quadtree";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
+import { isSettlementPositionOccupied, MIN_SETTLEMENT_DISTANCE } from "../utils/settlementTokens";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
 import { NON_NAVIGABLE_LAKE_GROUPS } from "./features";
 import type { ProductionRecord } from "./production-generator";
@@ -46,6 +47,12 @@ type PortCandidate = {
 };
 
 class BurgModule {
+  readonly minimumSpacing = MIN_SETTLEMENT_DISTANCE;
+
+  isTooClose([x, y]: [number, number], ignoredId?: number): boolean {
+    return isSettlementPositionOccupied(pack.burgs, x, y, ignoredId);
+  }
+
   generate() {
     TIME && console.time("generateBurgs");
     const { cells } = pack;
@@ -53,9 +60,9 @@ class BurgModule {
     let burgs: Burg[] = [0 as any]; // burgs array
     cells.burg = new Uint16Array(cells.i.length);
 
-    const populatedCells = cells.i.filter(i => cells.s[i] > 0 && cells.culture[i]);
+    const populatedCells = cells.i.filter(i => cells.s[i] > 0 && cells.h[i] >= 20);
     if (!populatedCells.length) {
-      ERROR && console.error("There is no populated cells with culture assigned. Cannot generate states");
+      ERROR && console.error("There are no habitable land cells. Cannot generate settlements");
       return burgs;
     }
 
@@ -67,7 +74,7 @@ class BurgModule {
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 
       const capitalsNumber = getCapitalsNumber();
-      let spacing = (graphWidth + graphHeight) / 2 / capitalsNumber; // min distance between capitals
+      let spacing = Math.max(MIN_SETTLEMENT_DISTANCE, (graphWidth + graphHeight) / 2 / capitalsNumber);
 
       for (let i = 0; burgs.length <= capitalsNumber; i++) {
         const cell = sorted[i];
@@ -80,11 +87,12 @@ class BurgModule {
 
         // reset if all cells were checked
         if (i === sorted.length - 1) {
+          if (burgs.length > capitalsNumber || spacing === MIN_SETTLEMENT_DISTANCE) break;
           WARN && console.warn("Cannot place capitals with current spacing. Trying again with reduced spacing");
           burgsQuadtree = quadtree();
           i = -1;
           burgs = [0 as any];
-          spacing /= 1.2;
+          spacing = Math.max(MIN_SETTLEMENT_DISTANCE, spacing / 1.2);
         }
       }
 
@@ -114,7 +122,7 @@ class BurgModule {
           const cell = sorted[i];
           const [x, y] = cells.p[cell];
 
-          const minSpacing = spacing * gauss(1, 0.3, 0.2, 2, 2); // randomize to make placement not uniform
+          const minSpacing = Math.max(MIN_SETTLEMENT_DISTANCE, spacing * gauss(1, 0.3, 0.2, 2, 2));
           if (burgsQuadtree.find(x, y, minSpacing) !== undefined) continue; // to close to existing burg
 
           const burgId = burgs.length;
@@ -134,6 +142,7 @@ class BurgModule {
           });
           added++;
           cells.burg[cell] = burgId;
+          burgsQuadtree.add([x, y]);
         }
 
         spacing *= 0.5;
@@ -210,6 +219,7 @@ class BurgModule {
     for (const burg of burgs) {
       if (!burg.i || burg.lock || burg.port || !cells.r[burg.cell]) continue;
       const [x, y] = this.shiftTowardsRiverBank(burg.cell, riversById);
+      if (this.isTooClose([x, y], burg.i)) continue;
       burg.x = x;
       burg.y = y;
     }
@@ -295,6 +305,7 @@ class BurgModule {
     burg.port = portFeatureId;
     const [x, y] =
       haven !== null ? this.getCloseToEdgePoint(burg.cell, haven) : this.shiftTowardsRiverBank(burg.cell, riversById);
+    if (this.isTooClose([x, y], burg.i)) return;
     burg.x = x;
     burg.y = y;
   }
@@ -708,6 +719,9 @@ class BurgModule {
 
     const burgId = pack.burgs.length;
     const cellId = window.findCell(x, y, undefined, pack);
+    const existingId = cells.burg[cellId as number];
+    const existing = pack.burgs[existingId];
+    if (existing?.i && !existing.removed) return existingId;
     const culture = cells.culture[cellId as number];
     const name = Names.getCulture(culture);
     const state = cells.state[cellId as number];

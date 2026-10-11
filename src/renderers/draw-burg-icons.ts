@@ -1,4 +1,7 @@
+import { isRpgAsset, SETTLEMENT_ASSETS } from "@/data/rpg-map-assets";
 import type { Burg } from "../generators/burgs-generator";
+import { settlementTokenAppearance } from "../utils/settlementTokens";
+import { installRpgAssetDefinitions } from "./rpg-asset-renderer";
 
 declare global {
   var drawBurgIcons: () => void;
@@ -8,6 +11,7 @@ declare global {
 
 const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");
+  installRpgAssetDefinitions();
   createIconGroups();
 
   for (const { name } of options.burgs.groups) {
@@ -19,7 +23,7 @@ const burgIconsRenderer = (): void => {
 
     const icon = iconsGroup.dataset.icon || "#icon-circle";
     iconsGroup.innerHTML = burgsInGroup
-      .map(b => `<use id="burg${b.i}" data-id="${b.i}" href="${icon}" x="${b.x}" y="${b.y}"></use>`)
+      .map(b => burgIconMarkup(b, icon, iconsGroup.getAttribute("font-size")))
       .join("");
 
     const portsInGroup = burgsInGroup.filter(b => b.port);
@@ -45,14 +49,8 @@ const drawBurgIconRenderer = (burg: Burg): void => {
 
   removeBurgIconRenderer(burg.i!);
   const icon = iconGroup.attr("data-icon") || "#icon-circle";
-  burgIcons
-    .select(`#${burg.group}`)
-    .append("use")
-    .attr("href", icon)
-    .attr("id", `burg${burg.i}`)
-    .attr("data-id", burg.i!)
-    .attr("x", burg.x)
-    .attr("y", burg.y);
+  installRpgAssetDefinitions();
+  iconGroup.node()!.insertAdjacentHTML("beforeend", burgIconMarkup(burg, icon, iconGroup.attr("font-size")));
 
   if (burg.port) {
     anchors
@@ -66,12 +64,26 @@ const drawBurgIconRenderer = (burg: Burg): void => {
   }
 };
 
-const removeBurgIconRenderer = (burgId: number): void => {
-  const existingIcon = document.getElementById(`burg${burgId}`);
-  if (existingIcon) existingIcon.remove();
+function burgIconMarkup(burg: Burg, icon: string, fontSize: string | null): string {
+  const appearance = settlementTokenAppearance(
+    burg.population,
+    burg.capital,
+    icon,
+    Number.parseFloat(fontSize || "6") || 6,
+    icon === `#rpg-${SETTLEMENT_ASSETS[burg.group || ""]}`
+  );
+  const size = appearance.size;
+  icon = appearance.icon;
+  const geometry = isRpgAsset(icon)
+    ? `width="${size}" height="${size}" transform="translate(${-size / 2} ${-size * 0.85})"`
+    : "";
+  return `<use id="burg${burg.i}" data-id="${burg.i}" href="${icon}" x="${burg.x}" y="${burg.y}" ${geometry}></use>`;
+}
 
-  const existingAnchor = document.getElementById(`anchor${burgId}`);
-  if (existingAnchor) existingAnchor.remove();
+const removeBurgIconRenderer = (burgId: number): void => {
+  document.querySelectorAll(`#burgIcons [id="burg${burgId}"]`).forEach(icon => void icon.remove());
+
+  document.querySelectorAll(`#anchors [id="anchor${burgId}"]`).forEach(anchor => void anchor.remove());
 };
 
 function createIconGroups(): void {

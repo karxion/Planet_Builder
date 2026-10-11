@@ -1,0 +1,487 @@
+import { abilityModifier, NPC_STAT_BLOCKS, SRD_ATTRIBUTION, SRD_URL } from "@/data/npc-stat-blocks";
+import { removeLegacyDivisions } from "@/generators/administration-policy";
+import {
+  type AdministrativeSnapshot,
+  belongsTo,
+  buildAdministration,
+  createCampaign,
+  generateVillageNpcs,
+  synchronizeNpcPlaceNames
+} from "@/generators/campaign-generator";
+import { koreanizeWorldNames } from "@/generators/korean-world-names";
+import { drawAdministration } from "@/renderers/administration-renderer";
+import { t } from "@/services/ui-language";
+import type { AdministrationLevel, CampaignWorld, NpcTemplateId, WorldNpc } from "@/types/campaign-world";
+
+let campaign: CampaignWorld | undefined;
+let selectedNpc = "";
+let mapLevel: AdministrationLevel = "country";
+let page = 0;
+const levels: AdministrationLevel[] = ["country", "region", "fief", "village"];
+const labels = { country: "국가", region: "지역", fief: "영지", village: "마을" };
+const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+const escapeHtml = (value: string) => {
+  const span = document.createElement("span");
+  span.textContent = value;
+  return span.innerHTML.replaceAll('"', "&quot;");
+};
+const changed = () => window.dispatchEvent(new Event("project:changed"));
+
+function snapshot(): AdministrativeSnapshot {
+  const villages = pack.burgs
+    .filter(b => b.i && !b.removed)
+    .map(b => ({
+      id: b.i,
+      name: b.name || `마을 ${b.i}`,
+      stateId: b.state || 0,
+      fiefId: pack.cells.province[b.cell] || 0,
+      x: b.x,
+      y: b.y,
+      capital: Boolean(b.capital),
+      port: Boolean(b.port)
+    }));
+  const adjacent = new Map<number, Set<number>>();
+  for (const cell of pack.cells.i) {
+    const a = pack.cells.province[cell];
+    if (!a) continue;
+    if (!adjacent.has(a)) adjacent.set(a, new Set());
+    for (const neighbor of pack.cells.c[cell]) {
+      const b = pack.cells.province[neighbor];
+      if (b && a !== b && pack.cells.state[cell] === pack.cells.state[neighbor]) adjacent.get(a)!.add(b);
+    }
+  }
+  return {
+    villages,
+    states: pack.states
+      .filter(s => s && !s.removed && (s.i || villages.some(v => v.stateId === 0)))
+      .map(s => {
+        const [x, y] = pack.cells.p[s.center] || [graphWidth / 2, graphHeight / 2];
+        return { id: s.i, name: s.i ? s.fullName || s.name : "무소속", x, y };
+      }),
+    fiefs: pack.provinces
+      .filter(p => p?.i && !p.removed)
+      .map(p => {
+        const [x, y] = pack.cells.p[p.center] || [0, 0];
+        return { id: p.i, stateId: p.state, name: `${p.name} 영지`, x, y, neighbors: [...(adjacent.get(p.i) || [])] };
+      })
+  };
+}
+
+function refresh(): void {
+  if (!pack.burgs?.length || !pack.states?.length) return;
+  const removedMarkers = new Set(removeLegacyDivisions(pack));
+  notes = notes.filter(note => !removedMarkers.has(note.id));
+  removedMarkers.forEach(id => void el(id)?.remove());
+  for (const unit of options.military || []) {
+    delete unit.cultures;
+    delete unit.religions;
+  }
+  const input = snapshot();
+  let referencesChanged = false;
+  if (!campaign) campaign = createCampaign(input, String(seed));
+  else {
+    const synchronized = synchronizeNpcPlaceNames(campaign.npcs, campaign.units, input.villages);
+    referencesChanged = synchronized.some((npc, index) => npc !== campaign!.npcs[index]);
+    campaign.npcs = synchronized;
+    const oldVillages = new Set(campaign.units.filter(u => u.level === "village").map(u => u.sourceId));
+    campaign.units = buildAdministration(input);
+    campaign.npcs.push(
+      ...input.villages
+        .filter(v => !oldVillages.has(v.id))
+        .flatMap(v => generateVillageNpcs(campaign!.seed, v, campaign!.generation))
+    );
+  }
+  removeObsoleteUi();
+  drawAdministration(campaign.units, mapLevel);
+  if (referencesChanged) changed();
+}
+
+function reset(): void {
+  campaign = undefined;
+  selectedNpc = "";
+  mapLevel = "country";
+  const renamed = applyKoreanNames();
+  refresh();
+  applyClassification();
+  if (el<HTMLDialogElement>("fpb-world-dialog")?.open) renderFilters();
+  if (renamed) changed();
+}
+
+function applyKoreanNames(): boolean {
+  if (!pack.burgs?.length || !pack.states?.length || !koreanizeWorldNames(pack, String(seed))) return false;
+  for (const burg of pack.burgs) {
+    const label = el(`burgLabel${burg.i}`);
+    if (label && burg.name) label.textContent = burg.name;
+  }
+  for (const province of pack.provinces) {
+    const label = el(`provinceLabel${province.i}`);
+    if (label && province.name) label.textContent = province.name;
+  }
+  drawStateLabels();
+  return true;
+}
+
+function applyClassification(): void {
+  if (!campaign) return;
+  campaign.mapLevel = mapLevel;
+  el<HTMLSelectElement>("fpb-admin-level").value = mapLevel;
+  if (layerIsOn("toggleStates") !== (mapLevel === "country")) toggleStates();
+  if (layerIsOn("toggleProvinces")) toggleProvinces();
+  if (!layerIsOn("toggleBurgIcons")) toggleBurgIcons();
+  if (!layerIsOn("toggleLabels")) toggleLabels();
+  if (el("states")) el("states").style.display = mapLevel === "country" ? "" : "none";
+  drawAdministration(campaign.units, mapLevel);
+}
+
+function removeObsoleteUi(): void {
+  for (const id of ["cults", "relig", "zones"]) el(id)?.replaceChildren();
+  for (const id of [
+    "toggleCultures",
+    "toggleReligions",
+    "toggleZones",
+    "editCulturesButton",
+    "editReligions",
+    "editZonesButton",
+    "regenerateCultures",
+    "regenerateReligions",
+    "regenerateZones"
+  ]) {
+    const target = el(id);
+    if (target) {
+      target.hidden = true;
+      target.setAttribute("aria-hidden", "true");
+    }
+  }
+  for (const id of [
+    "culturesInput",
+    "culturesSet",
+    "religionsNumber",
+    "provinceCultureDisplay",
+    "burgCulture",
+    "burgsFilterCulture"
+  ]) {
+    const target = el(id);
+    const row = target?.closest("tr");
+    if (row) row.hidden = true;
+    else if (target) {
+      (target.closest("label") || target).hidden = true;
+    }
+  }
+  document
+    .querySelectorAll<HTMLOptionElement>(
+      'option[value="cultural"], option[value="religions"], #styleElementSelect option[value="cults"], #styleElementSelect option[value="relig"], #styleElementSelect option[value="zones"]'
+    )
+    .forEach(option => void option.remove());
+  document.querySelectorAll<HTMLElement>('#burgsHeader [data-sortby="culture"]').forEach(target => {
+    target.hidden = true;
+  });
+  if (el("burgCulture")?.parentElement) el("burgCulture").parentElement!.hidden = true;
+  for (const id of [
+    "provinceCultureName",
+    "burgTemple",
+    "stateNameEditorShortCulture",
+    "provinceNameEditorShortCulture",
+    "lakeNameCulture",
+    "battleNameCulture"
+  ]) {
+    if (el(id)) el(id).hidden = true;
+  }
+  for (const id of ["infoCulture", "infoReligion"]) {
+    if (el(id)?.parentElement) el(id).parentElement!.hidden = true;
+  }
+  el("burgsHeader")?.style.setProperty("grid-template-columns", "9em 7em 7.5em 6.5em 8em 6.5em 6.5em 5.5em 6em");
+  for (const [id, name] of Object.entries({
+    toggleStates: "국가",
+    toggleProvinces: "영지",
+    overviewBurgsButton: "마을",
+    editProvincesButton: "영지",
+    editStatesButton: "국가"
+  })) {
+    if (el(id)) el(id).textContent = t(name);
+  }
+}
+
+function init(): void {
+  const button = document.createElement("button");
+  button.id = "fpb-world-button";
+  button.type = "button";
+  button.title = "세계 분류 및 NPC";
+  button.innerHTML = '<span class="icon-users" aria-hidden="true"></span>세계·NPC';
+  document.querySelector(".fpb-actions")?.prepend(button);
+  button.addEventListener("click", open);
+  const dialog = document.createElement("dialog");
+  dialog.id = "fpb-world-dialog";
+  dialog.innerHTML = `<header class="fpb-world-header"><span class="fpb-world-crest icon-shield-alt" aria-hidden="true"></span><div><h2>세계와 NPC</h2><span id="fpb-world-summary"></span></div><select class="fpb-dialog-language" data-fpb-language data-fpb-preference aria-label="언어 / Language"><option value="ko">한국어</option><option value="en">English</option></select><button id="fpb-world-close" type="button" title="닫기" aria-label="닫기" class="fpb-icon-button icon-cancel"></button></header>
+    <div class="fpb-world-layout"><aside class="fpb-world-filters">${levels.map(level => `<label>${labels[level]}<select id="fpb-filter-${level}"><option value="">전체</option></select></label>`).join("")}
+    <label>지도 구획<select id="fpb-admin-level">${levels.map(level => `<option value="${level}">${labels[level]}</option>`).join("")}</select></label>
+    <button id="fpb-unit-focus" type="button"><span class="icon-target" aria-hidden="true"></span>지도에서 보기</button>
+    <button id="fpb-npc-regenerate" type="button"><span class="icon-cw" aria-hidden="true"></span>범위 내 NPC 재생성</button>
+    <button id="fpb-korean-names" type="button"><span class="icon-cw" aria-hidden="true"></span>지명 한글화</button>
+    <a href="legal/srd.html" target="_blank" rel="noopener">SRD 5.2.1 · CC BY 4.0</a></aside>
+    <main class="fpb-npc-main"><div class="fpb-npc-toolbar"><input id="fpb-npc-search" type="search" aria-label="NPC 검색" placeholder="이름 또는 역할 검색"><span id="fpb-npc-count" role="status"></span><button id="fpb-npc-export" title="NPC JSON 내보내기" aria-label="NPC JSON 내보내기" class="icon-download" type="button"></button></div>
+    <div class="fpb-npc-columns"><section class="fpb-npc-results" aria-label="NPC 목록"><div id="fpb-npc-list"></div><nav class="fpb-npc-pagination"><button id="fpb-npc-prev" type="button" class="icon-left-open" aria-label="이전 페이지" title="이전 페이지"></button><span id="fpb-npc-page"></span><button id="fpb-npc-next" type="button" class="icon-right-open" aria-label="다음 페이지" title="다음 페이지"></button></nav></section><section id="fpb-npc-detail" aria-label="NPC 상세"></section></div></main></div>`;
+  document.body.append(dialog);
+  el("fpb-world-close").onclick = () => dialog.close();
+  for (const level of levels)
+    el(`fpb-filter-${level}`).onchange = () => {
+      for (const next of levels.slice(levels.indexOf(level) + 1))
+        el<HTMLSelectElement>(`fpb-filter-${next}`).value = "";
+      page = 0;
+      renderFilters();
+    };
+  el("fpb-npc-search").oninput = () => {
+    page = 0;
+    renderNpcs();
+  };
+  el("fpb-npc-prev").onclick = () => {
+    page--;
+    renderNpcs();
+  };
+  el("fpb-npc-next").onclick = () => {
+    page++;
+    renderNpcs();
+  };
+  el("fpb-admin-level").onchange = () => {
+    mapLevel = el<HTMLSelectElement>("fpb-admin-level").value as AdministrationLevel;
+    applyClassification();
+    changed();
+  };
+  el("fpb-unit-focus").onclick = () => focusUnit(selectedScope());
+  el("fpb-npc-regenerate").onclick = regenerate;
+  el("fpb-npc-export").onclick = exportNpcs;
+  el("fpb-korean-names").onclick = () => {
+    if (!confirm(t("잠기지 않은 영어 지명을 새 한글 이름으로 바꿀까요? 한글 지명과 잠긴 항목은 유지됩니다."))) return;
+    if (!applyKoreanNames()) return;
+    refresh();
+    renderFilters();
+    changed();
+  };
+  window.addEventListener("map:generated", reset);
+  window.addEventListener("map:loaded", reset);
+  window.addEventListener("ui:language-changed", () => {
+    const draft = collectNpcDraft();
+    removeObsoleteUi();
+    if (dialog.open) {
+      renderFilters();
+      if (draft) renderDetail(draft);
+    }
+  });
+  // Block obsolete keyboard entry points as well as hidden buttons.
+  window.addEventListener(
+    "keydown",
+    event => {
+      const target = event.target as HTMLElement;
+      if (target.closest("input, textarea, select, [contenteditable]")) return;
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey && ["c", "r", "z"].includes(event.key.toLowerCase())) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    },
+    true
+  );
+  const renamed = applyKoreanNames();
+  refresh();
+  if (renamed) changed();
+}
+
+function open(): void {
+  refresh();
+  renderFilters();
+  el<HTMLDialogElement>("fpb-world-dialog").showModal();
+}
+
+function selectedScope(): string {
+  return (
+    [...levels]
+      .reverse()
+      .map(level => el<HTMLSelectElement>(`fpb-filter-${level}`).value)
+      .find(Boolean) || ""
+  );
+}
+
+function renderFilters(): void {
+  if (!campaign) return;
+  let parent = "";
+  for (const level of levels) {
+    const select = el<HTMLSelectElement>(`fpb-filter-${level}`);
+    const previous = select.value;
+    const units = campaign.units.filter(
+      u => u.level === level && (!parent || belongsTo(u.id, parent, campaign!.units))
+    );
+    select.replaceChildren(new Option(t(`전체 ${labels[level]}`), ""), ...units.map(u => new Option(u.name, u.id)));
+    if (units.some(u => u.id === previous)) select.value = previous;
+    if (select.value) parent = select.value;
+  }
+  el("fpb-world-summary").textContent = levels
+    .map(level => `${t(labels[level])} ${campaign!.units.filter(u => u.level === level).length}`)
+    .join(" · ");
+  renderNpcs();
+}
+
+function filteredNpcs(): WorldNpc[] {
+  if (!campaign) return [];
+  const scope = selectedScope();
+  const villages = new Set(
+    campaign.units
+      .filter(u => u.level === "village" && (!scope || belongsTo(u.id, scope, campaign!.units)))
+      .map(u => u.id)
+  );
+  const query = el<HTMLInputElement>("fpb-npc-search").value.trim().toLocaleLowerCase();
+  return campaign.npcs.filter(
+    npc => (!scope || villages.has(npc.villageId)) && `${npc.name} ${npc.role}`.toLocaleLowerCase().includes(query)
+  );
+}
+
+function renderNpcs(): void {
+  const npcs = filteredNpcs();
+  page = Math.max(0, Math.min(page, Math.ceil(npcs.length / 30) - 1));
+  const shown = npcs.slice(page * 30, (page + 1) * 30);
+  el("fpb-npc-count").textContent = t("{count}명", { count: npcs.length });
+  el("fpb-npc-page").textContent = `${page + 1} / ${Math.max(1, Math.ceil(npcs.length / 30))}`;
+  el<HTMLButtonElement>("fpb-npc-prev").disabled = page === 0;
+  el<HTMLButtonElement>("fpb-npc-next").disabled = (page + 1) * 30 >= npcs.length;
+  if (!shown.some(npc => npc.id === selectedNpc)) selectedNpc = shown[0]?.id || "";
+  el("fpb-npc-list").innerHTML =
+    shown
+      .map(
+        npc =>
+          `<button type="button" class="fpb-npc-row ${npc.id === selectedNpc ? "selected" : ""}" data-npc="${escapeHtml(npc.id)}"><strong data-i18n-skip>${escapeHtml(npc.name)}</strong><span><span data-i18n-skip>${escapeHtml(npc.role)}</span> · CR ${NPC_STAT_BLOCKS[npc.templateId].cr}${npc.edited ? ` · ${t("수정됨")}` : ""}</span><small data-i18n-skip>${escapeHtml(campaign!.units.find(u => u.id === npc.villageId)?.name || t("소속 마을 없음"))}</small></button>`
+      )
+      .join("") || '<p class="fpb-npc-empty">조건에 맞는 NPC가 없습니다.</p>';
+  el("fpb-npc-list")
+    .querySelectorAll<HTMLButtonElement>("[data-npc]")
+    .forEach(button => {
+      button.onclick = () => {
+        selectedNpc = button.dataset.npc!;
+        renderNpcs();
+      };
+    });
+  renderDetail();
+}
+
+function renderDetail(preview?: WorldNpc): void {
+  const storedNpc = campaign?.npcs.find(n => n.id === selectedNpc);
+  const npc = preview || storedNpc;
+  if (!npc) {
+    el("fpb-npc-detail").replaceChildren();
+    return;
+  }
+  const stats = NPC_STAT_BLOCKS[npc.templateId];
+  const signed = (n: number) => (n < 0 ? String(n) : `+${n}`);
+  el("fpb-npc-detail").innerHTML =
+    `<form id="fpb-npc-form"><div class="fpb-npc-heading"><h3 data-i18n-skip>${escapeHtml(npc.name)}</h3><button id="fpb-npc-focus" class="icon-target" type="button" title="거주 마을 보기" aria-label="거주 마을 보기"></button></div>
+    <label>이름<input name="name" value="${escapeHtml(npc.name)}" maxlength="80" required></label><label>역할<input name="role" value="${escapeHtml(npc.role)}" maxlength="80" required></label>
+    <label>능력치 유형<select name="templateId">${Object.entries(NPC_STAT_BLOCKS)
+      .map(([id, block]) => `<option value="${id}" ${id === npc.templateId ? "selected" : ""}>${block.name}</option>`)
+      .join("")}</select></label>
+    <div class="fpb-npc-stats"><span>AC <b>${stats.ac}</b></span><span>HP <b>${stats.hp}</b> (${stats.hitDice})</span><span>CR <b>${stats.cr}</b> · ${stats.xp} XP</span><span>이동 30ft · 숙련 +2</span><span>${t("우선권")} ${signed(abilityModifier(stats.abilities[1]))} (${10 + abilityModifier(stats.abilities[1])})</span></div>
+    <table class="fpb-ability-table"><thead><tr>${["근력", "민첩", "건강", "지능", "지혜", "매력"].map(a => `<th>${a}</th>`).join("")}</tr></thead><tbody><tr>${stats.abilities.map(a => `<td>${a}<small>${signed(abilityModifier(a))}</small></td>`).join("")}</tr></tbody></table>
+    <p class="fpb-npc-rule">중형 또는 소형 인간형 · 중립<br>내성: 위 능력 수정치와 동일<br>${t(stats.skills)}<br>${t("수동 지각")} ${stats.passivePerception}<br>${t("언어")}: ${t(stats.languages)}<br>${t("장비")}: ${t(stats.gear)}</p>
+    ${[...stats.traits, ...stats.actions, ...stats.reactions].map(text => `<p class="fpb-npc-rule">${text}</p>`).join("")}
+    ${(
+      [
+        ["appearance", "외형"],
+        ["personality", "성격"],
+        ["goal", "목표"],
+        ["secret", "비밀"],
+        ["notes", "GM 메모"]
+      ] as const
+    )
+      .map(
+        ([key, label]) =>
+          `<label>${label}<textarea name="${key}" maxlength="4000" rows="2">${escapeHtml(npc[key])}</textarea></label>`
+      )
+      .join("")}
+    <div class="fpb-npc-edit-actions"><button type="submit" class="primary">변경 저장</button><button id="fpb-npc-delete" type="button" class="icon-trash" title="NPC 삭제" aria-label="NPC 삭제"></button><a href="${SRD_URL}#page=${stats.page}" target="_blank" rel="noopener">${t("규칙 원문 p.{page}", { page: stats.page })}</a></div></form>`;
+  el("fpb-npc-focus").onclick = () => focusUnit(npc.villageId);
+  el<HTMLFormElement>("fpb-npc-form")
+    .querySelector("[name=templateId]")!
+    .addEventListener("change", () => {
+      const data = new FormData(el<HTMLFormElement>("fpb-npc-form"));
+      const draft = { ...npc, templateId: String(data.get("templateId")) as NpcTemplateId };
+      for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
+        draft[key] = String(data.get(key) || "");
+      renderDetail(draft);
+    });
+  el<HTMLFormElement>("fpb-npc-form").onsubmit = event => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget as HTMLFormElement);
+    for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
+      npc[key] = String(data.get(key) || "").trim();
+    npc.templateId = String(data.get("templateId")) as NpcTemplateId;
+    npc.edited = true;
+    Object.assign(storedNpc!, npc);
+    changed();
+    renderNpcs();
+  };
+  el("fpb-npc-delete").onclick = () => {
+    if (!confirm(t("{name} NPC를 삭제할까요?", { name: npc.name }))) return;
+    campaign!.npcs = campaign!.npcs.filter(n => n.id !== npc.id);
+    changed();
+    renderNpcs();
+  };
+}
+
+function collectNpcDraft(): WorldNpc | undefined {
+  const npc = campaign?.npcs.find(item => item.id === selectedNpc);
+  const form = el<HTMLFormElement>("fpb-npc-form");
+  if (!npc || !form) return;
+  const data = new FormData(form);
+  const draft = { ...npc, templateId: String(data.get("templateId")) as NpcTemplateId };
+  for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
+    draft[key] = String(data.get(key) || "");
+  return draft;
+}
+
+function focusUnit(id: string): void {
+  const unit = campaign?.units.find(u => u.id === id);
+  if (!unit) return;
+  el<HTMLDialogElement>("fpb-world-dialog").close();
+  el("fpb-map-view").click();
+  zoomTo(unit.x, unit.y, unit.level === "village" ? 6 : 2, 600);
+}
+
+function regenerate(): void {
+  if (!campaign || !confirm(t("선택 범위의 자동 생성 NPC를 다시 만들까요? 직접 수정한 NPC는 보존됩니다."))) return;
+  const scope = selectedScope();
+  const villages = snapshot().villages.filter(v => !scope || belongsTo(`village:${v.id}`, scope, campaign!.units));
+  const ids = new Set(villages.map(v => `village:${v.id}`));
+  campaign.generation++;
+  campaign.npcs = campaign.npcs.filter(n => n.edited || !ids.has(n.villageId));
+  campaign.npcs.push(...villages.flatMap(v => generateVillageNpcs(campaign!.seed, v, campaign!.generation)));
+  changed();
+  renderNpcs();
+}
+
+function exportNpcs(): void {
+  const payload = {
+    ruleset: "srd-5.2.1",
+    units: campaign?.units,
+    npcs: filteredNpcs().map(npc => ({ ...npc, statBlock: NPC_STAT_BLOCKS[npc.templateId] })),
+    source: SRD_URL,
+    attribution: SRD_ATTRIBUTION
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "world-npcs.json";
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function restore(world?: CampaignWorld): void {
+  campaign = world ? structuredClone(world) : undefined;
+  mapLevel = campaign?.mapLevel || "country";
+  if (el("fpb-admin-level")) el<HTMLSelectElement>("fpb-admin-level").value = mapLevel;
+  refresh();
+  applyClassification();
+}
+
+export const Campaign = {
+  init,
+  restore,
+  get: () => {
+    refresh();
+    return campaign;
+  }
+};

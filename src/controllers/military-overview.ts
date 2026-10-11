@@ -378,8 +378,8 @@ function militaryCustomize(): void {
         <td><input data-tip="Type unit name. If name is changed for existing unit, old unit will be replaced" value="${name}" /></td>
         <td>${getLimitButton("biomes")}</td>
         <td>${getLimitButton("states")}</td>
-        <td>${getLimitButton("cultures")}</td>
-        <td>${getLimitButton("religions")}</td>
+        <td hidden><button data-value="" disabled></button></td>
+        <td hidden><button data-value="" disabled></button></td>
         <td><input data-tip="Enter conscription percentage for rural population" type="number" min="0" max="100" step=".01" value="${rural}" /></td>
         <td><input data-tip="Enter conscription percentage for urban population" type="number" min="0" max="100" step=".01" value="${urban}" /></td>
         <td><input data-tip="Enter average number of people in crew (for total personnel calculation)" type="number" min="1" step="1" value="${crew}" /></td>
@@ -505,7 +505,7 @@ function militaryCustomize(): void {
         string,
         number
       ];
-      const [icon, , biomes, states, cultures, religions, rural, urban, crew, power, type, separate] = values;
+      const [icon, , biomes, states, , , rural, urban, crew, power, type, separate] = values;
 
       const unit: MilitaryUnit = {
         icon,
@@ -519,8 +519,6 @@ function militaryCustomize(): void {
       };
       if (biomes) unit.biomes = biomes;
       if (states) unit.states = states;
-      if (cultures) unit.cultures = cultures;
-      if (religions) unit.religions = religions;
       return unit;
     });
     localStorage.setItem("military", JSON.stringify(options.military));

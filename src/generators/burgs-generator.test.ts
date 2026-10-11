@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Minimal pack geometry used across all scenarios
@@ -62,6 +62,64 @@ function makeBurgs() {
   ];
 }
 
+describe("settlement placement regressions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("registers every generated town in the distance index and is deterministic", async () => {
+    await import("./burgs-generator");
+    vi.stubGlobal("TIME", false);
+    vi.stubGlobal("WARN", false);
+    vi.stubGlobal("ERROR", false);
+    vi.stubGlobal("graphWidth", 100);
+    vi.stubGlobal("graphHeight", 50);
+    vi.stubGlobal("Names", { getCulture: () => "Town", getCultureShort: () => "Capital" });
+    vi.stubGlobal("document", {
+      getElementById: (id: string) =>
+        id === "statesNumber" ? { valueAsNumber: 0 } : { value: "20", valueAsNumber: 20 }
+    });
+    vi.spyOn(Burgs, "assignPorts").mockImplementation(() => {});
+    const generate = () => {
+      let seed = 42;
+      vi.spyOn(Math, "random").mockImplementation(() => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      });
+      const points = Array.from({ length: 20 }, (_, i) => [i * 3, 0]);
+      vi.stubGlobal("pack", {
+        cells: {
+          i: points.map((_, i) => i),
+          s: points.map(() => 100),
+          h: points.map(() => 30),
+          p: points,
+          culture: points.map(() => 1),
+          f: points.map(() => 1)
+        }
+      });
+      Burgs.generate();
+      return pack.burgs.filter(b => b.i);
+    };
+    const burgs = generate();
+    expect(burgs.length).toBeGreaterThan(1);
+    for (const a of burgs)
+      for (const b of burgs) {
+        if (a.i !== b.i) expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(Burgs.minimumSpacing);
+      }
+    expect(generate()).toEqual(burgs);
+  });
+
+  it("reuses an occupied cell instead of adding a second settlement", async () => {
+    await import("./burgs-generator");
+    vi.stubGlobal("pack", { cells: { burg: [0, 1] }, burgs: [0, { i: 1, cell: 1, x: 20, y: 20 }] });
+    vi.stubGlobal("findCell", () => 1);
+    expect(Burgs.add([20, 20])).toBe(1);
+    expect(pack.burgs).toHaveLength(2);
+    expect(pack.cells.burg[1]).toBe(1);
+  });
+});
+
 // ---------------------------------------------------------------------------
 
 describe("BurgsModule.assignPorts — open-lake port promotion", () => {
@@ -118,6 +176,21 @@ describe("BurgsModule.assignPorts — open-lake port promotion", () => {
     const burgs = globalThis.pack.burgs;
     expect(burgs[1].port).toBe(1); // lake feature id
     expect(burgs[2].port).toBe(1);
+  });
+
+  it("does not move a coastal port into a neighboring settlement token", () => {
+    globalThis.pack = {
+      burgs: [0, { i: 1, cell: 1, x: 0, y: 5 }, { i: 2, cell: 2, x: 20, y: 5 }],
+      cells: { ...BASE_CELLS, p: BASE_CELLS.p.map((point, i) => (i === 2 ? [20, 5] : point)) },
+      features: [null, { i: 1, type: "lake", cells: 3 }],
+      vertices: BASE_VERTICES,
+      rivers: []
+    } as any;
+    Burgs.assignPorts();
+    const [, a, b] = globalThis.pack.burgs;
+    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(Burgs.minimumSpacing);
+    expect(a.port).toBe(1);
+    expect(b.port).toBe(1);
   });
 
   // -------------------------------------------------------------------------

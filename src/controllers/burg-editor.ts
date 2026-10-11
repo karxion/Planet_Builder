@@ -1,7 +1,8 @@
 import { drag, pointer, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { t } from "@/services/ui-language";
 import type { Burg } from "../generators/burgs-generator";
-import { convertTemperature, ensureEl, getTemperatureLikeness, parseTransform, rand, rn } from "../utils";
+import { convertTemperature, ensureEl, getTemperatureLikeness, parseTransform, rn } from "../utils";
 import type { PromptOptions } from "../utils/commonUtils";
 
 declare const showBurgTemperatureGraph: (id: string) => void;
@@ -86,7 +87,7 @@ function updateBurgValues(): void {
   const province = pack.cells.province[b.cell];
   const provinceName = province ? `${pack.provinces[province].fullName}, ` : "";
   const stateName = pack.states[b.state!].fullName || pack.states[b.state!].name;
-  ensureEl("burgProvinceAndState").innerHTML = provinceName + stateName;
+  ensureEl("burgProvinceAndState").textContent = provinceName + stateName;
 
   ensureEl<HTMLInputElement>("burgName").value = b.name!;
   ensureEl<HTMLSelectElement>("burgGroup").value = b.group!;
@@ -147,8 +148,7 @@ function changeName(): void {
 }
 
 function generateNameRandom(): void {
-  const base = rand(nameBases.length - 1);
-  ensureEl<HTMLInputElement>("burgName").value = Names.getBase(base);
+  ensureEl<HTMLInputElement>("burgName").value = Names.getDefault();
   changeName();
 }
 
@@ -183,6 +183,7 @@ function changePopulation(): void {
     ensureEl<HTMLInputElement>("burgPopulation").valueAsNumber / populationRate / urbanization,
     4
   );
+  drawBurgIcon(burg);
   updateBurgPreview(burg);
 }
 
@@ -413,6 +414,10 @@ function relocateBurgOnClick(this: SVGGElement, event: any): void {
   }
 
   const newState = cells.state[cellId];
+  if (Burgs.isTooClose(point as [number, number], id)) {
+    tip(t("Settlements are too close. Please select a more distant location"), false, "error");
+    return;
+  }
   const oldState = burg.state;
   if (newState !== oldState && burg.capital) {
     tip("Capital cannot be relocated into another state!", false, "error");

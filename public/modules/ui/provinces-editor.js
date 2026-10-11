@@ -527,7 +527,7 @@ function editProvinces() {
     ensureEl("provinceNameEditorFull").value = p.fullName;
 
     const cultureId = pack.cells.culture[p.center];
-    ensureEl("provinceCultureDisplay").innerText = pack.cultures[cultureId].name;
+    ensureEl("provinceCultureDisplay").innerText = "";
 
     $("#provinceNameEditor").dialog({
       resizable: false,
@@ -561,8 +561,7 @@ function editProvinces() {
     }
 
     function regenerateShortNameRandom() {
-      const base = rand(nameBases.length - 1);
-      const name = Names.getState(Names.getBase(base), undefined, base);
+      const name = Names.getDefault();
       ensureEl("provinceNameEditorShort").value = name;
     }
 
@@ -1043,7 +1042,7 @@ function editProvinces() {
     const c = cells.culture[center];
     const name = burg ? pack.burgs[burg].name : Names.getState(Names.getCultureShort(c), c);
     const formName = oldProvince ? provinces[oldProvince].formName : "Province";
-    const fullName = name + " " + formName;
+    const fullName = name + " 영지";
     const stateColor = pack.states[state].color;
     const rndColor = getRandomColor();
     const color = stateColor[0] === "#" ? d3.color(d3.interpolate(stateColor, rndColor)(0.2)).hex() : rndColor;

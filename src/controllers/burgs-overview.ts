@@ -1,5 +1,6 @@
 import { pack as packLayout, pointer, select, stratify } from "d3";
 import { Controllers } from "@/controllers";
+import { t } from "@/services/ui-language";
 import { convertTemperature, ensureEl, getTemperatureLikeness, rn, si } from "../utils";
 
 let isInitialized = false;
@@ -66,7 +67,7 @@ function updateFilter(settings: { stateId?: number | null; cultureId?: number | 
   const selectedCulture = settings.cultureId != null ? settings.cultureId : +cultureFilter.value || -1;
   cultureFilter.options.length = 0; // remove all options
   cultureFilter.options.add(new Option(`all`, "-1", false, selectedCulture === -1));
-  cultureFilter.options.add(new Option(pack.cultures[0].name, "0", false, selectedCulture === 0));
+  cultureFilter.options.add(new Option("전체", "0", false, selectedCulture === 0));
   const culturesSorted = pack.cultures.filter(c => c.i && !c.removed).sort((a, b) => (a.name > b.name ? 1 : -1));
   culturesSorted.forEach(
     c => void cultureFilter.options.add(new Option(c.name, String(c.i), false, c.i === selectedCulture))
@@ -123,7 +124,7 @@ function burgsOverviewAddLines(): void {
     const state = pack.states[b.state!].name;
     const prov = pack.cells.province[b.cell];
     const province = prov ? pack.provinces[prov].name : "";
-    const culture = pack.cultures[b.culture!].name;
+    const culture = pack.cultures[b.culture!]?.name || "";
 
     lines += /* html */ `<div
         class="states"
@@ -143,7 +144,6 @@ function burgsOverviewAddLines(): void {
         <input data-tip="Burg name" class="burgName" value="${b.name}" disabled />
         <input data-tip="Burg province" value="${province}" disabled />
         <input data-tip="Burg state" value="${state}" disabled />
-        <input data-tip="Dominant culture" value="${culture}" disabled />
         <input data-tip="Burg group" value="${b.group}" disabled />
         <span data-tip="Burg population" class="icon-male"></span>
         <input data-tip="Burg population" value=${si(population)} style="width: 5em" disabled />
@@ -290,6 +290,10 @@ function addBurgOnClick(this: SVGGElement, event: any): void {
     return;
   }
 
+  if (Burgs.isTooClose(point as [number, number])) {
+    tip(t("Settlements are too close. Please select a more distant location"), false, "error");
+    return;
+  }
   Burgs.add(point as [number, number]); // add new burg
 
   if (event.shiftKey === false) {
@@ -358,7 +362,6 @@ function showBurgsChart(): void {
   // prepare svg
   alertMessage.innerHTML = /* html */ `<select id="burgsTreeType" style="display:block; margin-left:13px; font-size:11px">
       <option value="states" selected>Group by state</option>
-      <option value="cultures">Group by culture</option>
       <option value="parent">Group by province and state</option>
       <option value="provinces">Group by province</option>
     </select>`;
@@ -488,7 +491,7 @@ function showBurgsChart(): void {
 }
 
 function downloadBurgsData(): void {
-  let data = `Id,Burg,Province,Province Full Name,State,State Full Name,Culture,Religion,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Temple,Shanty Town,Emblem,Preview link\n`; // headers
+  let data = `Id,Village,Fief,Fief Full Name,Country,Country Full Name,Group,Population,X,Y,Latitude,Longitude,Elevation (${heightUnit.value}),Temperature,Temperature likeness,Capital,Port,Citadel,Walls,Plaza,Shanty Town,Emblem,Preview link\n`; // headers
   const valid = pack.burgs.filter(b => b.i && !b.removed); // all valid burgs
 
   valid.forEach(b => {
@@ -499,8 +502,6 @@ function downloadBurgsData(): void {
     data += province ? `${pack.provinces[province].fullName},` : ",";
     data += `${pack.states[b.state!].name},`;
     data += `${pack.states[b.state!].fullName},`;
-    data += `${pack.cultures[b.culture!].name},`;
-    data += `${pack.religions[pack.cells.religion[b.cell]].name},`;
     data += `${b.group},`;
     data += `${rn(b.population! * populationRate * urbanization)},`;
 
@@ -520,7 +521,6 @@ function downloadBurgsData(): void {
     data += b.citadel ? "citadel," : ",";
     data += b.walls ? "walls," : ",";
     data += b.plaza ? "plaza," : ",";
-    data += b.temple ? "temple," : ",";
     data += b.shanty ? "shanty town," : ",";
     data += b.coa ? `${JSON.stringify(b.coa).replace(/"/g, "").replace(/,/g, ";")},` : ",";
     data += Burgs.getPreview(b).link;

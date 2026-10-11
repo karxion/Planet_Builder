@@ -14,6 +14,8 @@ const loadRenderer = (): Promise<Renderer> =>
 const create = (canvas: HTMLCanvasElement, type = "viewMesh") => loadRenderer().then(m => m.create(canvas, type));
 const redraw = () => loadRenderer().then(m => m.redraw());
 const update = () => loadRenderer().then(m => m.update());
+const getCameraState = () => loadRenderer().then(m => m.getCameraState());
+const setCameraState = (state: Record<string, number>) => loadRenderer().then(m => m.setCameraState(state));
 const stop = () => loadRenderer().then(m => m.stop());
 const setSunColor = (color: string) => loadRenderer().then(m => m.setSunColor(color));
 const setScale = (scale: number) => loadRenderer().then(m => m.setScale(scale));
@@ -43,6 +45,7 @@ const heightAt = (x: number, y: number, scale: number) => loadRenderer().then(m 
 
 // --- enter / exit ------------------------------------------------------------
 function teardown(): void {
+  window.removeEventListener("resize", resizeViewport);
   if (!document.getElementById("canvas3d")) return;
   void stop();
   document.getElementById("canvas3d")?.remove();
@@ -76,8 +79,9 @@ async function open(type: string): Promise<void> {
     canvas.height = canvas.width / (graphWidth / graphHeight);
     canvas.style.display = "block";
   } else {
-    canvas.width = svgWidth;
-    canvas.height = svgHeight;
+    canvas.width = window.innerWidth;
+    const shellHeight = document.getElementById("fpb-shell")?.getBoundingClientRect().height ?? 0;
+    canvas.height = Math.max(1, window.innerHeight - shellHeight);
     canvas.style.position = "absolute";
     canvas.style.display = "none";
   }
@@ -87,6 +91,7 @@ async function open(type: string): Promise<void> {
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
+    if (document.getElementById("fpb-shell")) return;
     const help = "Drag to pan • Scroll to zoom • Right-click drag to rotate • <b>O</b> to toggle options";
     +canvas.dataset.hovered! > 2 ? tip("") : tip(help);
     canvas.dataset.hovered = String((+canvas.dataset.hovered! | 0) + 1);
@@ -101,9 +106,17 @@ async function open(type: string): Promise<void> {
       resizeStop: resize3d,
       close: enterStandard
     });
-  } else document.body.insertBefore(canvas, ensureEl("optionsContainer"));
+  } else {
+    document.body.insertBefore(canvas, ensureEl("optionsContainer"));
+    window.addEventListener("resize", resizeViewport);
+  }
 
   toggleOptions();
+}
+
+function resizeViewport(): void {
+  const shellHeight = document.getElementById("fpb-shell")?.getBoundingClientRect().height ?? 0;
+  renderer?.resize(window.innerWidth, Math.max(1, window.innerHeight - shellHeight));
 }
 
 function resize3d(): void {
@@ -329,4 +342,16 @@ function onChangeResolution(this: HTMLInputElement): void {
   void setResolution(+this.value);
 }
 
-export const View3d = { open, enterStandard, toggleOptions, redraw, update, isOn, isCached, heightAt };
+export const View3d = {
+  open,
+  enterStandard,
+  toggleOptions,
+  redraw,
+  update,
+  getCameraState,
+  setCameraState,
+  saveScreenshot,
+  isOn,
+  isCached,
+  heightAt
+};

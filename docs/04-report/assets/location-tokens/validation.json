@@ -1,0 +1,198 @@
+[
+  {
+    "id": "city",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 636072,
+    "bytes": 31622
+  },
+  {
+    "id": "village",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 641436,
+    "bytes": 33848
+  },
+  {
+    "id": "capital",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 743246,
+    "bytes": 29098
+  },
+  {
+    "id": "hamlet",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 746370,
+    "bytes": 32438
+  },
+  {
+    "id": "town",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 591010,
+    "bytes": 31734
+  },
+  {
+    "id": "dungeon",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 568150,
+    "bytes": 33384
+  },
+  {
+    "id": "ruins",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 868289,
+    "bytes": 29026
+  },
+  {
+    "id": "tower",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 1243195,
+    "bytes": 14480
+  },
+  {
+    "id": "portal",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 656937,
+    "bytes": 29770
+  },
+  {
+    "id": "mine",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 503034,
+    "bytes": 33166
+  },
+  {
+    "id": "bridge",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 685953,
+    "bytes": 28386
+  },
+  {
+    "id": "inn",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 521037,
+    "bytes": 33200
+  },
+  {
+    "id": "lighthouse",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 1001302,
+    "bytes": 20268
+  },
+  {
+    "id": "waterfall",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 776440,
+    "bytes": 27004
+  },
+  {
+    "id": "battlefield",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 866503,
+    "bytes": 28242
+  },
+  {
+    "id": "camp",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 703895,
+    "bytes": 31052
+  },
+  {
+    "id": "spring",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 612854,
+    "bytes": 36548
+  },
+  {
+    "id": "market",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 587218,
+    "bytes": 32974
+  },
+  {
+    "id": "library",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 647467,
+    "bytes": 29646
+  },
+  {
+    "id": "tomb",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 678936,
+    "bytes": 29622
+  },
+  {
+    "id": "monster-lair",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 624098,
+    "bytes": 31998
+  },
+  {
+    "id": "shipwreck",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 694199,
+    "bytes": 32806
+  },
+  {
+    "id": "monument",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 1116749,
+    "bytes": 17196
+  },
+  {
+    "id": "volcano",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 833307,
+    "bytes": 27662
+  },
+  {
+    "id": "fort",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 676962,
+    "bytes": 30528
+  },
+  {
+    "id": "outpost",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 1022784,
+    "bytes": 22210
+  },
+  {
+    "id": "harbor",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 612329,
+    "bytes": 32446
+  },
+  {
+    "id": "caravan",
+    "width": 1254,
+    "height": 1254,
+    "transparentPixels": 616975,
+    "bytes": 29810
+  }
+]

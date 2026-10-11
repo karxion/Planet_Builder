@@ -2,12 +2,11 @@
   "background_color": "#fff",
   "display": "standalone",
   "orientation": "any",
-  "name": "Azgaar's Fantasy Map Generator",
-  "short_name": "Azgaar's Fantasy Map Generator",
-  "description": "Web application generating interactive and highly customizable maps",
-  "scope": "/Fantasy-Map-Generator/",
-  "start_url": "/Fantasy-Map-Generator/?source=pwa",
-  "url": "https://azgaar.github.io/Fantasy-Map-Generator",
+  "name": "판타지 행성 빌더",
+  "short_name": "행성 빌더",
+  "description": "2D 지도 편집과 3D 행성 투영을 결합한 판타지 세계 제작 도구",
+  "scope": "/",
+  "start_url": "/?source=pwa",
   "icons": [
     {
       "src": "images/icons/icon_x512.png",

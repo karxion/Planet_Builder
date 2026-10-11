@@ -161,8 +161,6 @@ optionsContent.addEventListener("click", event => {
   else if (id === "translateExtent") toggleTranslateExtent(event.target);
   else if (id === "speakerTest") testSpeaker();
   else if (id === "themeColorRestore") restoreDefaultThemeColor();
-  else if (id === "loadGoogleTranslateButton") loadGoogleTranslate();
-  else if (id === "resetLanguage") resetLanguage();
 });
 
 function mapSizeInputChange() {
@@ -204,14 +202,22 @@ function applyGraphSize() {
 }
 
 // on generate, on load, on resize, on canvas size change
-function fitMapToScreen() {
-  svgWidth = Math.min(+mapWidthInput.value, window.innerWidth);
-  svgHeight = Math.min(+mapHeightInput.value, window.innerHeight);
+function fitMapToScreen(reset = false) {
+  const shell = document.getElementById("fpb-shell");
+  const previousWidth = svgWidth;
+  const previousHeight = svgHeight;
+  const previousMin = zoom.scaleExtent()[0];
+  const current = shell ? d3.zoomTransform(svg.node()) : null;
+  svgWidth = shell ? window.innerWidth : Math.min(+mapWidthInput.value, window.innerWidth);
+  svgHeight = shell
+    ? Math.max(1, window.innerHeight - shell.getBoundingClientRect().height)
+    : Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
 
-  const zoomMin = rn(Math.max(svgWidth / graphWidth, svgHeight / graphHeight), 3);
+  const fit = window.getMapFitTransform(graphWidth, graphHeight, svgWidth, svgHeight);
+  const zoomMin = shell ? fit.k : rn(fit.k, 3);
   zoomExtentMin.value = zoomMin;
-  const zoomMax = +zoomExtentMax.value;
+  const zoomMax = Math.max(zoomMin, +zoomExtentMax.value);
 
   zoom
     .translateExtent([
@@ -219,6 +225,18 @@ function fitMapToScreen() {
       [graphWidth, graphHeight]
     ])
     .scaleExtent([zoomMin, zoomMax]);
+
+  if (shell) {
+    const extent = [[0, 0], [svgWidth, svgHeight]];
+    zoom.extent(extent);
+    let transform = d3.zoomIdentity.translate(fit.x, fit.y).scale(fit.k);
+    // Keep a zoomed-in location centered; otherwise refit the unchanged world to the new viewport.
+    if (!reset && current.k > previousMin + 1e-6 && current.k >= zoomMin) {
+      const [x, y] = current.invert([previousWidth / 2, previousHeight / 2]);
+      transform = d3.zoomIdentity.translate(svgWidth / 2 - x * current.k, svgHeight / 2 - y * current.k).scale(current.k);
+    }
+    svg.interrupt().call(zoom.transform, zoom.constrain()(transform, extent, zoom.translateExtent()));
+  }
 
   fitScaleBar(scaleBar, svgWidth, svgHeight);
   if (window.fitLegendBox) fitLegendBox();
@@ -473,44 +491,6 @@ function changeDialogsTheme(themeColor, transparency) {
   });
 }
 
-function loadGoogleTranslate() {
-  const script = document.createElement("script");
-  script.src = "https://translate.google.com/translate_a/element.js?cb=initGoogleTranslate";
-  script.onload = () => {
-    ensureEl("loadGoogleTranslateButton").remove();
-
-    // replace mapLayers underline <u> with bare text to avoid translation issue
-    document
-      .getElementById("mapLayers")
-      .querySelectorAll("li")
-      .forEach(el => {
-        const text = el.innerHTML.replace(/<u>(.+)<\/u>/g, "$1");
-        el.innerHTML = text;
-      });
-  };
-
-  document.head.appendChild(script);
-}
-
-function initGoogleTranslate() {
-  new google.translate.TranslateElement(
-    { pageLanguage: "en", layout: google.translate.TranslateElement.InlineLayout.VERTICAL },
-    "google_translate_element"
-  );
-}
-
-function resetLanguage() {
-  const languageSelect = document.querySelector("#google_translate_element select");
-  if (!languageSelect.value) return;
-
-  languageSelect.value = "en";
-  languageSelect.handleChange(new Event("change"));
-
-  // do once again to actually reset the language
-  languageSelect.value = "en";
-  languageSelect.handleChange(new Event("change"));
-}
-
 function changeZoomExtent(value) {
   if (+zoomExtentMin.value > +zoomExtentMax.value) {
     [zoomExtentMin.value, zoomExtentMax.value] = [zoomExtentMax.value, zoomExtentMin.value];
@@ -525,6 +505,11 @@ function changeZoomExtent(value) {
 }
 
 function restoreDefaultZoomExtent() {
+  if (document.getElementById("fpb-shell")) {
+    zoomExtentMax.value = 20;
+    fitMapToScreen(true);
+    return;
+  }
   zoomExtentMin.value = 1;
   zoomExtentMax.value = 20;
   zoom.scaleExtent([1, 20]).scaleTo(svg, 1);

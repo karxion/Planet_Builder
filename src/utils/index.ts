@@ -38,6 +38,7 @@ import {
   poissonDiscSampler,
   shouldRegenerateGrid
 } from "./graphUtils";
+import { getMapFitTransform } from "./mapViewport";
 import { ensureEl, findEl, getComposedPath, getNextId } from "./nodeUtils";
 import { connectVertices, findPath, getIsolines, getPolesOfInaccessibility, getVertexPath } from "./pathUtils";
 import { biased, each, gauss, generateSeed, getNumberInRange, P, Pint, ra, rand, rw } from "./probabilityUtils";
@@ -89,6 +90,7 @@ window.ensureEl = ensureEl;
 window.findEl = findEl;
 window.getComposedPath = getComposedPath;
 window.getNextId = getNextId;
+window.getMapFitTransform = getMapFitTransform;
 
 window.rollups = rollups;
 window.dist2 = distanceSquared;
@@ -118,6 +120,9 @@ Node.prototype.off = function (name, fn) {
 };
 
 declare global {
+  interface Window {
+    getMapFitTransform: typeof getMapFitTransform;
+  }
   interface JSON {
     isValid: (str: string) => boolean;
     safeParse: (str: string) => any;

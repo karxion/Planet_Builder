@@ -1,6 +1,7 @@
 import type { Selection } from "d3";
 import { select } from "d3";
 import { connectVertices, ensureEl, getBase64, getCoordinates, getGridPolygon, rn, unique } from "@/utils";
+import { clearMapIconGroups } from "@/renderers/map-icon-groups";
 
 type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -238,6 +239,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   } = options;
 
   const cloneEl = (document.getElementById("map") as unknown as SVGSVGElement).cloneNode(true) as SVGSVGElement; // clone svg
+  if (fullMap || noLabels) clearMapIconGroups(cloneEl);
   cloneEl.id = "fantasyMap";
   document.body.appendChild(cloneEl);
   const clone: MapSelection = select(cloneEl);

@@ -1,5 +1,8 @@
 import { mean } from "d3";
 import type { PackedGraph } from "@/types/PackedGraph";
+import { ADMINISTRATIVE_ONLY } from "./administration-policy";
+import { migrateMarkerIcon } from "@/data/rpg-map-assets";
+import { getDungeonUrl } from "@/data/dungeon-locations";
 import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rand, rn, rw } from "../utils";
 
 declare global {
@@ -108,7 +111,7 @@ class MarkersModule {
       list: function to select candidates
       add: function to add marker legend
     */
-    return [
+    const config: MarkerConfig[] = [
       {
         type: "volcanoes",
         icon: "🌋",
@@ -448,6 +451,10 @@ class MarkersModule {
         add: this.addEncounter.bind(this)
       }
     ];
+    return config.map(marker => {
+      const icon = migrateMarkerIcon(marker.type, marker.icon);
+      return { ...marker, icon, px: icon.startsWith("#rpg-") ? 26 : marker.px };
+    });
   }
 
   private resetConfig() {
@@ -458,6 +465,7 @@ class MarkersModule {
     TIME && console.time("addMarkers");
 
     this.config.forEach(({ type, icon, dx, dy, px, min, each, multiplier, list, add }) => {
+      if (ADMINISTRATIVE_ONLY && type.startsWith("sacred-")) return;
       if (multiplier === 0) return;
 
       const candidates = Array.from(list(pack));
@@ -965,9 +973,8 @@ class MarkersModule {
   }
 
   private addDungeon(id: string, cell: number) {
-    const dungeonSeed = `${seed}${cell}`;
     const name = "Dungeon";
-    const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
+    const legend = `<div>Undiscovered dungeon. <a href="${getDungeonUrl(String(seed), cell)}" target="_blank" rel="noopener noreferrer">Watabou: One Page Dungeon</a></div>`;
     notes.push({ id, name, legend });
   }
 

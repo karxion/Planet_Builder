@@ -187,7 +187,7 @@ function removeElementOnKey() {
   if (!visibleDialogs.length) return;
 
   visibleDialogs.forEach(dialog =>
-    dialog.querySelectorAll("button").forEach(button => button.textContent === "Remove" && button.click())
+    dialog.querySelectorAll("button").forEach(button => (button.dataset.fpbOriginalLabel === "Remove" || button.textContent === "Remove") && button.click())
   );
 }
 

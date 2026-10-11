@@ -805,11 +805,13 @@ stylePopulationUrbanStrokeInput.on("input", e => {
 });
 
 styleBurgIconsIcon.on("change", e => {
-  getEl().attr("data-icon", e.target.value).selectAll("use").attr("href", e.target.value);
+  getEl().attr("data-icon", e.target.value);
+  drawBurgIcons();
 });
 
 styleBurgIconsIconSize.on("input", e => {
   getEl().attr("font-size", e.target.value);
+  drawBurgIcons();
 });
 
 styleBurgIconsStrokeLinejoin.on("change", e => {

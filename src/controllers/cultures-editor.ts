@@ -21,6 +21,7 @@ let culturesManualHistory: string[] = [];
 const cultureTypes = ["Generic", "River", "Lake", "Naval", "Nomadic", "Hunting", "Highland"];
 
 function open(): void {
+  if (!pack.cultures.length) return;
   if (customization) return;
   closeDialogs("#culturesEditor, .stable");
   if (!layerIsOn("toggleCultures")) toggleCultures();

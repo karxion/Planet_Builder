@@ -1,4 +1,5 @@
 import { max, quadtree, range } from "d3";
+import { ADMINISTRATIVE_ONLY, clearCultures } from "./administration-policy";
 import { abbreviate, biased, ensureEl, getColors, getRandomColor, minmax, P, rand, rn, rw } from "../utils";
 
 declare global {
@@ -1012,6 +1013,7 @@ class CulturesModule {
   }
 
   generate() {
+    if (ADMINISTRATIVE_ONLY) return clearCultures(pack);
     TIME && console.time("generateCultures");
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
@@ -1204,6 +1206,7 @@ class CulturesModule {
   }
 
   add(center: number) {
+    if (ADMINISTRATIVE_ONLY) return;
     const defaultCultures = this.getDefault();
     let culture: number, base: number, name: string;
 
@@ -1245,6 +1248,7 @@ class CulturesModule {
   }
 
   expand() {
+    if (ADMINISTRATIVE_ONLY) return clearCultures(pack);
     TIME && console.time("expandCultures");
     const { cells, cultures } = pack;
 

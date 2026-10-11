@@ -93,11 +93,42 @@ const redraw = () => {
   render();
 };
 
+function resize(width: number, height: number): void {
+  if (!Renderer || !camera) return;
+  Renderer.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  render();
+}
+
 // update 3d texture
 const update = () => {
   if (options.threeD.isGlobe) updateGlobeTexure();
   else update3dTexture();
 };
+
+function getCameraState(): Record<string, number> {
+  if (!camera) return {};
+  const target = controls?.target as { x?: number; y?: number; z?: number } | undefined;
+  return {
+    px: camera.position.x,
+    py: camera.position.y,
+    pz: camera.position.z,
+    tx: target?.x ?? 0,
+    ty: target?.y ?? 0,
+    tz: target?.z ?? 0
+  };
+}
+
+function setCameraState(state: Record<string, number>): void {
+  if (!camera || !controls || !Number.isFinite(state.px) || !Number.isFinite(state.py) || !Number.isFinite(state.pz)) {
+    return;
+  }
+  camera.position.set(state.px, state.py, state.pz);
+  controls.target?.set(state.tx ?? 0, state.ty ?? 0, state.tz ?? 0);
+  controls.update?.();
+  render();
+}
 
 // try to clean the memory as much as possible
 const stop = () => {
@@ -902,8 +933,26 @@ async function newGlobe(canvas: HTMLCanvasElement) {
   controls.maxPolarAngle = Math.PI;
 
   controls.addEventListener("change", render);
+  raycaster = new Three.Raycaster();
+  canvas.addEventListener("dblclick", selectGlobeLocation);
 
   return true;
+}
+
+function selectGlobeLocation(event: MouseEvent): void {
+  if (!mesh || !camera || !raycaster) return;
+  const rect = Renderer.domElement.getBoundingClientRect();
+  const pointer = new Three.Vector2(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(mesh, false)[0];
+  if (!hit?.uv) return;
+
+  const x = (1 - hit.uv.x) * graphWidth;
+  const y = (1 - hit.uv.y) * graphHeight;
+  window.dispatchEvent(new CustomEvent("planet:location-selected", { detail: { x, y } }));
 }
 
 async function OrbitControls(camera: THREE.Camera, domElement: HTMLElement): Promise<Controls | false> {
@@ -1172,10 +1221,13 @@ function OBJExporter(): any {
 
 export {
   create,
+  getCameraState,
   redraw,
+  resize,
   saveOBJ,
   saveScreenshot,
   setColors,
+  setCameraState,
   setErosionDetail,
   setErosionOctaves,
   setErosionRiverDepth,
