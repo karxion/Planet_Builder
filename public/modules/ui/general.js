@@ -108,8 +108,8 @@ function showNotes(e) {
     currentNoteId = id;
 
     document.getElementById("notes").style.display = "block";
-    document.getElementById("notesHeader").innerHTML = note.name;
-    document.getElementById("notesBody").innerHTML = note.legend;
+    document.getElementById("notesHeader").textContent = note.name;
+    document.getElementById("notesBody").innerHTML = sanitizeNoteHtml(note.legend);
   } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";

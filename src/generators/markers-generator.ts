@@ -1,15 +1,20 @@
 import { mean } from "d3";
-import type { PackedGraph } from "@/types/PackedGraph";
-import { ADMINISTRATIVE_ONLY } from "./administration-policy";
-import { migrateMarkerIcon } from "@/data/rpg-map-assets";
 import { getDungeonUrl } from "@/data/dungeon-locations";
+import { migrateMarkerIcon } from "@/data/rpg-map-assets";
+import type { AdventureSite } from "@/types/adventure-site";
+import type { DungeonInterior } from "@/types/dungeon-interior";
+import type { PackedGraph } from "@/types/PackedGraph";
 import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rand, rn, rw } from "../utils";
+import { ADMINISTRATIVE_ONLY } from "./administration-policy";
+import { populateAdventureMarkers } from "./adventure-site-markers";
 
 declare global {
   var Markers: MarkersModule;
 }
 
 export interface Marker {
+  adventure?: AdventureSite;
+  interior?: DungeonInterior;
   i: number;
   type: string;
   icon: string;
@@ -465,6 +470,7 @@ class MarkersModule {
     TIME && console.time("addMarkers");
 
     this.config.forEach(({ type, icon, dx, dy, px, min, each, multiplier, list, add }) => {
+      if (type === "dungeons") return;
       if (ADMINISTRATIVE_ONLY && type.startsWith("sacred-")) return;
       if (multiplier === 0) return;
 
@@ -482,6 +488,8 @@ class MarkersModule {
       }
     });
 
+    if (this.config.some(config => config.type === "dungeons" && config.multiplier > 0))
+      populateAdventureMarkers(pack, notes, String(seed), { width: graphWidth, height: graphHeight });
     this.occupied = [];
     TIME && console.timeEnd("addMarkers");
   }

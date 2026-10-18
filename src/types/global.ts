@@ -116,6 +116,7 @@ declare global {
     cost: number[];
   };
   var notes: any[];
+  var sanitizeNoteHtml: (markup: string) => string;
   var style: {
     burgLabels: { [key: string]: { [key: string]: string } };
     burgIcons: { [key: string]: { [key: string]: string } };

@@ -1,8 +1,18 @@
 import Alea from "alea";
+import { MAJOR_NPC_GOALS } from "@/data/npc-progression";
 import type { AdministrativeUnit, CampaignWorld, NpcTemplateId, WorldNpc } from "@/types/campaign-world";
+import {
+  buildNpcContexts,
+  generateCommonerCr,
+  generateNpcProgression,
+  isNpcCity,
+  type NpcGenerationContext,
+  npcProfession
+} from "./npc-progression";
+import { synchronizeHeritage } from "./realm-heritage";
 
 export interface AdministrativeSnapshot {
-  states: { id: number; name: string; x: number; y: number }[];
+  states: { id: number; name: string; x: number; y: number; government?: string; area?: number }[];
   fiefs: { id: number; stateId: number; name: string; x: number; y: number; neighbors: number[] }[];
   villages: {
     id: number;
@@ -13,6 +23,8 @@ export interface AdministrativeSnapshot {
     y: number;
     capital: boolean;
     port: boolean;
+    population?: number;
+    continentId?: number;
   }[];
 }
 
@@ -126,40 +138,143 @@ const secrets = [
 export function generateVillageNpcs(
   worldSeed: string,
   village: AdministrativeSnapshot["villages"][number],
-  generation = 0
+  generation = 0,
+  context: NpcGenerationContext = { archetype: "balanced", nationalSeat: false, continentalSeat: false }
 ): WorldNpc[] {
   const random = Alea(`${worldSeed}:npc-v1:${village.id}:${generation}`);
-  const pick = <T>(values: T[]): T => values[Math.floor(random() * values.length)];
-  const roles: [string, NpcTemplateId][] = [
-    [village.capital ? "영주" : "마을 대표", village.capital ? "noble" : "commoner"],
-    ["경비병", "guard"],
-    [village.port ? "항구 상인" : "여관 주인", "commoner"],
-    ["길잡이", "scout"]
+  const roles: [number, string, NpcTemplateId][] = [
+    [0, isNpcCity(village) ? "영주" : "마을 대표", isNpcCity(village) ? "noble" : "commoner"],
+    [1, "경비병", "guard"],
+    [2, village.port ? "항구 상인" : "여관 주인", "commoner"],
+    [3, "길잡이", "scout"]
   ];
-  return roles.map(([role, templateId], index) => ({
-    id: `npc:${village.id}:${generation}:${index}`,
-    villageId: `village:${village.id}`,
-    name: `${pick(firstNames)} ${pick(lastNames)}`,
-    role,
-    templateId,
-    appearance: pick(appearances),
-    personality: pick(personalities),
-    goal: `${village.name}에서 ${pick(goals)}`,
-    secret: pick(secrets),
-    notes: "",
-    edited: false
-  }));
+  if (context.nationalSeat) roles.push([4, "대귀족", "noble"], [5, "국가 핵심 인재", "guard"]);
+  if (context.continentalSeat) {
+    // Fixed slot 6 keeps the continental identity independent of a national seat.
+    roles.push([6, "전설적 인물", "noble"]);
+  }
+  return roles.map(([index, role, templateId]) => {
+    const id = `npc:${village.id}:${generation}:${index}`;
+    const identityRandom = index < 4 ? random : Alea(`${worldSeed}:${id}:major-identity-v1`);
+    const pick = <T>(values: T[]): T => values[Math.floor(identityRandom() * values.length)];
+    const progression = generateNpcProgression(worldSeed, id, village, index, context);
+    const professionRole = (index === 0 && !isNpcCity(village)) || index === 2 ? role : npcProfession(progression);
+    return {
+      id,
+      villageId: `village:${village.id}`,
+      name: `${pick(firstNames)} ${pick(lastNames)}`,
+      role: professionRole,
+      templateId,
+      appearance: pick(appearances),
+      personality: pick(personalities),
+      goal: `${village.name}에서 ${pick(progression.scope === "settlement" ? goals : MAJOR_NPC_GOALS[progression.scope])}`,
+      secret: pick(secrets),
+      notes: "",
+      edited: false,
+      progression
+    };
+  });
+}
+
+export function remainingNpcContexts(input: AdministrativeSnapshot, world: CampaignWorld) {
+  const contexts = buildNpcContexts(input, world.npcProfiles);
+  const villages = new Map(input.villages.map(village => [`village:${village.id}`, village]));
+  const occupiedCountries = new Map<number, Set<number>>();
+  const occupiedContinents = new Map<number, Set<number>>();
+  for (const npc of world.npcs) {
+    const home = villages.get(npc.villageId);
+    if (!home) continue;
+    const key =
+      npc.progression?.scope === "continent"
+        ? home.continentId
+        : npc.progression?.scope === "country"
+          ? home.stateId
+          : undefined;
+    if (key === undefined) continue;
+    const occupied = npc.progression?.scope === "continent" ? occupiedContinents : occupiedCountries;
+    if (!occupied.has(key)) occupied.set(key, new Set());
+    occupied.get(key)!.add(home.id);
+  }
+  for (const village of input.villages) {
+    const context = contexts.get(village.id)!;
+    if ([...(occupiedCountries.get(village.stateId) || [])].some(id => id !== village.id)) context.nationalSeat = false;
+    if (
+      village.continentId !== undefined &&
+      [...(occupiedContinents.get(village.continentId) || [])].some(id => id !== village.id)
+    )
+      context.continentalSeat = false;
+  }
+  return contexts;
 }
 
 export function createCampaign(input: AdministrativeSnapshot, seed: string): CampaignWorld {
-  return {
+  const contexts = buildNpcContexts(input);
+  const world: CampaignWorld = {
     version: 1,
     ruleset: "srd-5.2.1",
     seed,
     generation: 0,
+    npcGenerationVersion: 1,
+    npcProfiles: [],
     units: buildAdministration(input),
-    npcs: input.villages.flatMap(v => generateVillageNpcs(seed, v))
+    npcs: input.villages.flatMap(v => generateVillageNpcs(seed, v, 0, contexts.get(v.id)))
   };
+  synchronizeHeritage(world, input);
+  return world;
+}
+
+export function updateNpcProgressions(world: CampaignWorld, input: AdministrativeSnapshot, force = false): boolean {
+  const contexts = buildNpcContexts(input, world.npcProfiles);
+  const villages = new Map(input.villages.map(village => [`village:${village.id}`, village]));
+  let changed = false;
+  for (const npc of world.npcs) {
+    if (npc.progression?.classId === "none" && npc.progression.commonerCr === undefined) {
+      npc.progression = { ...npc.progression, commonerCr: npc.edited ? "0" : generateCommonerCr(world.seed, npc.id) };
+      changed = true;
+    }
+    if (npc.progression && (!force || npc.edited)) continue;
+    const village = villages.get(npc.villageId);
+    if (!village) continue;
+    const slot = Number(npc.id.split(":").at(-1));
+    if (!Number.isInteger(slot) || slot < 0 || slot > 6) continue;
+    npc.progression = generateNpcProgression(world.seed, npc.id, village, slot, contexts.get(village.id)!);
+    if (npc.edited && npc.progression.classId === "none") npc.progression.commonerCr = "0";
+    if (force && !npc.edited && slot !== 2 && !(slot === 0 && !isNpcCity(village)))
+      npc.role = npcProfession(npc.progression);
+    changed = true;
+  }
+  if (!world.npcGenerationVersion) {
+    const occupied = new Set(world.npcs.map(npc => `${npc.villageId}:${npc.id.split(":").at(-1)}`));
+    for (const village of input.villages) {
+      const additions = generateVillageNpcs(world.seed, village, world.generation, contexts.get(village.id));
+      world.npcs.push(
+        ...additions.filter(
+          npc => Number(npc.id.split(":").at(-1)) >= 4 && !occupied.has(`${npc.villageId}:${npc.id.split(":").at(-1)}`)
+        )
+      );
+    }
+    world.npcGenerationVersion = 1;
+    changed = true;
+  }
+  return changed;
+}
+
+export function regenerateCampaignNpcs(
+  world: CampaignWorld,
+  input: AdministrativeSnapshot,
+  villageIds: Set<string>
+): void {
+  const retained = world.npcs.filter(npc => npc.edited || !villageIds.has(npc.villageId));
+  const contexts = remainingNpcContexts(input, { ...world, npcs: retained });
+  const occupied = new Set(retained.map(npc => `${npc.villageId}:${npc.id.split(":").at(-1)}`));
+  world.generation++;
+  world.npcs = [
+    ...retained,
+    ...input.villages
+      .filter(village => villageIds.has(`village:${village.id}`))
+      .flatMap(village => generateVillageNpcs(world.seed, village, world.generation, contexts.get(village.id)))
+      .filter(npc => !occupied.has(`${npc.villageId}:${npc.id.split(":").at(-1)}`))
+  ];
 }
 
 export function synchronizeNpcPlaceNames(

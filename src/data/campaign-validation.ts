@@ -1,8 +1,45 @@
-import type { CampaignWorld } from "@/types/campaign-world";
+import { COMMONER_CR_PROFILES, COUNTRY_ARCHETYPES, NPC_CLASSES, NPC_RANKS, NPC_SCOPES } from "@/data/npc-progression";
+import { isRealmHeritage } from "@/data/realm-heritage-validation";
+import type { CampaignWorld, NpcProgression } from "@/types/campaign-world";
+
+export function isNpcProgression(value: unknown): value is NpcProgression {
+  if (!value || typeof value !== "object") return false;
+  const profile = value as NpcProgression;
+  return (
+    Number.isSafeInteger(profile.level) &&
+    profile.level >= 1 &&
+    Object.hasOwn(NPC_CLASSES, profile.classId) &&
+    Object.hasOwn(NPC_RANKS, profile.rank) &&
+    Object.hasOwn(NPC_SCOPES, profile.scope) &&
+    Object.hasOwn(COUNTRY_ARCHETYPES, profile.archetype) &&
+    (profile.classId !== "none" || profile.level === 1) &&
+    (profile.commonerCr === undefined ||
+      (profile.classId === "none" &&
+        typeof profile.commonerCr === "string" &&
+        Object.hasOwn(COMMONER_CR_PROFILES, profile.commonerCr)))
+  );
+}
 
 export function isCampaignWorld(value: unknown): value is CampaignWorld {
   if (!value || typeof value !== "object") return false;
   const world = value as CampaignWorld;
+  if (world.heritage !== undefined && !isRealmHeritage(world.heritage)) return false;
+  if (world.npcGenerationVersion !== undefined && world.npcGenerationVersion !== 1) return false;
+  if (world.npcProfiles !== undefined) {
+    if (!Array.isArray(world.npcProfiles) || world.npcProfiles.length > 100000) return false;
+    const states = new Set<number>();
+    for (const profile of world.npcProfiles) {
+      if (
+        !profile ||
+        !Number.isSafeInteger(profile.stateId) ||
+        profile.stateId < 0 ||
+        !Object.hasOwn(COUNTRY_ARCHETYPES, profile.archetype) ||
+        states.has(profile.stateId)
+      )
+        return false;
+      states.add(profile.stateId);
+    }
+  }
   if (world.mapLevel && !["village", "fief", "region", "country"].includes(world.mapLevel)) return false;
   if (
     world.version !== 1 ||
@@ -56,6 +93,7 @@ export function isCampaignWorld(value: unknown): value is CampaignWorld {
       typeof npc.edited !== "boolean"
     )
       return false;
+    if (npc.progression !== undefined && !isNpcProgression(npc.progression)) return false;
     for (const field of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const) {
       if (typeof npc[field] !== "string" || npc[field].length > 4000) return false;
     }

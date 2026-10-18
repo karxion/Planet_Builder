@@ -671,6 +671,16 @@ body.fpb-ready :is(#toggleCompass, #togglePrecipitation, #togglePopulation, #tog
 .fpb-group-item strong { display: block; overflow-wrap: anywhere; font-size: 13px; }
 .fpb-group-item small { display: block; color: #b8c8ab; font-size: 11px; margin-top: 3px; }
 #fpb-dungeons-dialog { width: min(740px, calc(100vw - 32px)); padding: 0; border: 1px solid #ac945a; border-radius: 6px; background: #202923; color: #eee9d6; }
+#fpb-dungeons-dialog { max-height: calc(100dvh - 32px); overflow: auto; }
+.fpb-dungeon-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px; border-bottom: 1px solid #46503f; }
+.fpb-dungeon-settings label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; overflow-wrap: anywhere; }
+.fpb-dungeon-settings input { width: 100%; min-width: 0; box-sizing: border-box; background: #18271e; color: #eee9d6; border: 1px solid #657553; padding: 6px; }
+.fpb-dungeon-settings button { padding: 8px; background: #364a3b; color: #eee9d6; border: 1px solid #657553; border-radius: 4px; }
+.fpb-dungeon-settings button[type=submit] { grid-column: span 2; }
+#fpb-dungeons-dialog > p { margin: 8px 16px; font-size: 12px; overflow-wrap: anywhere; }
+#fpb-dungeons-dialog > p:empty { display: none; }
+.fpb-dungeon-row label { display: inline-flex; align-items: center; gap: 4px; margin: 6px 10px 0 0; font-size: 11px; }
+.fpb-dungeon-row a:not(.fpb-dungeon-link) { font-size: 11px; color: #c7ad65; }
 #fpb-dungeons-dialog::backdrop { background: #0b130f99; }
 #fpb-dungeons-dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #59664d; }
 #fpb-dungeons-dialog h2 { margin: 0; font-size: 18px; }
@@ -679,9 +689,94 @@ body.fpb-ready :is(#toggleCompass, #togglePrecipitation, #togglePopulation, #tog
 .fpb-dungeon-toolbar button { padding: 8px 12px; background: #364a3b; color: #eee9d6; border: 1px solid #657553; border-radius: 4px; }
 .fpb-dungeon-toolbar button span { margin-right: 6px; }
 .fpb-dungeon-list { overflow-y: auto; max-height: min(520px, 65vh); }
-.fpb-dungeon-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) repeat(3, 32px); align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #46503f; }
+.fpb-dungeon-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) repeat(4, 32px); align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #46503f; }
 .fpb-dungeon-row .fpb-asset-preview { width: 40px; height: 40px; }
 .fpb-dungeon-row strong { display: block; font-size: 14px; overflow-wrap: anywhere; }
 .fpb-dungeon-row small { display: block; font-size: 11px; color: #b8c8ab; margin-top: 4px; overflow-wrap: anywhere; }
 .fpb-dungeon-link { display: grid; place-items: center; width: 32px; height: 32px; color: #c7ad65; }
 .fpb-dungeon-empty { text-align: center; padding: 32px 16px; color: #b8c8ab; }
+
+#fpb-dungeon-interior { width: min(1280px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px); padding: 0; border: 1px solid #a3a793; border-radius: 6px; background: #202923; color: #eee9d6; overflow: auto; box-sizing: border-box; }
+#fpb-dungeon-interior::backdrop { background: #0b130fbb; }
+#fpb-dungeon-interior header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #59664d; }
+#fpb-dungeon-interior header > div { min-width: 0; flex: 1; }
+#fpb-dungeon-interior header .fpb-asset-preview { flex: 0 0 40px; width: 40px; height: 40px; }
+#fpb-dungeon-interior h2 { margin: 2px 0; font-size: 18px; overflow-wrap: anywhere; }
+#fpb-dungeon-interior small { color: #b8c8ab; }
+#fpb-dungeon-interior button { width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid #657553; border-radius: 4px; background: #364a3b; color: #eee9d6; cursor: pointer; }
+#fpb-dungeon-interior button:disabled { opacity: 0.4; cursor: default; }
+#fpb-dungeon-interior select { min-width: 0; max-width: 260px; padding: 6px; border: 1px solid #657553; background: #17261e; color: #eee9d6; border-radius: 4px; box-sizing: border-box; }
+.fpb-interior-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #46503f; }
+.fpb-interior-controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; min-width: 0; }
+.fpb-interior-controls label.fpb-interior-toggle { flex-direction: row; align-items: center; min-height: 32px; margin-left: auto; }
+.fpb-interior-summary { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 10px 16px; font-size: 12px; background: #283730; border-bottom: 1px solid #46503f; }
+.fpb-interior-summary span:last-child { color: #d5c17e; }
+.fpb-interior-status { padding: 0 16px; color: #f1b8a5; font-size: 13px; overflow-wrap: anywhere; }
+.fpb-interior-status:empty { display: none; }
+.fpb-interior-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-height: 400px; }
+.fpb-interior-canvas { min-width: 0; background: #182125; }
+.fpb-interior-zoom { display: flex; align-items: center; gap: 6px; padding: 8px 12px; }
+.fpb-interior-zoom output { width: 50px; text-align: center; font-size: 12px; }
+.fpb-interior-scroll { width: 100%; overflow: auto; max-height: min(640px, 65dvh); }
+.fpb-dungeon-map { display: block; width: 100%; height: auto; }
+.fpb-dungeon-map [data-room] { cursor: pointer; }
+.fpb-dungeon-map [data-room]:hover, .fpb-dungeon-map [data-room]:focus-visible { fill: #3692ad44; outline: none; stroke: #16586e; stroke-width: 2; }
+.fpb-interior-legend { padding: 10px 12px; font-size: 11px; color: #c3d0d2; line-height: 1.6; overflow-wrap: anywhere; }
+.fpb-interior-workspace aside { min-width: 0; padding: 14px; border-left: 1px solid #59664d; max-height: min(740px, 75dvh); overflow: auto; box-sizing: border-box; }
+.fpb-interior-workspace aside > label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.fpb-interior-workspace aside select { flex: 1; width: 100%; }
+.fpb-interior-detail h3 { font-size: 17px; margin: 16px 0 8px; color: #e0cd8b; }
+.fpb-interior-detail h4 { font-size: 13px; margin: 12px 0 6px; color: #b1d5d2; }
+.fpb-interior-detail p, .fpb-interior-detail summary { font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.fpb-interior-detail section { padding: 4px 0 12px; border-bottom: 1px solid #46503f; }
+.fpb-interior-detail a { color: #e0cd8b; }
+.fpb-dungeon-rules { white-space: pre-wrap; max-height: 260px; overflow: auto; }
+.fpb-interior-empty { padding: 32px; font-size: 14px; }
+@media (max-width: 800px) {
+  .fpb-interior-workspace { grid-template-columns: minmax(0, 1fr); }
+  .fpb-interior-workspace aside { border-left: 0; border-top: 1px solid #59664d; max-height: none; }
+  .fpb-interior-scroll { max-height: 55dvh; }
+  #fpb-dungeon-interior select { max-width: 100%; }
+}
+@media (max-width: 500px) {
+  .fpb-dungeon-row { grid-template-columns: 32px minmax(0, 1fr) repeat(2, 32px); padding: 8px; gap: 6px; }
+  .fpb-dungeon-row .fpb-asset-preview { width: 30px; height: 30px; }
+  .fpb-dungeon-row [data-interior] { grid-column: 3; }
+  .fpb-interior-controls { padding: 10px; gap: 8px; }
+  .fpb-interior-controls label:not(.fpb-interior-toggle) { flex: 1 1 130px; }
+  .fpb-interior-controls label.fpb-interior-toggle { margin-left: 0; }
+}
+
+.fpb-world-tabs { display: flex; flex: 0 0 42px; gap: 0; border-bottom: 1px solid var(--fpb-line); padding: 0 12px; }
+#fpb-world-dialog .fpb-world-tabs button { border: 0; border-radius: 0; background: transparent; padding: 8px 16px; min-width: 80px; }
+#fpb-world-dialog .fpb-world-tabs button[aria-selected="true"] { color: #ead49b; border-bottom: 2px solid #cfaf62; background: #303c30; }
+.fpb-world-tabs button span { margin-right: 6px; }
+#fpb-npc-panel, #fpb-heritage-panel { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+#fpb-npc-panel[hidden], #fpb-heritage-panel[hidden] { display: none; }
+#fpb-heritage-list { overflow: auto; flex: 1; min-height: 0; }
+#fpb-heritage-detail { overflow: auto; padding: 18px 22px; min-width: 0; }
+#fpb-heritage-detail h3 { font-size: 20px; color: var(--fpb-gold); overflow-wrap: anywhere; }
+#fpb-heritage-detail p { font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.fpb-heritage-options { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 10px 16px; border-bottom: 1px solid var(--fpb-line); }
+#fpb-history-form { display: flex; align-items: end; gap: 8px; }
+#fpb-history-form label { margin: 0; }
+#fpb-history-age { max-width: 130px; }
+#fpb-world-dialog .fpb-headquarters-toggle { display: flex; align-items: center; gap: 8px; margin: 0; }
+#fpb-world-dialog .fpb-headquarters-toggle[hidden] { display: none; }
+#fpb-world-dialog #fpb-show-headquarters { width: 16px; min-height: 16px; height: 16px; margin: 0; }
+#fpb-heritage-count { margin-left: auto; color: var(--fpb-muted); }
+#fpb-heritage-search { min-width: 0; max-width: 340px; margin: 0 !important; }
+.fpb-item-reference { border-top: 1px solid var(--fpb-line); margin-top: 16px; padding: 12px 0; }
+.fpb-item-reference h4 { margin: 0 0 12px; font-size: 15px; color: var(--fpb-gold); }
+.fpb-item-reference-rules { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; font-size: 12px; max-height: 320px; overflow: auto; padding: 10px 0; }
+.fpb-item-reference a { display: inline-block; margin: 8px 0; color: var(--fpb-gold); font-size: 12px; }
+.fpb-rules-references { border-top: 1px solid var(--fpb-line); margin: 12px 0; padding: 10px 0; min-width: 0; }
+.fpb-rules-references summary { cursor: pointer; font-size: 13px; color: var(--fpb-gold); }
+.fpb-rules-references label { display: flex; align-items: center; gap: 12px; margin: 12px 0 8px; flex-wrap: wrap; }
+.fpb-rules-references select { width: 100px; max-width: 100%; }
+.fpb-rules-references nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.fpb-rules-references a { margin: 0; color: var(--fpb-gold); font-size: 12px; overflow-wrap: anywhere; }
+.fpb-rules-references small { display: block; margin-top: 8px; line-height: 1.5; }
+.fpb-heritage-options > label { margin: 0 !important; }
+@media (max-width: 800px) { #fpb-heritage-detail { overflow: visible; padding: 14px; } }
+@media (max-width: 500px) { .fpb-world-tabs { padding: 0 6px; } #fpb-world-dialog .fpb-world-tabs button { flex: 1; min-width: 0; } .fpb-heritage-options { gap: 8px; padding: 10px; } }

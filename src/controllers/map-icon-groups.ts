@@ -25,6 +25,7 @@ function refresh(): void {
       applyIndividualMapIcons(view);
     } else restoreIndividualMapIcons(view);
     applyResourceIconSpacing(view);
+    window.dispatchEvent(new Event("map:icons-laid-out"));
     observer.observe(view, {
       childList: true,
       subtree: true,

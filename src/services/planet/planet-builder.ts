@@ -1,15 +1,18 @@
 import { Controllers } from "@/controllers";
 import { Campaign } from "@/controllers/campaign-world";
-import { initRpgMapAssets } from "@/controllers/rpg-map-assets";
-import { initMapIconGroups } from "@/controllers/map-icon-groups";
 import { initDungeonLocations } from "@/controllers/dungeon-locations";
+import { initMapIconGroups } from "@/controllers/map-icon-groups";
+import { initRpgMapAssets } from "@/controllers/rpg-map-assets";
+import { renderCloudProjectRow } from "@/renderers/cloud-project-row";
 import { Services } from "@/services";
 import { getUiLanguage, initUiLanguage, t } from "@/services/ui-language";
 import type { CloudProject, PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
 import { ensureEl } from "@/utils";
 import { ProjectConflictError, ProjectRepository } from "./bkend-repository";
-import { ProjectCodec } from "./project-codec";
+import { assertPlanetProject, ProjectCodec } from "./project-codec";
+import { ProjectSession } from "./project-session";
+import { isPlanetSettings } from "./project-validation";
 
 const UPSTREAM_COMMIT = "03a10502b0293b2afdb37b506f8b25178ce06c4f";
 const SETTINGS_KEY = "fpb-planet-settings";
@@ -19,9 +22,12 @@ const CLOUD_AUTOSAVE_DELAY = 60_000;
 
 const isFirstRun = !localStorage.getItem(SETTINGS_KEY);
 let settings = loadSettings();
-let currentCloudProject: CloudProject | undefined;
+const session = new ProjectSession();
 let autosaveTimer = 0;
 let cloudAutosaveTimer = 0;
+let textureUpdateTimer = 0;
+let loadingProject = false;
+let changeRevision = 0;
 let viewMode: PlanetViewMode = "map";
 
 async function init(): Promise<void> {
@@ -46,7 +52,8 @@ async function init(): Promise<void> {
     };
     if (mapHistory.length) window.setTimeout(createFirstPlanet, 0);
     else window.addEventListener("map:generated", () => window.setTimeout(createFirstPlanet, 0), { once: true });
-  } else
+  } else if (mapHistory.length) window.setTimeout(() => void restoreAutosave(), 0);
+  else
     window.addEventListener("map:generated", () => window.setTimeout(() => void restoreAutosave(), 0), { once: true });
 }
 
@@ -139,9 +146,16 @@ function bindEvents(): void {
   }
 
   window.addEventListener("map:generated", () => {
+    beginDocument();
     mapName.value = settings.name;
     setStatus("저장되지 않은 변경", "dirty");
     scheduleAutosave();
+  });
+  window.addEventListener("map:loaded", () => {
+    if (!loadingProject) {
+      beginDocument();
+      scheduleAutosave();
+    }
   });
   window.addEventListener("planet:location-selected", event => {
     const { x, y } = (event as CustomEvent<{ x: number; y: number }>).detail;
@@ -226,6 +240,8 @@ function collectSettings(): PlanetSettings {
 
 async function generatePlanet(event: SubmitEvent): Promise<void> {
   event.preventDefault();
+  if (loadingProject) return;
+  beginDocument();
   settings = collectSettings();
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   applyPlanetSettingsToFmg(settings);
@@ -283,7 +299,10 @@ function applyPlanetSettingsToFmg(next: PlanetSettings): void {
 }
 
 async function buildProject(): Promise<PlanetProject> {
+  if (loadingProject) throw new Error("A project is already being opened");
+  const generation = session.capture();
   const mapPayload = await Services.Save.prepareMapData();
+  if (!session.isCurrent(generation)) throw new Error("Project changed during export");
   const activeLayers = Array.from(document.querySelectorAll("#map > #viewbox > g"))
     .filter(element => getComputedStyle(element).display !== "none")
     .map(element => element.id)
@@ -296,19 +315,23 @@ async function buildProject(): Promise<PlanetProject> {
     mode: viewMode,
     activeLayers
   });
-  if (viewMode === "globe") project.view.camera = await Controllers.View3d.getCameraState();
   project.campaign = structuredClone(Campaign.get());
+  if (project.view.mode === "globe") project.view.camera = await Controllers.View3d.getCameraState();
+  if (!session.isCurrent(generation)) throw new Error("Project changed during export");
   return project;
 }
 
 async function saveToMachine(): Promise<void> {
+  const generation = session.capture();
+  const revision = changeRevision;
   try {
     setStatus("프로젝트 압축 중", "saving");
-    const blob = await ProjectCodec.encodePlanetProject(await buildProject());
-    downloadBlob(blob, `${safeFilename(settings.name)}.fpb`);
-    setStatus("기기에 저장됨", "saved");
+    const project = await buildProject();
+    const blob = await ProjectCodec.encodePlanetProject(project);
+    downloadBlob(blob, `${safeFilename(project.planet.name)}.fpb`);
+    if (session.isCurrent(generation) && revision === changeRevision) setStatus("기기에 저장됨", "saved");
   } catch (error) {
-    showError(error);
+    if (session.isCurrent(generation)) showError(error);
   }
 }
 
@@ -316,18 +339,15 @@ async function loadFile(event: Event): Promise<void> {
   const input = event.currentTarget as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  const generation = session.capture();
 
   try {
     setStatus("프로젝트 여는 중", "saving");
     const project = file.name.toLowerCase().endsWith(".fpb")
       ? await ProjectCodec.decodePlanetProject(file)
-      : ProjectCodec.legacyMapToProject(
-          await file.text(),
-          { fmgVersion: VERSION, upstreamCommit: UPSTREAM_COMMIT },
-          settings
-        );
+      : await ProjectCodec.decodeLegacyMap(file, { fmgVersion: VERSION, upstreamCommit: UPSTREAM_COMMIT }, settings);
+    if (!session.isCurrent(generation)) return;
     await loadProject(project);
-    currentCloudProject = undefined;
     setStatus("프로젝트 열림", "saved");
   } catch (error) {
     showError(error);
@@ -337,51 +357,66 @@ async function loadFile(event: Event): Promise<void> {
 }
 
 async function loadProject(project: PlanetProject): Promise<void> {
-  settings = project.planet;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  updateForm();
-  const loaded = new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(
-      () => reject(new Error(t("프로젝트를 여는 데 시간이 너무 오래 걸립니다"))),
-      30_000
-    );
-    window.addEventListener(
-      "map:loaded",
-      () => {
-        window.clearTimeout(timeout);
-        resolve();
-      },
-      { once: true }
-    );
-  });
-  await Services.Load.uploadMap(new Blob([project.mapPayload], { type: "text/plain" }));
-  await loaded;
-  Campaign.restore(project.campaign);
-  await setView(project.view.mode);
-  if (project.view.mode === "globe") {
-    await Controllers.View3d.setCameraState(project.view.camera);
+  assertPlanetProject(project);
+  if (loadingProject) throw new Error("A project is already being opened");
+  loadingProject = true;
+  beginDocument();
+  const generation = session.capture();
+  let restored = false;
+  try {
+    await setView("map");
+    await Services.Load.loadMap(new Blob([project.mapPayload], { type: "text/plain" }));
+    if (!session.isCurrent(generation)) throw new Error("Project changed during loading");
+    settings = structuredClone(project.planet);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    updateForm();
+    Campaign.restore(project.campaign);
+    await setView(project.view.mode);
+    if (project.view.mode === "globe") await Controllers.View3d.setCameraState(project.view.camera);
+    restored = true;
+  } finally {
+    loadingProject = false;
+    if (restored) scheduleAutosave();
   }
 }
 
+function beginDocument(): void {
+  session.reset();
+  window.clearTimeout(autosaveTimer);
+  window.clearTimeout(cloudAutosaveTimer);
+  window.clearTimeout(textureUpdateTimer);
+}
+
 function scheduleAutosave(): void {
+  if (loadingProject) return;
+  changeRevision++;
   window.clearTimeout(autosaveTimer);
   autosaveTimer = window.setTimeout(() => void autosave(), AUTOSAVE_DELAY);
   scheduleCloudSync();
   if (document.body.classList.contains("fpb-ready")) setStatus("저장되지 않은 변경", "dirty");
-  if (options.threeD.isOn) window.setTimeout(() => void Controllers.View3d.update(), 350);
+  window.clearTimeout(textureUpdateTimer);
+  if (options.threeD.isOn) {
+    textureUpdateTimer = window.setTimeout(() => {
+      if (options.threeD.isOn) void Controllers.View3d.update();
+    }, 350);
+  }
 }
 
 function scheduleCloudSync(): void {
   window.clearTimeout(cloudAutosaveTimer);
-  if (!ProjectRepository.isAuthenticated() || !currentCloudProject) return;
+  if (!ProjectRepository.isAuthenticated() || !session.cloudProject) return;
   cloudAutosaveTimer = window.setTimeout(() => void autoSyncCloud(), CLOUD_AUTOSAVE_DELAY);
 }
 
 async function restoreAutosave(): Promise<void> {
+  const generation = session.capture();
+  const revision = changeRevision;
   try {
     const blob = await ldb.get(AUTOSAVE_KEY);
     if (!(blob instanceof Blob) || !blob.size) return;
-    await loadProject(await ProjectCodec.decodePlanetProject(blob));
+    const project = await ProjectCodec.decodePlanetProject(blob);
+    if (!session.isCurrent(generation) || revision !== changeRevision) return;
+    await loadProject(project);
     setStatus("자동 저장 복구됨", "saved");
   } catch (error) {
     ERROR && console.error(error);
@@ -390,12 +425,18 @@ async function restoreAutosave(): Promise<void> {
 }
 
 async function autosave(): Promise<void> {
-  if (customization) return;
+  if (customization || loadingProject) return;
+  const generation = session.capture();
+  const revision = changeRevision;
   try {
-    const blob = await ProjectCodec.encodePlanetProject(await buildProject());
-    await ldb.set(AUTOSAVE_KEY, blob);
-    setStatus("자동 저장됨", "saved");
+    await session.run("local", generation, async () => {
+      const blob = await ProjectCodec.encodePlanetProject(await buildProject());
+      if (!session.isCurrent(generation)) return;
+      await ldb.set(AUTOSAVE_KEY, blob);
+      if (session.isCurrent(generation) && revision === changeRevision) setStatus("자동 저장됨", "saved");
+    });
   } catch (error) {
+    if (!session.isCurrent(generation)) return;
     ERROR && console.error(error);
     setStatus("자동 저장 실패", "error");
   }
@@ -447,16 +488,15 @@ async function authenticate(event: SubmitEvent): Promise<void> {
 }
 
 async function saveToCloud(): Promise<void> {
+  const generation = session.capture();
   try {
     setStatus("클라우드 저장 중", "saving");
-    const project = await buildProject();
-    const blob = await ProjectCodec.encodePlanetProject(project);
-    currentCloudProject = await ProjectRepository.save(project, blob, currentCloudProject);
-    setStatus("클라우드에 저장됨", "cloud");
-    scheduleCloudSync();
+    await persistCloud(generation, false, "클라우드에 저장됨");
+    if (!session.isCurrent(generation)) return;
     await refreshCloudList();
   } catch (error) {
-    if (error instanceof ProjectConflictError && currentCloudProject) {
+    if (!session.isCurrent(generation)) return;
+    if (error instanceof ProjectConflictError && session.cloudProject) {
       const preserveBoth = window.confirm(
         t(
           "클라우드에 더 새로운 버전이 있습니다. 로컬 작업을 별도 프로젝트로 보존할까요? 취소하면 로컬 파일은 유지되고 목록에서 클라우드본을 열 수 있습니다."
@@ -464,10 +504,7 @@ async function saveToCloud(): Promise<void> {
       );
       if (preserveBoth) {
         try {
-          const project = await buildProject();
-          const blob = await ProjectCodec.encodePlanetProject(project);
-          currentCloudProject = await ProjectRepository.save(project, blob);
-          setStatus("로컬 작업을 별도 보존함", "cloud");
+          await persistCloud(generation, true, "로컬 작업을 별도 보존함");
           await refreshCloudList();
           return;
         } catch (preserveError) {
@@ -481,16 +518,29 @@ async function saveToCloud(): Promise<void> {
 }
 
 async function autoSyncCloud(): Promise<void> {
-  if (!currentCloudProject) return;
+  if (!session.cloudProject) return;
+  const generation = session.capture();
   try {
-    const project = await buildProject();
-    const blob = await ProjectCodec.encodePlanetProject(project);
-    currentCloudProject = await ProjectRepository.save(project, blob, currentCloudProject);
-    setStatus("클라우드 자동 동기화됨", "cloud");
+    await persistCloud(generation, false, "클라우드 자동 동기화됨");
   } catch (error) {
+    if (!session.isCurrent(generation)) return;
     setStatus(error instanceof ProjectConflictError ? "클라우드 충돌 확인 필요" : "클라우드 자동 동기화 실패", "error");
     showError(error);
   }
+}
+
+async function persistCloud(generation: number, createCopy: boolean, status: string): Promise<void> {
+  await session.run("cloud", generation, async () => {
+    const revision = changeRevision;
+    const project = await buildProject();
+    const blob = await ProjectCodec.encodePlanetProject(project);
+    if (!session.isCurrent(generation)) return;
+    const saved = await ProjectRepository.save(project, blob, createCopy ? undefined : session.cloudProject);
+    if (!session.isCurrent(generation)) return;
+    session.cloudProject = saved;
+    if (revision === changeRevision) setStatus(status, "cloud");
+    else scheduleCloudSync();
+  });
 }
 
 async function refreshCloudList(): Promise<void> {
@@ -499,7 +549,7 @@ async function refreshCloudList(): Promise<void> {
   try {
     const projects = await ProjectRepository.list();
     listElement.innerHTML = projects.length
-      ? projects.map(project => cloudProjectItem(project)).join("")
+      ? projects.map(project => renderCloudProjectRow(project, getUiLanguage())).join("")
       : `<div class="fpb-empty compact"><strong>저장된 행성이 없습니다</strong><p>현재 행성을 클라우드에 저장해 보세요.</p></div>`;
     listElement.querySelectorAll<HTMLElement>("[data-action]").forEach(button => {
       button.addEventListener("click", () => void handleCloudAction(button, projects));
@@ -510,31 +560,51 @@ async function refreshCloudList(): Promise<void> {
   }
 }
 
-function cloudProjectItem(project: CloudProject): string {
-  return `<article class="fpb-project-row"><div><strong data-i18n-skip>${escapeHtml(project.name)}</strong><small data-i18n-skip>${new Date(project.updatedAt).toLocaleString(getUiLanguage() === "ko" ? "ko-KR" : "en-US")} · ${(project.sizeBytes / 1024 / 1024).toFixed(1)}MB · r${project.revision}</small></div><div><button data-action="open" data-id="${project.id}" type="button">열기</button><button data-action="rename" data-id="${project.id}" type="button">이름 변경</button><button data-action="delete" data-id="${project.id}" class="danger" type="button">삭제</button></div></article>`;
-}
-
 async function handleCloudAction(button: HTMLElement, projects: CloudProject[]): Promise<void> {
   const project = projects.find(item => item.id === button.dataset.id);
   if (!project) return;
   try {
     if (button.dataset.action === "open") {
-      await loadProject(await ProjectCodec.decodePlanetProject(await ProjectRepository.load(project)));
-      currentCloudProject = project;
+      const generation = session.capture();
+      const decoded = await ProjectCodec.decodePlanetProject(await ProjectRepository.load(project));
+      if (!session.isCurrent(generation)) return;
+      decoded.planet.name = project.name;
+      const pending = loadProject(decoded);
+      const openedGeneration = session.capture();
+      await pending;
+      if (!session.isCurrent(openedGeneration)) return;
+      session.cloudProject = project;
       scheduleCloudSync();
       ensureEl<HTMLDialogElement>("fpb-cloud-dialog").close();
       setStatus("클라우드 프로젝트", "cloud");
     }
     if (button.dataset.action === "rename") {
       const name = window.prompt(t("새 프로젝트 이름"), project.name)?.trim();
-      if (name) await ProjectRepository.rename(project, name);
+      if (name) {
+        const generation = session.capture();
+        await session.run("cloud", generation, async () => {
+          const current = session.cloudProject?.id === project.id;
+          const renamed = await ProjectRepository.rename(current ? session.cloudProject! : project, name);
+          if (session.isCurrent(generation) && current && session.cloudProject?.id === project.id) {
+            session.cloudProject = renamed;
+            settings.name = name;
+            mapName.value = name;
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            updateForm();
+            scheduleAutosave();
+          }
+        });
+      }
     }
     if (
       button.dataset.action === "delete" &&
       window.confirm(t("'{name}' 프로젝트를 삭제할까요?", { name: project.name }))
     ) {
-      await ProjectRepository.remove(project);
-      if (currentCloudProject?.id === project.id) currentCloudProject = undefined;
+      if (session.cloudProject?.id === project.id) {
+        session.reset();
+        window.clearTimeout(cloudAutosaveTimer);
+      }
+      await session.run("cloud", session.capture(), () => ProjectRepository.remove(project));
     }
     await refreshCloudList();
   } catch (error) {
@@ -543,10 +613,16 @@ async function handleCloudAction(button: HTMLElement, projects: CloudProject[]):
 }
 
 async function signOut(): Promise<void> {
-  await ProjectRepository.signOut();
-  currentCloudProject = undefined;
-  setStatus("로컬 프로젝트", "local");
-  await renderCloudContent();
+  session.reset();
+  window.clearTimeout(cloudAutosaveTimer);
+  try {
+    await ProjectRepository.signOut();
+  } catch (error) {
+    showError(error);
+  } finally {
+    setStatus("로컬 프로젝트", "local");
+    await renderCloudContent();
+  }
 }
 
 function updateRangeOutputs(): void {
@@ -584,11 +660,12 @@ function loadSettings(): PlanetSettings {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "null") as Partial<PlanetSettings> | null;
     if (!stored) return structuredClone(DEFAULT_PLANET_SETTINGS);
-    return {
+    const merged = {
       ...structuredClone(DEFAULT_PLANET_SETTINGS),
       ...stored,
       climate: { ...DEFAULT_PLANET_SETTINGS.climate, ...stored.climate }
     };
+    return isPlanetSettings(merged) ? merged : structuredClone(DEFAULT_PLANET_SETTINGS);
   } catch {
     return structuredClone(DEFAULT_PLANET_SETTINGS);
   }
@@ -611,7 +688,7 @@ function safeFilename(value: string): string {
 function escapeHtml(value: string): string {
   const element = document.createElement("span");
   element.textContent = value;
-  return element.innerHTML;
+  return element.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function showError(error: unknown): void {

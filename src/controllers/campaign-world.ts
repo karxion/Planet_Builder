@@ -1,3 +1,13 @@
+import { isNpcProgression } from "@/data/campaign-validation";
+import {
+  COMMONER_CR_PROFILES,
+  COUNTRY_ARCHETYPES,
+  NPC_CLASSES,
+  NPC_EPIC_MIN_LEVEL,
+  NPC_RANKS,
+  NPC_SCOPES,
+  NPC_TIER_RANGES
+} from "@/data/npc-progression";
 import { abilityModifier, NPC_STAT_BLOCKS, SRD_ATTRIBUTION, SRD_URL } from "@/data/npc-stat-blocks";
 import { removeLegacyDivisions } from "@/generators/administration-policy";
 import {
@@ -6,17 +16,38 @@ import {
   buildAdministration,
   createCampaign,
   generateVillageNpcs,
-  synchronizeNpcPlaceNames
+  regenerateCampaignNpcs,
+  remainingNpcContexts,
+  synchronizeNpcPlaceNames,
+  updateNpcProgressions
 } from "@/generators/campaign-generator";
 import { koreanizeWorldNames } from "@/generators/korean-world-names";
+import { applyItemReference, chooseItemReference, designOption } from "@/generators/magic-item-generator";
+import { inferCountryArchetype, npcCombatProfile, npcCommonerProfile, npcTier } from "@/generators/npc-progression";
+import { synchronizeHeritage } from "@/generators/realm-heritage";
 import { drawAdministration } from "@/renderers/administration-renderer";
+import { drawReligionHeadquarters } from "@/renderers/religion-headquarters";
 import { t } from "@/services/ui-language";
-import type { AdministrationLevel, CampaignWorld, NpcTemplateId, WorldNpc } from "@/types/campaign-world";
+import type {
+  AdministrationLevel,
+  CampaignWorld,
+  CommonerCr,
+  CountryArchetype,
+  NpcClassId,
+  NpcRank,
+  NpcScope,
+  NpcTemplateId,
+  WorldNpc
+} from "@/types/campaign-world";
+import { createHeritagePanel, type HeritageView } from "./realm-heritage";
+import { createRulesReferences } from "./rules-references";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
 let mapLevel: AdministrationLevel = "country";
 let page = 0;
+let worldView: "npcs" | HeritageView = "npcs";
+let heritagePanel: ReturnType<typeof createHeritagePanel>;
 const levels: AdministrationLevel[] = ["country", "region", "fief", "village"];
 const labels = { country: "국가", region: "지역", fief: "영지", village: "마을" };
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -26,6 +57,10 @@ const escapeHtml = (value: string) => {
   return span.innerHTML.replaceAll('"', "&quot;");
 };
 const changed = () => window.dispatchEvent(new Event("project:changed"));
+const tierText = (level: number, compact = false): string => {
+  const tier = npcTier(level);
+  return tier === "epic" ? t("에픽") : compact ? `T${tier}` : `${t("티어")} ${tier}`;
+};
 
 function snapshot(): AdministrativeSnapshot {
   const villages = pack.burgs
@@ -38,10 +73,17 @@ function snapshot(): AdministrativeSnapshot {
       x: b.x,
       y: b.y,
       capital: Boolean(b.capital),
-      port: Boolean(b.port)
+      port: Boolean(b.port),
+      population: b.population,
+      continentId: pack.features[pack.cells.f[b.cell]]?.group === "continent" ? pack.cells.f[b.cell] : undefined
     }));
   const adjacent = new Map<number, Set<number>>();
+  const areas = new Map<number, number>();
   for (const cell of pack.cells.i) {
+    if (pack.cells.h[cell] >= 20) {
+      const state = pack.cells.state[cell];
+      areas.set(state, (areas.get(state) || 0) + (pack.cells.area[cell] || 1));
+    }
     const a = pack.cells.province[cell];
     if (!a) continue;
     if (!adjacent.has(a)) adjacent.set(a, new Set());
@@ -56,7 +98,14 @@ function snapshot(): AdministrativeSnapshot {
       .filter(s => s && !s.removed && (s.i || villages.some(v => v.stateId === 0)))
       .map(s => {
         const [x, y] = pack.cells.p[s.center] || [graphWidth / 2, graphHeight / 2];
-        return { id: s.i, name: s.i ? s.fullName || s.name : "무소속", x, y };
+        return {
+          id: s.i,
+          name: s.i ? s.fullName || s.name : "무소속",
+          x,
+          y,
+          government: `${s.form || ""} ${s.formName || ""} ${s.fullName || ""}`,
+          area: areas.get(s.i) ?? s.area ?? 0
+        };
       }),
     fiefs: pack.provinces
       .filter(p => p?.i && !p.removed)
@@ -85,14 +134,18 @@ function refresh(): void {
     campaign.npcs = synchronized;
     const oldVillages = new Set(campaign.units.filter(u => u.level === "village").map(u => u.sourceId));
     campaign.units = buildAdministration(input);
+    const contexts = remainingNpcContexts(input, campaign);
     campaign.npcs.push(
       ...input.villages
         .filter(v => !oldVillages.has(v.id))
-        .flatMap(v => generateVillageNpcs(campaign!.seed, v, campaign!.generation))
+        .flatMap(v => generateVillageNpcs(campaign!.seed, v, campaign!.generation, contexts.get(v.id)))
     );
+    referencesChanged = updateNpcProgressions(campaign, input) || referencesChanged;
   }
+  referencesChanged = synchronizeHeritage(campaign, input) || referencesChanged;
   removeObsoleteUi();
   drawAdministration(campaign.units, mapLevel);
+  drawReligionHeadquarters(campaign, { width: graphWidth, height: graphHeight });
   if (referencesChanged) changed();
 }
 
@@ -214,13 +267,98 @@ function init(): void {
   dialog.innerHTML = `<header class="fpb-world-header"><span class="fpb-world-crest icon-shield-alt" aria-hidden="true"></span><div><h2>세계와 NPC</h2><span id="fpb-world-summary"></span></div><select class="fpb-dialog-language" data-fpb-language data-fpb-preference aria-label="언어 / Language"><option value="ko">한국어</option><option value="en">English</option></select><button id="fpb-world-close" type="button" title="닫기" aria-label="닫기" class="fpb-icon-button icon-cancel"></button></header>
     <div class="fpb-world-layout"><aside class="fpb-world-filters">${levels.map(level => `<label>${labels[level]}<select id="fpb-filter-${level}"><option value="">전체</option></select></label>`).join("")}
     <label>지도 구획<select id="fpb-admin-level">${levels.map(level => `<option value="${level}">${labels[level]}</option>`).join("")}</select></label>
+    <label>국가 성향<select id="fpb-country-archetype" disabled>${Object.entries(COUNTRY_ARCHETYPES)
+      .map(([id, name]) => `<option value="${id}">${name}</option>`)
+      .join("")}</select></label>
     <button id="fpb-unit-focus" type="button"><span class="icon-target" aria-hidden="true"></span>지도에서 보기</button>
     <button id="fpb-npc-regenerate" type="button"><span class="icon-cw" aria-hidden="true"></span>범위 내 NPC 재생성</button>
     <button id="fpb-korean-names" type="button"><span class="icon-cw" aria-hidden="true"></span>지명 한글화</button>
-    <a href="legal/srd.html" target="_blank" rel="noopener">SRD 5.2.1 · CC BY 4.0</a></aside>
+    <a href="legal/srd.html" target="_blank" rel="noopener">SRD 5.1 / 5.2.1 · CC BY 4.0</a></aside>
     <main class="fpb-npc-main"><div class="fpb-npc-toolbar"><input id="fpb-npc-search" type="search" aria-label="NPC 검색" placeholder="이름 또는 역할 검색"><span id="fpb-npc-count" role="status"></span><button id="fpb-npc-export" title="NPC JSON 내보내기" aria-label="NPC JSON 내보내기" class="icon-download" type="button"></button></div>
     <div class="fpb-npc-columns"><section class="fpb-npc-results" aria-label="NPC 목록"><div id="fpb-npc-list"></div><nav class="fpb-npc-pagination"><button id="fpb-npc-prev" type="button" class="icon-left-open" aria-label="이전 페이지" title="이전 페이지"></button><span id="fpb-npc-page"></span><button id="fpb-npc-next" type="button" class="icon-right-open" aria-label="다음 페이지" title="다음 페이지"></button></nav></section><section id="fpb-npc-detail" aria-label="NPC 상세"></section></div></main></div>`;
   document.body.append(dialog);
+  const main = dialog.querySelector<HTMLElement>(".fpb-npc-main")!;
+  const npcPanel = document.createElement("section");
+  npcPanel.id = "fpb-npc-panel";
+  npcPanel.append(...main.childNodes);
+  const heritageHost = document.createElement("section");
+  heritageHost.id = "fpb-heritage-panel";
+  heritageHost.hidden = true;
+  const tabs = document.createElement("nav");
+  tabs.className = "fpb-world-tabs";
+  tabs.setAttribute("role", "tablist");
+  for (const [view, label, icon] of [
+    ["npcs", "NPC", "users"],
+    ["treasures", "보물", "star"],
+    ["religions", "종교", "bank"]
+  ] as const) {
+    const tab = document.createElement("button");
+    tab.id = `fpb-tab-${view}`;
+    tab.type = "button";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-controls", view === "npcs" ? npcPanel.id : heritageHost.id);
+    tab.setAttribute("aria-selected", String(view === worldView));
+    tab.innerHTML = `<span class="icon-${icon}" aria-hidden="true"></span>${label}`;
+    tab.onclick = () => switchWorldView(view);
+    tab.onkeydown = event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const buttons = [...tabs.querySelectorAll<HTMLButtonElement>("button")];
+      const index = buttons.indexOf(tab);
+      const next =
+        event.key === "Home" ? 0 : event.key === "End" ? 2 : (index + (event.key === "ArrowRight" ? 1 : 2)) % 3;
+      buttons[next].click();
+      buttons[next].focus();
+    };
+    tabs.append(tab);
+  }
+  main.append(tabs, npcPanel, heritageHost);
+  npcPanel.setAttribute("role", "tabpanel");
+  heritageHost.setAttribute("role", "tabpanel");
+  heritagePanel = createHeritagePanel(heritageHost, {
+    world: () => campaign,
+    focus: focusUnit,
+    changed: () => {
+      drawReligionHeadquarters(campaign, { width: graphWidth, height: graphHeight });
+      changed();
+    },
+    historyChanged: (stateId, age) => {
+      const nation = campaign?.heritage?.nations.find(nation => nation.stateId === stateId);
+      if (!nation || !campaign) return;
+      nation.ageYears = age;
+      synchronizeHeritage(campaign, snapshot());
+      drawReligionHeadquarters(campaign, { width: graphWidth, height: graphHeight });
+      changed();
+    },
+    referenceEditionChanged: edition => {
+      if (!campaign?.heritage) return;
+      campaign.heritage.itemReferenceEdition = edition;
+      const input = snapshot();
+      for (const item of campaign.heritage.treasures) {
+        if (item.edited) continue;
+        const state = input.states.find(state => state.id === item.stateId);
+        const archetype =
+          campaign.npcProfiles?.find(profile => profile.stateId === item.stateId)?.archetype ||
+          inferCountryArchetype(state?.government || "");
+        const category = designOption(item)?.reference.category;
+        applyItemReference(
+          item,
+          chooseItemReference(campaign.seed, item.id, item.rarity, edition, archetype, category)
+        );
+      }
+      changed();
+    }
+  });
+  window.addEventListener("map:icons-laid-out", () =>
+    drawReligionHeadquarters(campaign, { width: graphWidth, height: graphHeight })
+  );
+  window.addEventListener("realm:religion-selected", event => {
+    const id = (event as CustomEvent<unknown>).detail;
+    if (typeof id !== "string" || !campaign?.heritage?.religions.some(religion => religion.id === id)) return;
+    for (const level of levels) el<HTMLSelectElement>(`fpb-filter-${level}`).value = "";
+    open();
+    switchWorldView("religions", id);
+  });
   el("fpb-world-close").onclick = () => dialog.close();
   for (const level of levels)
     el(`fpb-filter-${level}`).onchange = () => {
@@ -248,6 +386,24 @@ function init(): void {
   };
   el("fpb-unit-focus").onclick = () => focusUnit(selectedScope());
   el("fpb-npc-regenerate").onclick = regenerate;
+  el("fpb-country-archetype").onchange = () => {
+    if (!campaign) return;
+    const country = campaign.units.find(unit => unit.id === el<HTMLSelectElement>("fpb-filter-country").value);
+    if (!country) return;
+    const archetype = el<HTMLSelectElement>("fpb-country-archetype").value as CountryArchetype;
+    campaign.npcProfiles = [
+      ...(campaign.npcProfiles || []).filter(profile => profile.stateId !== country.stateId),
+      { stateId: country.stateId, archetype }
+    ];
+    const input = snapshot();
+    updateNpcProgressions(
+      campaign,
+      { ...input, villages: input.villages.filter(village => village.stateId === country.stateId) },
+      true
+    );
+    changed();
+    renderNpcs();
+  };
   el("fpb-npc-export").onclick = exportNpcs;
   el("fpb-korean-names").onclick = () => {
     if (!confirm(t("잠기지 않은 영어 지명을 새 한글 이름으로 바꿀까요? 한글 지명과 잠긴 항목은 유지됩니다."))) return;
@@ -290,6 +446,20 @@ function open(): void {
   el<HTMLDialogElement>("fpb-world-dialog").showModal();
 }
 
+function switchWorldView(view: "npcs" | HeritageView, selectedId?: string): void {
+  worldView = view;
+  el("fpb-npc-panel").hidden = view !== "npcs";
+  el("fpb-heritage-panel").hidden = view === "npcs";
+  el(view === "npcs" ? "fpb-npc-panel" : "fpb-heritage-panel").setAttribute("aria-labelledby", `fpb-tab-${view}`);
+  el("fpb-npc-regenerate").hidden = view !== "npcs";
+  for (const name of ["npcs", "treasures", "religions"]) {
+    const tab = el<HTMLButtonElement>(`fpb-tab-${name}`);
+    tab.setAttribute("aria-selected", String(name === view));
+    tab.tabIndex = name === view ? 0 : -1;
+  }
+  if (view !== "npcs") heritagePanel.render(view, selectedScope(), selectedId);
+}
+
 function selectedScope(): string {
   return (
     [...levels]
@@ -315,7 +485,16 @@ function renderFilters(): void {
   el("fpb-world-summary").textContent = levels
     .map(level => `${t(labels[level])} ${campaign!.units.filter(u => u.level === level).length}`)
     .join(" · ");
+  const selectedCountry = campaign.units.find(unit => unit.id === el<HTMLSelectElement>("fpb-filter-country").value);
+  const archetypeSelect = el<HTMLSelectElement>("fpb-country-archetype");
+  archetypeSelect.disabled = !selectedCountry;
+  const countryState = selectedCountry && snapshot().states.find(state => state.id === selectedCountry.stateId);
+  archetypeSelect.value = selectedCountry
+    ? campaign.npcProfiles?.find(profile => profile.stateId === selectedCountry.stateId)?.archetype ||
+      inferCountryArchetype(countryState?.government || "")
+    : "balanced";
   renderNpcs();
+  switchWorldView(worldView);
 }
 
 function filteredNpcs(): WorldNpc[] {
@@ -328,7 +507,11 @@ function filteredNpcs(): WorldNpc[] {
   );
   const query = el<HTMLInputElement>("fpb-npc-search").value.trim().toLocaleLowerCase();
   return campaign.npcs.filter(
-    npc => (!scope || villages.has(npc.villageId)) && `${npc.name} ${npc.role}`.toLocaleLowerCase().includes(query)
+    npc =>
+      (!scope || villages.has(npc.villageId)) &&
+      `${npc.name} ${npc.role} ${npc.progression ? t(NPC_CLASSES[npc.progression.classId]) : ""}`
+        .toLocaleLowerCase()
+        .includes(query)
   );
 }
 
@@ -345,7 +528,7 @@ function renderNpcs(): void {
     shown
       .map(
         npc =>
-          `<button type="button" class="fpb-npc-row ${npc.id === selectedNpc ? "selected" : ""}" data-npc="${escapeHtml(npc.id)}"><strong data-i18n-skip>${escapeHtml(npc.name)}</strong><span><span data-i18n-skip>${escapeHtml(npc.role)}</span> · CR ${NPC_STAT_BLOCKS[npc.templateId].cr}${npc.edited ? ` · ${t("수정됨")}` : ""}</span><small data-i18n-skip>${escapeHtml(campaign!.units.find(u => u.id === npc.villageId)?.name || t("소속 마을 없음"))}</small></button>`
+          `<button type="button" class="fpb-npc-row ${npc.id === selectedNpc ? "selected" : ""}" data-npc="${escapeHtml(npc.id)}"><strong data-i18n-skip>${escapeHtml(npc.name)}</strong><span><span data-i18n-skip>${escapeHtml(npc.role)}</span> · ${npc.progression ? (npc.progression.classId === "none" ? `${t("비모험가")} · CR ${npc.progression.commonerCr || "0"}` : `${t(NPC_CLASSES[npc.progression.classId])} Lv.${npc.progression.level} · ${tierText(npc.progression.level, true)}`) : `CR ${NPC_STAT_BLOCKS[npc.templateId].cr}`}${npc.edited ? ` · ${t("수정됨")}` : ""}</span><small data-i18n-skip>${escapeHtml(campaign!.units.find(u => u.id === npc.villageId)?.name || t("소속 마을 없음"))}</small></button>`
       )
       .join("") || '<p class="fpb-npc-empty">조건에 맞는 NPC가 없습니다.</p>';
   el("fpb-npc-list")
@@ -367,17 +550,47 @@ function renderDetail(preview?: WorldNpc): void {
     return;
   }
   const stats = NPC_STAT_BLOCKS[npc.templateId];
+  const combat = npcCombatProfile(npc);
+  const commoner = npcCommonerProfile(npc);
+  const progression = npc.progression;
+  const epic = progression?.classId !== "none" && progression !== undefined && npcTier(progression.level) === "epic";
+  const choices = (items: Record<string, string>, selected: string) =>
+    Object.entries(items)
+      .map(([id, name]) => `<option value="${id}" ${id === selected ? "selected" : ""}>${t(name)}</option>`)
+      .join("");
   const signed = (n: number) => (n < 0 ? String(n) : `+${n}`);
   el("fpb-npc-detail").innerHTML =
     `<form id="fpb-npc-form"><div class="fpb-npc-heading"><h3 data-i18n-skip>${escapeHtml(npc.name)}</h3><button id="fpb-npc-focus" class="icon-target" type="button" title="거주 마을 보기" aria-label="거주 마을 보기"></button></div>
     <label>이름<input name="name" value="${escapeHtml(npc.name)}" maxlength="80" required></label><label>역할<input name="role" value="${escapeHtml(npc.role)}" maxlength="80" required></label>
-    <label>능력치 유형<select name="templateId">${Object.entries(NPC_STAT_BLOCKS)
+    ${
+      progression
+        ? `<label>직업<select name="classId">${choices(NPC_CLASSES, progression.classId)}</select></label>${
+            progression.classId === "none"
+              ? `<input name="level" type="hidden" value="1"><label>${t("도전 지수 (CR)")}<select name="commonerCr">${Object.keys(
+                  COMMONER_CR_PROFILES
+                )
+                  .map(
+                    cr =>
+                      `<option value="${cr}" ${cr === (progression.commonerCr || "0") ? "selected" : ""}>CR ${cr}</option>`
+                  )
+                  .join("")}</select></label>`
+              : `<label>레벨<input name="level" type="number" min="1" max="${Number.MAX_SAFE_INTEGER}" step="1" value="${progression.level}" required></label>`
+          }<label>지위<select name="rank">${choices(NPC_RANKS, progression.rank)}</select></label><label>활동 범위<select name="scope">${choices(NPC_SCOPES, progression.scope)}</select></label><p>${progression.classId === "none" ? t("비모험가") : tierText(progression.level)} · ${t(COUNTRY_ARCHETYPES[progression.archetype])}</p>`
+        : ""
+    }
+    ${commoner ? `<h4>${t("커머너 프로필")}</h4><div class="fpb-npc-stats"><span>CR <b>${commoner.cr}</b> · ${commoner.xp} XP</span><span>AC <b>${commoner.ac}</b></span><span>HP <b>${commoner.hp}</b></span><span>${t("명중")} +${commoner.attackBonus}</span><span>${t("근접 타격 피해")} ${commoner.damage}</span></div>${commoner.cr !== "0" ? `<p class="fpb-npc-rule">${t("앱 변형 커머너 · 지정 CR은 추정치")}</p>` : ""}` : ""}
+    ${combat ? `<h4>${t("레벨 기반 간이 프로필")}</h4><div class="fpb-npc-stats"><span>AC <b>${combat.ac}</b></span><span>HP <b>${combat.hp}</b></span><span>${t("숙련")} +${combat.proficiency}</span><span>${t("명중")} +${combat.attackBonus}</span>${combat.spellSaveDc ? `<span>${t("주문 DC")} ${combat.spellSaveDc}</span>` : ""}</div><table class="fpb-ability-table"><thead><tr>${["근력", "민첩", "건강", "지능", "지혜", "매력"].map(a => `<th>${t(a)}</th>`).join("")}</tr></thead><tbody><tr>${combat.abilities.map(a => `<td>${a}<small>${signed(abilityModifier(a))}</small></td>`).join("")}</tr></tbody></table><p class="fpb-npc-rule">${t("간이 수치 · 클래스 특성·주문·특기는 미포함 · 공식 CR 아님")}</p>` : ""}
+    ${epic ? `<p class="fpb-npc-rule">${t("에픽 · 서사 레벨만 기록 · 21레벨 이상 간이 전투 수치 미제공")}</p>` : ""}
+    <details ${combat || commoner || epic ? "" : "open"}><summary>${t("SRD 기본 참고 능력치 (레벨 미반영)")}</summary><label>능력치 유형<select name="templateId">${Object.entries(
+      NPC_STAT_BLOCKS
+    )
       .map(([id, block]) => `<option value="${id}" ${id === npc.templateId ? "selected" : ""}>${block.name}</option>`)
       .join("")}</select></label>
     <div class="fpb-npc-stats"><span>AC <b>${stats.ac}</b></span><span>HP <b>${stats.hp}</b> (${stats.hitDice})</span><span>CR <b>${stats.cr}</b> · ${stats.xp} XP</span><span>이동 30ft · 숙련 +2</span><span>${t("우선권")} ${signed(abilityModifier(stats.abilities[1]))} (${10 + abilityModifier(stats.abilities[1])})</span></div>
     <table class="fpb-ability-table"><thead><tr>${["근력", "민첩", "건강", "지능", "지혜", "매력"].map(a => `<th>${a}</th>`).join("")}</tr></thead><tbody><tr>${stats.abilities.map(a => `<td>${a}<small>${signed(abilityModifier(a))}</small></td>`).join("")}</tr></tbody></table>
     <p class="fpb-npc-rule">중형 또는 소형 인간형 · 중립<br>내성: 위 능력 수정치와 동일<br>${t(stats.skills)}<br>${t("수동 지각")} ${stats.passivePerception}<br>${t("언어")}: ${t(stats.languages)}<br>${t("장비")}: ${t(stats.gear)}</p>
     ${[...stats.traits, ...stats.actions, ...stats.reactions].map(text => `<p class="fpb-npc-rule">${text}</p>`).join("")}
+    </details>
     ${(
       [
         ["appearance", "외형"],
@@ -393,24 +606,30 @@ function renderDetail(preview?: WorldNpc): void {
       )
       .join("")}
     <div class="fpb-npc-edit-actions"><button type="submit" class="primary">변경 저장</button><button id="fpb-npc-delete" type="button" class="icon-trash" title="NPC 삭제" aria-label="NPC 삭제"></button><a href="${SRD_URL}#page=${stats.page}" target="_blank" rel="noopener">${t("규칙 원문 p.{page}", { page: stats.page })}</a></div></form>`;
+  const form = el<HTMLFormElement>("fpb-npc-form");
+  form.insertBefore(
+    createRulesReferences("character", "2024", progression?.classId).element,
+    form.querySelector(".fpb-npc-edit-actions")
+  );
   el("fpb-npc-focus").onclick = () => focusUnit(npc.villageId);
   el<HTMLFormElement>("fpb-npc-form")
-    .querySelector("[name=templateId]")!
-    .addEventListener("change", () => {
-      const data = new FormData(el<HTMLFormElement>("fpb-npc-form"));
-      const draft = { ...npc, templateId: String(data.get("templateId")) as NpcTemplateId };
-      for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
-        draft[key] = String(data.get(key) || "");
-      renderDetail(draft);
+    .querySelectorAll("[name=templateId], [name=classId], [name=level], [name=rank], [name=scope], [name=commonerCr]")
+    .forEach(control => {
+      control.addEventListener("change", () => {
+        const draft = collectNpcDraft(npc);
+        if (draft?.progression?.classId === "none")
+          draft.progression = { ...draft.progression, level: 1, rank: "common", scope: "settlement" };
+        if (draft && (!draft.progression || isNpcProgression(draft.progression))) renderDetail(draft);
+      });
     });
   el<HTMLFormElement>("fpb-npc-form").onsubmit = event => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget as HTMLFormElement);
+    const draft = collectNpcDraft(npc);
+    if (!draft || (draft.progression && !isNpcProgression(draft.progression))) return;
     for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
-      npc[key] = String(data.get(key) || "").trim();
-    npc.templateId = String(data.get("templateId")) as NpcTemplateId;
-    npc.edited = true;
-    Object.assign(storedNpc!, npc);
+      draft[key] = draft[key].trim();
+    draft.edited = true;
+    Object.assign(storedNpc!, draft);
     changed();
     renderNpcs();
   };
@@ -422,12 +641,24 @@ function renderDetail(preview?: WorldNpc): void {
   };
 }
 
-function collectNpcDraft(): WorldNpc | undefined {
-  const npc = campaign?.npcs.find(item => item.id === selectedNpc);
+function collectNpcDraft(preview?: WorldNpc): WorldNpc | undefined {
+  const npc = preview || campaign?.npcs.find(item => item.id === selectedNpc);
   const form = el<HTMLFormElement>("fpb-npc-form");
   if (!npc || !form) return;
   const data = new FormData(form);
   const draft = { ...npc, templateId: String(data.get("templateId")) as NpcTemplateId };
+  if (npc.progression) {
+    draft.progression = {
+      ...npc.progression,
+      level: Number(data.get("level")),
+      classId: String(data.get("classId")) as NpcClassId,
+      rank: String(data.get("rank")) as NpcRank,
+      scope: String(data.get("scope")) as NpcScope
+    };
+    if (draft.progression.classId === "none")
+      draft.progression.commonerCr = String(data.get("commonerCr") || "0") as CommonerCr;
+    else delete draft.progression.commonerCr;
+  }
   for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
     draft[key] = String(data.get(key) || "");
   return draft;
@@ -444,11 +675,10 @@ function focusUnit(id: string): void {
 function regenerate(): void {
   if (!campaign || !confirm(t("선택 범위의 자동 생성 NPC를 다시 만들까요? 직접 수정한 NPC는 보존됩니다."))) return;
   const scope = selectedScope();
-  const villages = snapshot().villages.filter(v => !scope || belongsTo(`village:${v.id}`, scope, campaign!.units));
+  const input = snapshot();
+  const villages = input.villages.filter(v => !scope || belongsTo(`village:${v.id}`, scope, campaign!.units));
   const ids = new Set(villages.map(v => `village:${v.id}`));
-  campaign.generation++;
-  campaign.npcs = campaign.npcs.filter(n => n.edited || !ids.has(n.villageId));
-  campaign.npcs.push(...villages.flatMap(v => generateVillageNpcs(campaign!.seed, v, campaign!.generation)));
+  regenerateCampaignNpcs(campaign, input, ids);
   changed();
   renderNpcs();
 }
@@ -456,8 +686,15 @@ function regenerate(): void {
 function exportNpcs(): void {
   const payload = {
     ruleset: "srd-5.2.1",
+    tierScheme: { id: "fpb-five-tier-v1", ranges: NPC_TIER_RANGES, epicMinLevel: NPC_EPIC_MIN_LEVEL },
     units: campaign?.units,
-    npcs: filteredNpcs().map(npc => ({ ...npc, statBlock: NPC_STAT_BLOCKS[npc.templateId] })),
+    npcs: filteredNpcs().map(npc => ({
+      ...npc,
+      narrativeTier: npc.progression && npc.progression.classId !== "none" ? npcTier(npc.progression.level) : undefined,
+      combatProfile: npcCombatProfile(npc) || npcCommonerProfile(npc),
+      statBlock: NPC_STAT_BLOCKS[npc.templateId],
+      statBlockUsage: "srd-base-reference-not-level-scaled"
+    })),
     source: SRD_URL,
     attribution: SRD_ATTRIBUTION
   };

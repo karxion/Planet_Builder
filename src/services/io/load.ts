@@ -1,5 +1,7 @@
-import { Services } from "@/services";
+import { cleanDungeonInterior } from "@/data/dungeon-validation";
 import { removeLegacyDivisions } from "@/generators/administration-policy";
+import { Services } from "@/services";
+import { sanitizeImportedNotes, sanitizeMapSvg, sanitizeSvgDefinitions } from "@/services/content-sanitizer";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -116,6 +118,20 @@ function showUploadErrorMessage(error: string, maplink: string, random?: boolean
 
 let uploadTimeStart = 0;
 
+// Promise-based entry point for callers that must wait for the complete map restore.
+async function loadMap(file: Blob): Promise<void> {
+  uploadTimeStart = performance.now();
+  const { mapData, mapVersion } = await parseLoadedResult(await file.arrayBuffer());
+  if (!mapData || !mapVersion || !isValidVersion(mapVersion) || mapData.length < 10 || !mapData[5]) {
+    throw new Error("Invalid map file");
+  }
+  if (compareVersions(mapVersion, "0.70.0").isOlder || compareVersions(mapVersion, VERSION).isNewer) {
+    throw new Error("Unsupported map version");
+  }
+  ensureEl("coas").innerHTML = "";
+  if (!(await parseLoadedData(mapData, mapVersion))) throw new Error("Map loading failed");
+}
+
 function uploadMap(file: Blob, callback?: () => void): void {
   uploadTimeStart = performance.now();
 
@@ -229,8 +245,11 @@ function showUploadMessage(type: string, mapData: string[] | null, mapVersion: s
   });
 }
 
-async function parseLoadedData(data: string[], mapVersion: string | null): Promise<void> {
+async function parseLoadedData(data: string[], mapVersion: string | null): Promise<boolean> {
   try {
+    const importedSvg = sanitizeMapSvg(data[5]);
+    const importedDefinitions = data[45] ? sanitizeSvgDefinitions(data[45]) : null;
+    const importedNotes = data[4] ? sanitizeImportedNotes(JSON.parse(data[4])) : [];
     // exit customization
     if (typeof window.closeDialogs === "function") closeDialogs();
     customization = 0;
@@ -306,7 +325,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ensureEl<HTMLInputElement>("eraInput").value = options.era;
     ensureEl<HTMLInputElement>("shapeRendering").value = viewbox.attr("shape-rendering") || "geometricPrecision";
     if (data[2]) mapCoordinates = JSON.parse(data[2]);
-    if (data[4]) notes = JSON.parse(data[4]);
+    notes = importedNotes;
     if (data[33]) rulers.fromString(data[33]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);
@@ -336,7 +355,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       }
     }
     svg.remove();
-    document.body.insertAdjacentHTML("afterbegin", data[5]);
+    document.body.prepend(importedSvg);
     // Reselect with the global d3 v5 (not the bundled d3 v7 `select`): the global
     // `svg`/`viewbox` selections are consumed by legacy v5 code (zoom behavior,
     // `d3.mouse`, `d3.event`). A v7 selection dispatches events without setting the
@@ -429,6 +448,10 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     pack.provinces = data[30] ? JSON.parse(data[30]) : ([0] as unknown as typeof pack.provinces);
     pack.rivers = data[32] ? JSON.parse(data[32]) : [];
     pack.markers = data[35] ? JSON.parse(data[35]) : [];
+    for (const marker of pack.markers) {
+      if (marker?.adventure !== undefined && !isAdventureSite(marker.adventure)) delete marker.adventure;
+      if (marker) cleanDungeonInterior(marker);
+    }
     pack.routes = data[37] ? JSON.parse(data[37]) : [];
     pack.zones = data[38] ? JSON.parse(data[38]) : [];
     pack.cells.biome = Uint8Array.from(data[16].split(","), Number);
@@ -458,7 +481,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
 
     const removedMarkers = new Set(removeLegacyDivisions(pack));
     notes = notes.filter(note => !removedMarkers.has(note.id));
-    removedMarkers.forEach(id => document.getElementById(id)?.remove());
+    removedMarkers.forEach(id => {
+      document.getElementById(id)?.remove();
+    });
     for (const unit of options.military || []) {
       delete unit.cultures;
       delete unit.religions;
@@ -476,9 +501,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     }
 
     // data[45]: custom good icons
-    if (data[45]) {
+    if (importedDefinitions) {
       const goodIconsDefs = document.getElementById("good-icons");
-      if (goodIconsDefs) goodIconsDefs.insertAdjacentHTML("beforeend", data[45]);
+      goodIconsDefs?.append(importedDefinitions);
     }
 
     {
@@ -596,7 +621,9 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
         ERROR && console.error("[Data integrity] Invalid province", p, "is assigned to cells", invalidCells);
       });
 
-      const invalidCultures = [...new Set(cells.culture)].filter(c => c && (!pack.cultures[c] || pack.cultures[c].removed));
+      const invalidCultures = [...new Set(cells.culture)].filter(
+        c => c && (!pack.cultures[c] || pack.cultures[c].removed)
+      );
       invalidCultures.forEach(c => {
         const invalidCells = cells.i.filter(i => cells.culture[i] === c);
         invalidCells.forEach(i => {
@@ -821,6 +848,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     showStatistics();
     INFO && console.groupEnd();
     tip("Map is successfully loaded", true, "success", 7000);
+    return true;
   } catch (error) {
     ERROR && console.error(error);
     clearMainTip();
@@ -848,6 +876,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
       },
       position: { my: "center", at: "center", of: "svg" }
     });
+    return false;
   }
 }
 
@@ -857,5 +886,8 @@ export const Load = {
   createSharableDropboxLink,
   loadMapFromURL,
   showUploadErrorMessage,
+  loadMap,
   uploadMap
 };
+
+import { isAdventureSite } from "@/data/adventure-sites";

@@ -1,8 +1,9 @@
 // Save the whole .map project to storage, machine or cloud
-import { Services } from "@/services";
+
 import { removeLegacyDivisions } from "@/generators/administration-policy";
-import { ensureEl, link, parseError, rn } from "@/utils";
 import { clearMapIconGroups } from "@/renderers/map-icon-groups";
+import { Services } from "@/services";
+import { ensureEl, link, parseError, rn } from "@/utils";
 
 type SaveMethod = "storage" | "machine" | "dropbox";
 
@@ -45,7 +46,9 @@ async function saveMap(method: SaveMethod): Promise<void> {
 function prepareMapData(): string {
   const removedMarkers = new Set(removeLegacyDivisions(pack));
   notes = notes.filter(note => !removedMarkers.has(note.id));
-  removedMarkers.forEach(id => document.getElementById(id)?.remove());
+  removedMarkers.forEach(id => {
+    document.getElementById(id)?.remove();
+  });
   for (const unit of options.military || []) {
     delete unit.cultures;
     delete unit.religions;
@@ -92,7 +95,9 @@ function prepareMapData(): string {
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   clearMapIconGroups(cloneEl);
-  for (const id of ["cults", "relig", "zones", "fpb-administration"]) cloneEl.querySelector(`#${id}`)?.replaceChildren();
+  cloneEl.querySelector("#fpb-headquarters")?.remove();
+  for (const id of ["cults", "relig", "zones", "fpb-administration"])
+    cloneEl.querySelector(`#${id}`)?.replaceChildren();
 
   // reset transform values to default
   cloneEl.setAttribute("width", String(graphWidth));
@@ -110,8 +115,8 @@ function prepareMapData(): string {
   const gridGeneral = JSON.stringify({ spacing, cellsX, cellsY, boundary, points, features, cellsDesired });
   const packFeatures = JSON.stringify(pack.features);
   const cultures = JSON.stringify(pack.cultures);
-  const states = JSON.stringify(pack.states, (key, value) => key === "culture" ? undefined : value);
-  const burgs = JSON.stringify(pack.burgs, (key, value) => key === "culture" || key === "temple" ? undefined : value);
+  const states = JSON.stringify(pack.states, (key, value) => (key === "culture" ? undefined : value));
+  const burgs = JSON.stringify(pack.burgs, (key, value) => (key === "culture" || key === "temple" ? undefined : value));
   const religions = JSON.stringify(pack.religions);
   const provinces = JSON.stringify(pack.provinces);
   const rivers = JSON.stringify(pack.rivers);

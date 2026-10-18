@@ -64,6 +64,14 @@
 - **Treasury & Taxes**: States hold `state.treasury` accumulated by `States.collectTaxes()` from per-deal `deal.tax` (sales tax) plus `state.pollTax × (rural + urban)`. Rates are seeded from `state.form` and jittered per state. Neutrals collect nothing. Details in `docs/domain/taxes.md`.
 - **Invariants**: Saving a `.map` file MUST preserve the exact world state so it can be reloaded identically.
 
+# D&D Reference Sources
+
+- User-selected research index: https://dnd5e.wikidot.com/ for 2014 character creation, classes, feats, equipment, magic items and spells. Its homepage links the separate 2024 index at https://dnd2024.wikidot.com/.
+- Preserve edition and original publication provenance. Wikidot is a community reference containing setting-specific, UA and homebrew content; do not treat every listed option as official or compatible with both editions. UA/homebrew must not enter default generation without an explicit product decision and verification.
+- The bundled executable rules and full item text currently use the pinned, attributed CC BY 4.0 SRD 5.1 / 5.2.1 sources. Wiki links are external research references, not a blanket license for redistributing commercial sourcebook text.
+- See `docs/02-design/rules-reference-sources.design.md` for the research/import policy and current implementation limits. Referencing a site must not be reported as completing its full data import or a PC creation/spell engine.
+- User-defined NPC tiers override the earlier tier policy: T1=1-4, T2=5-8, T3=9-12, T4=13-16, T5=17-20, Epic=21+. Default placement remains village T1 / city T2 / nation T3 / continent T4. T5 and Epic are manual-only. Preserve saved levels when reclassifying and do not extrapolate the simplified combat profile beyond level 20. Fractional Commoner CR remains separate from character levels.
+
 # Known Sharp Edges
 
 - **Legacy Globals**: The codebase heavily relies on implicit global state (`pack` and `grid` on the `window`). Be extremely cautious when refactoring these to explicit parameters.

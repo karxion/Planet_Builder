@@ -16,7 +16,6 @@ const redraw = () => loadRenderer().then(m => m.redraw());
 const update = () => loadRenderer().then(m => m.update());
 const getCameraState = () => loadRenderer().then(m => m.getCameraState());
 const setCameraState = (state: Record<string, number>) => loadRenderer().then(m => m.setCameraState(state));
-const stop = () => loadRenderer().then(m => m.stop());
 const setSunColor = (color: string) => loadRenderer().then(m => m.setSunColor(color));
 const setScale = (scale: number) => loadRenderer().then(m => m.setScale(scale));
 const setResolutionScale = (scale: number) => loadRenderer().then(m => m.setResolutionScale(scale));
@@ -44,16 +43,31 @@ const isCached = (key?: string) => loadRenderer().then(m => m.isCached(key));
 const heightAt = (x: number, y: number, scale: number) => loadRenderer().then(m => m.heightAt(x, y, scale));
 
 // --- enter / exit ------------------------------------------------------------
-function teardown(): void {
-  window.removeEventListener("resize", resizeViewport);
-  if (!document.getElementById("canvas3d")) return;
-  void stop();
-  document.getElementById("canvas3d")?.remove();
-  if (ensureEl("options3dUpdate").offsetParent) $("#options3d").dialog("close");
-  if (ensureEl("preview3d").offsetParent) $("#preview3d").dialog("close");
+let viewGeneration = 0;
+let transitionQueue: Promise<void> = Promise.resolve();
+let tearingDown = false;
+
+function enqueueTransition(task: () => Promise<void>): Promise<void> {
+  const pending = transitionQueue.then(task);
+  transitionQueue = pending.catch(() => {});
+  return pending;
 }
 
-function enterStandard(): void {
+function teardown(): void {
+  window.removeEventListener("resize", resizeViewport);
+  if (!document.getElementById("canvas3d") && !options.threeD.isOn) return;
+  renderer?.stop();
+  document.getElementById("canvas3d")?.remove();
+  tearingDown = true;
+  try {
+    if (ensureEl("options3dUpdate").offsetParent) $("#options3d").dialog("close");
+    if (ensureEl("preview3d").offsetParent) $("#preview3d").dialog("close");
+  } finally {
+    tearingDown = false;
+  }
+}
+
+function resetViewButtons(): void {
   ensureEl("viewMode")
     .querySelectorAll(".pressed")
     .forEach(button => {
@@ -61,11 +75,33 @@ function enterStandard(): void {
     });
   ensureEl("heightmap3DView").classList.remove("pressed");
   ensureEl("viewStandard").classList.add("pressed");
-  teardown();
 }
 
-async function open(type: string): Promise<void> {
-  enterStandard(); // tears down any current 3D view and resets the buttons
+function enterStandard(): Promise<void> {
+  viewGeneration++;
+  resetViewButtons();
+  const canvas = document.getElementById("canvas3d");
+  if (canvas) canvas.style.display = "none";
+  return enqueueTransition(async () => teardown());
+}
+
+function open(type: string): Promise<void> {
+  const generation = ++viewGeneration;
+  return enqueueTransition(async () => {
+    if (generation !== viewGeneration) return;
+    teardown();
+    resetViewButtons();
+    try {
+      await openView(type, generation);
+    } catch (error) {
+      teardown();
+      if (generation === viewGeneration) resetViewButtons();
+      throw error;
+    }
+  });
+}
+
+async function openView(type: string, generation: number): Promise<void> {
   ensureEl("viewStandard").classList.remove("pressed");
   ensureEl(type).classList.add("pressed");
 
@@ -87,7 +123,11 @@ async function open(type: string): Promise<void> {
   }
 
   const started = await create(canvas, type);
-  if (!started) return;
+  if (!started || generation !== viewGeneration) {
+    renderer?.stop();
+    if (generation === viewGeneration) resetViewButtons();
+    return;
+  }
 
   canvas.style.display = "block";
   canvas.onmouseenter = () => {
@@ -104,7 +144,9 @@ async function open(type: string): Promise<void> {
       resizable: true,
       position: { my: "left bottom", at: "left+10 bottom-20", of: "svg" },
       resizeStop: resize3d,
-      close: enterStandard
+      close: () => {
+        if (!tearingDown) void enterStandard();
+      }
     });
   } else {
     document.body.insertBefore(canvas, ensureEl("optionsContainer"));

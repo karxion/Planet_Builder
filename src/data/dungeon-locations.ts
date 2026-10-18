@@ -1,5 +1,9 @@
-export function isDungeonLocation(marker: { type?: string; icon?: string }): boolean {
+import { isAdventureSite } from "./adventure-sites";
+
+export function isDungeonLocation(marker: { type?: string; icon?: string; adventure?: unknown }): boolean {
   return (
+    isAdventureSite(marker.adventure) ||
+    marker.type === "hostile-settlements" ||
     marker.type === "dungeons" ||
     marker.type === "dungeon" ||
     marker.type === "rpg-dungeon" ||

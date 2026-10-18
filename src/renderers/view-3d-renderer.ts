@@ -69,6 +69,8 @@ let labels: LabeledSprite[] = [];
 let icons: Array<THREE.Mesh<THREE.BufferGeometry, THREE.MeshPhongMaterial>> = [];
 let lines: Array<THREE.Line<THREE.BufferGeometry, THREE.LineBasicMaterial>> = [];
 let gridToPackCellMap = new Map<number, number>(); // grid cell index -> pack cell index
+let textureRequest = 0;
+let needsGlobeMesh = false;
 let erosionBakeActive = false; // dense eroded mesh is displayed
 let erosionBakeData: ErosionBake.ErosionBakeResult | null = null; // last bake, kept to re-generate the satellite texture
 let waterAnimationFrame: number | null = null; // render loop for the satellite water shimmer
@@ -132,6 +134,8 @@ function setCameraState(state: Record<string, number>): void {
 
 // try to clean the memory as much as possible
 const stop = () => {
+  textureRequest++;
+  needsGlobeMesh = false;
   if (controls) controls.dispose();
   cancelAnimationFrame(animationFrame);
   if (texture) texture.dispose();
@@ -147,12 +151,13 @@ const stop = () => {
   erosionBakeData = null;
   deleteLabels();
 
-  Renderer.renderLists.dispose();
-  Renderer.dispose();
-  scene.remove(mesh);
-  scene.remove(spotLight);
-  scene.remove(ambientLight);
-  scene.remove(waterMesh);
+  Renderer?.renderLists.dispose();
+  Renderer?.dispose();
+  if (Three && scene?.background instanceof Three.Texture) scene.background.dispose();
+  scene?.remove(mesh);
+  scene?.remove(spotLight);
+  scene?.remove(ambientLight);
+  scene?.remove(waterMesh);
 
   texture = null;
 
@@ -862,6 +867,7 @@ function extendWater(width: number, height: number) {
 }
 
 async function update3dTexture() {
+  const request = ++textureRequest;
   if (!material || !Renderer) return;
   if (options.threeD.satellite && erosionBakeData && !options.threeD.isGlobe && !options.threeD.wireframe) {
     const satelliteTexture = generateSatelliteTexture(Renderer, erosionBakeData, {
@@ -877,6 +883,10 @@ async function update3dTexture() {
 
   if (texture) texture.dispose();
   const url = await createMeshTextureUrl();
+  if (request !== textureRequest || !options.threeD.isOn) {
+    window.URL.revokeObjectURL(url);
+    return;
+  }
   window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
   texture = new Three.TextureLoader().load(url, render);
   material.map = texture;
@@ -982,6 +992,8 @@ async function MapControls(camera: THREE.Camera, domElement: HTMLElement): Promi
 }
 
 async function updateGlobeTexure(addMesh?: boolean) {
+  const request = ++textureRequest;
+  if (addMesh) needsGlobeMesh = true;
   const world = (mapCoordinates.latT ?? 0) > 179; // define if map covers whole world
 
   // texture size
@@ -1013,14 +1025,26 @@ async function updateGlobeTexure(addMesh?: boolean) {
 
   // fill canvas segment with map texture
   const img2 = new Image();
+  let url = "";
   img2.onload = () => {
+    window.URL.revokeObjectURL(url);
+    if (request !== textureRequest || !options.threeD.isOn) return;
     ctx.drawImage(img2, dx, dy, mapWidth, mapHeight);
     if (texture) texture.dispose();
     texture = new Three.CanvasTexture(ctx.canvas);
     material.map = texture;
-    if (addMesh) addGlobe3dMesh();
+    if (needsGlobeMesh) {
+      needsGlobeMesh = false;
+      addGlobe3dMesh();
+    } else render();
   };
-  img2.src = await Services.ExportMap.getMapURL("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
+  img2.onerror = () => window.URL.revokeObjectURL(url);
+  url = await Services.ExportMap.getMapURL("mesh", { noScaleBar: true, fullMap: true, noVignette: true });
+  if (request !== textureRequest || !options.threeD.isOn) {
+    window.URL.revokeObjectURL(url);
+    return;
+  }
+  img2.src = url;
 }
 
 function addGlobe3dMesh() {
@@ -1035,7 +1059,7 @@ function addGlobe3dMesh() {
 // render 3d scene and camera, do only on controls change
 const renderThrottled = throttle(doWorkOnRender, 200);
 function render() {
-  if (!Renderer || !scene || !camera) return;
+  if (!options.threeD.isOn || !Renderer || !scene || !camera) return;
   Renderer.render(scene, camera);
   renderThrottled();
 }
@@ -1226,8 +1250,8 @@ export {
   resize,
   saveOBJ,
   saveScreenshot,
-  setColors,
   setCameraState,
+  setColors,
   setErosionDetail,
   setErosionOctaves,
   setErosionRiverDepth,

@@ -1,5 +1,40 @@
+import type { RealmHeritage } from "./realm-heritage";
+
 export type AdministrationLevel = "village" | "fief" | "region" | "country";
 export type NpcTemplateId = "commoner" | "guard" | "scout" | "noble";
+export type CountryArchetype = "balanced" | "military" | "arcane" | "theocratic" | "nature" | "mercantile";
+export type NpcClassId =
+  | "none"
+  | "fighter"
+  | "paladin"
+  | "wizard"
+  | "sorcerer"
+  | "warlock"
+  | "cleric"
+  | "druid"
+  | "ranger"
+  | "rogue"
+  | "bard"
+  | "barbarian"
+  | "monk";
+export type NpcRank = "common" | "trained" | "notable" | "noble" | "elite" | "legendary";
+export type NpcScope = "settlement" | "country" | "continent";
+export type CommonerCr = "0" | "1/8" | "1/4" | "1/2";
+export type NpcTier = 1 | 2 | 3 | 4 | 5 | "epic";
+
+export interface NpcProgression {
+  level: number;
+  classId: NpcClassId;
+  rank: NpcRank;
+  scope: NpcScope;
+  archetype: CountryArchetype;
+  commonerCr?: CommonerCr;
+}
+
+export interface CountryNpcProfile {
+  stateId: number;
+  archetype: CountryArchetype;
+}
 
 export interface AdministrativeUnit {
   id: string;
@@ -24,6 +59,7 @@ export interface WorldNpc {
   secret: string;
   notes: string;
   edited: boolean;
+  progression?: NpcProgression;
 }
 
 export interface CampaignWorld {
@@ -34,6 +70,9 @@ export interface CampaignWorld {
   mapLevel?: AdministrationLevel;
   units: AdministrativeUnit[];
   npcs: WorldNpc[];
+  npcProfiles?: CountryNpcProfile[];
+  npcGenerationVersion?: 1;
+  heritage?: RealmHeritage;
 }
 
 export interface NpcStatBlock {

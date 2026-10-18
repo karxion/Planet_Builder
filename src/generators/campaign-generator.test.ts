@@ -48,10 +48,10 @@ describe("Administrative campaign", () => {
     expect(units.find(u => u.id === "village:2")?.parentId).toBe("fief:1:0");
     expect(belongsTo("village:2", "country:1", units)).toBe(true);
   });
-  it("generates four NPCs per village with persistent identities", () => {
+  it("generates four local NPCs per settlement and two national talents at the capital", () => {
     const world = createCampaign(input, "550021");
-    expect(world.npcs).toHaveLength(12);
-    expect(new Set(world.npcs.map(n => n.id)).size).toBe(12);
+    expect(world.npcs).toHaveLength(14);
+    expect(new Set(world.npcs.map(n => n.id)).size).toBe(14);
     expect(world.npcs[0].templateId).toBe("noble");
     expect(world.npcs.find(n => n.villageId === "village:2" && n.role === "항구 상인")).toBeDefined();
     expect(isCampaignWorld(world)).toBe(true);
@@ -78,6 +78,8 @@ describe("Administrative campaign", () => {
     project.campaign.mapLevel = "region";
     project.campaign.npcs[0].notes = "GM only: keep this note";
     project.campaign.npcs[0].edited = true;
+    project.campaign.npcProfiles = [{ stateId: 1, archetype: "arcane" }];
+    project.campaign.npcs.find(npc => npc.progression?.classId === "none")!.progression!.commonerCr = "1/2";
     expect((await decodePlanetProject(await encodePlanetProject(project))).campaign).toEqual(project.campaign);
   });
   it("rejects malformed NPCs, unknown rule templates and broken parents", () => {

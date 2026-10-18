@@ -29,7 +29,7 @@ function editNotes(id, name) {
 
     notesSelect.value = id;
     notesName.value = note.name;
-    notesLegend.innerHTML = note.legend;
+    notesLegend.innerHTML = sanitizeNoteHtml(note.legend);
     initEditor();
     updateNotesBox(note);
   } else {
@@ -104,13 +104,13 @@ function editNotes(id, name) {
     if (!note) return tip("Note element is not found", true, "error", 4000);
 
     const isTinyEditorActive = window.tinymce?.activeEditor;
-    note.legend = isTinyEditorActive ? tinymce.activeEditor.getContent() : notesLegend.innerHTML;
+    note.legend = sanitizeNoteHtml(isTinyEditorActive ? tinymce.activeEditor.getContent() : notesLegend.innerHTML);
     updateNotesBox(note);
   }
 
   function updateNotesBox(note) {
-    ensureEl("notesHeader").innerHTML = note.name;
-    ensureEl("notesBody").innerHTML = note.legend;
+    ensureEl("notesHeader").textContent = note.name;
+    ensureEl("notesBody").innerHTML = sanitizeNoteHtml(note.legend);
   }
 
   function changeElement() {
@@ -118,10 +118,11 @@ function editNotes(id, name) {
     if (!note) return tip("Note element is not found", true, "error", 4000);
 
     notesName.value = note.name;
-    notesLegend.innerHTML = note.legend;
+    const legend = sanitizeNoteHtml(note.legend);
+    notesLegend.innerHTML = legend;
     updateNotesBox(note);
 
-    if (window.tinymce) tinymce.activeEditor.setContent(note.legend);
+    if (window.tinymce) tinymce.activeEditor.setContent(legend);
   }
 
   function changeName() {
@@ -152,9 +153,10 @@ function editNotes(id, name) {
     if (note?.legend) prompt += ` Data: ${note.legend}`;
 
     const onApply = result => {
-      notesLegend.innerHTML = result;
+      const legend = sanitizeNoteHtml(result);
+      notesLegend.innerHTML = legend;
       if (note) {
-        note.legend = result;
+        note.legend = legend;
         updateNotesBox(note);
         if (window.tinymce) tinymce.activeEditor.setContent(note.legend);
       }

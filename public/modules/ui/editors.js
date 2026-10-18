@@ -27,7 +27,10 @@ function clicked() {
   else if (grand.id === "burgLabels" || grand.id === "burgIcons") window.Controllers.BurgEditor.open(el.dataset.id);
   else if (parent.id === "ice") editIce(el);
   else if (parent.id === "terrain") editReliefIcon();
-  else if (grand.id === "markers" || great.id === "markers") editMarker();
+  else if (el.closest("#markers")) {
+    const marker = el.closest('svg[id^="marker"]');
+    if (!window.openDungeonInterior?.(Number(marker?.id.slice(6)))) editMarker();
+  }
   else if (grand.id === "markets" && el.tagName !== "path") window.Controllers.MarketOverview.open(Number(parent.dataset.id));
   else if (grand.id === "goodsIcons" || parent.id === "goodsCells") window.Controllers.GoodsEditor.open();
   else if (grand.id === "goodsBurgs") window.Controllers.ProductionOverview.open(Number(parent.dataset.id));
