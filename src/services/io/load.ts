@@ -2,6 +2,7 @@ import { cleanDungeonInterior } from "@/data/dungeon-validation";
 import { removeLegacyDivisions } from "@/generators/administration-policy";
 import { Services } from "@/services";
 import { sanitizeImportedNotes, sanitizeMapSvg, sanitizeSvgDefinitions } from "@/services/content-sanitizer";
+import { removeDeorumFromNotes } from "@/services/external-character-policy";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
 
 async function quickLoad(): Promise<void> {
@@ -326,6 +327,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     ensureEl<HTMLInputElement>("shapeRendering").value = viewbox.attr("shape-rendering") || "geometricPrecision";
     if (data[2]) mapCoordinates = JSON.parse(data[2]);
     notes = importedNotes;
+    removeDeorumFromNotes(notes);
     if (data[33]) rulers.fromString(data[33]);
     if (data[34]) {
       const usedFonts = JSON.parse(data[34]);

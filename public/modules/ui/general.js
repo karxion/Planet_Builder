@@ -34,6 +34,7 @@ const tipBackgroundMap = {
 };
 
 function tip(tip, main = false, type = "info", time = 0) {
+  tip = window.fpbTranslateUiText ? window.fpbTranslateUiText(tip) : tip;
   tooltip.innerHTML = tip;
   tooltip.style.background = tipBackgroundMap[type];
 
@@ -108,12 +109,12 @@ function showNotes(e) {
     currentNoteId = id;
 
     document.getElementById("notes").style.display = "block";
-    document.getElementById("notesHeader").textContent = note.name;
-    document.getElementById("notesBody").innerHTML = sanitizeNoteHtml(note.legend);
+    window.renderMapNote(note);
   } else if (!options.pinNotes && !markerEditor?.offsetParent && !e.shiftKey) {
     document.getElementById("notes").style.display = "none";
     document.getElementById("notesHeader").innerHTML = "";
     document.getElementById("notesBody").innerHTML = "";
+    delete document.getElementById("notesBody").dataset.noteId;
     currentNoteId = null;
   }
 }
@@ -182,7 +183,7 @@ function showMapTooltip(point, e, i, g) {
 
   if (group === "labels") return tip("Click to edit the Label");
 
-  if (group === "markers") return tip("Click to edit the Marker. Hold Shift to not close the assosiated note");
+  if (group === "markers") return tip("Click to edit the Marker. Hold Shift to keep the associated note open");
 
   if (group === "markets") {
     const marketEl = e.target.closest("[data-id]");
@@ -596,7 +597,6 @@ function showInfo() {
   const Reddit = link("https://www.reddit.com/r/FantasyMapGenerator", "Reddit");
   const Patreon = link("https://www.patreon.com/azgaar", "Patreon");
   const Armoria = link("https://azgaar.github.io/Armoria", "Armoria");
-  const Deorum = link("https://deorum.vercel.app", "Deorum");
 
   const QuickStart = link(
     "https://github.com/Azgaar/Fantasy-Map-Generator/wiki/Quick-Start-Tutorial",
@@ -630,7 +630,6 @@ function showInfo() {
     <p>Check out our other projects:
       <ul>
         <li>${Armoria}: a tool for creating heraldic coats of arms</li>
-        <li>${Deorum}: a vast gallery of customizable fantasy characters</li>
       </ul>
     </p>
     

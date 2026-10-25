@@ -37,8 +37,15 @@ export function translateText(
       /^(.+?): (click to toggle, drag to raise or lower the layer\. Ctrl \+ click to edit layer style)$/i
     );
     const openTip = normalized.match(/^Click to open (.+)$/);
+    const editTip = normalized.match(/^(.+)\. (Click to (?:edit|view)(?: the (?:Route|Marker))?)$/);
+    const populationTip = normalized.match(/^(.+) (capital|city|town|village)\. Population: (.+)\. Click to edit$/);
+    const shortcutTip = normalized.match(/^(.+)\. Shortcut: (.+)$/);
     if (layerTip) result = `${translateText(layerTip[1], locale)}: ${translateText(layerTip[2], locale)}`;
     else if (openTip && lookup(openTip[1])) result = `${translateText(openTip[1], locale)} 열기`;
+    else if (populationTip)
+      result = `${populationTip[1]} · ${translateText(populationTip[2], locale)} · 인구: ${populationTip[3]}. 클릭하여 편집`;
+    else if (editTip) result = `${editTip[1]}. ${translateText(editTip[2], locale)}`;
+    else if (shortcutTip) result = `${translateText(shortcutTip[1], locale)}. 단축키: ${shortcutTip[2]}`;
   }
   result = result.replace(/\{(\w+)\}/g, (token, key: string) => String(values[key] ?? token));
   return source.replace(source.trim(), result);
@@ -47,6 +54,13 @@ export function translateText(
 export const t = (source: string, values?: Record<string, string | number>): string =>
   translateText(source, language, values);
 export const getUiLanguage = (): UiLanguage => language;
+
+declare global {
+  interface Window {
+    fpbTranslateUiText: typeof t;
+  }
+}
+if (typeof window !== "undefined") window.fpbTranslateUiText = t;
 
 function ignored(element: Element | null): boolean {
   return !element || Boolean(element.closest(excluded));

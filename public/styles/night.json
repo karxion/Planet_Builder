@@ -183,31 +183,33 @@
     "mask": null
   },
   "#rivers": {
-    "opacity": null,
+    "opacity": 1,
     "filter": "",
-    "fill": "#00050a"
+    "fill": "#278fc4"
   },
   "#ruler": {
     "opacity": 1,
     "filter": null
   },
   "#roads": {
-    "opacity": 0.72,
-    "stroke": "#7f96f0",
-    "stroke-width": 0.75,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt",
+    "opacity": 0.95,
+    "stroke": "#e4c9a0",
+    "stroke-width": 1.1,
+    "stroke-dasharray": "none",
+    "stroke-linecap": "round",
     "filter": "",
-    "mask": "url(#land)"
+    "mask": "url(#land)",
+    "stroke-linejoin": "round"
   },
   "#trails": {
-    "opacity": 0.62,
-    "stroke": "#7f96f0",
+    "opacity": 0.85,
+    "stroke": "#c1ad91",
     "stroke-width": 0.35,
-    "stroke-dasharray": 0,
-    "stroke-linecap": "butt",
+    "stroke-dasharray": "1 1.8",
+    "stroke-linecap": "round",
     "filter": "",
-    "mask": null
+    "mask": null,
+    "stroke-linejoin": "round"
   },
   "#searoutes": {
     "opacity": 1,
@@ -652,7 +654,7 @@
   },
   "#markets": {
     "opacity": 1,
-    "stroke-width": 1.0,
+    "stroke-width": 1,
     "fill-opacity": 0,
     "stroke-opacity": 0.8,
     "data-size": 3,

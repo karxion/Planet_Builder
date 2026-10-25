@@ -3,12 +3,10 @@ import {
   COMMONER_CR_PROFILES,
   COUNTRY_ARCHETYPES,
   NPC_CLASSES,
-  NPC_EPIC_MIN_LEVEL,
   NPC_RANKS,
-  NPC_SCOPES,
-  NPC_TIER_RANGES
+  NPC_SCOPES
 } from "@/data/npc-progression";
-import { abilityModifier, NPC_STAT_BLOCKS, SRD_ATTRIBUTION, SRD_URL } from "@/data/npc-stat-blocks";
+import { abilityModifier, NPC_STAT_BLOCKS, SRD_URL } from "@/data/npc-stat-blocks";
 import { removeLegacyDivisions } from "@/generators/administration-policy";
 import {
   type AdministrativeSnapshot,
@@ -24,9 +22,11 @@ import {
 import { koreanizeWorldNames } from "@/generators/korean-world-names";
 import { applyItemReference, chooseItemReference, designOption } from "@/generators/magic-item-generator";
 import { inferCountryArchetype, npcCombatProfile, npcCommonerProfile, npcTier } from "@/generators/npc-progression";
+import { rebalanceCampaignNpcs } from "@/generators/npc-rebalance";
 import { synchronizeHeritage } from "@/generators/realm-heritage";
 import { drawAdministration } from "@/renderers/administration-renderer";
 import { drawReligionHeadquarters } from "@/renderers/religion-headquarters";
+import { EditorDrafts } from "@/services/editor-drafts";
 import { t } from "@/services/ui-language";
 import type {
   AdministrationLevel,
@@ -41,6 +41,7 @@ import type {
 } from "@/types/campaign-world";
 import { createHeritagePanel, type HeritageView } from "./realm-heritage";
 import { createRulesReferences } from "./rules-references";
+import { mountNpcPortrait } from "./npc-portrait";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
@@ -150,6 +151,7 @@ function refresh(): void {
 }
 
 function reset(): void {
+  EditorDrafts.clear();
   campaign = undefined;
   selectedNpc = "";
   mapLevel = "country";
@@ -274,7 +276,7 @@ function init(): void {
     <button id="fpb-npc-regenerate" type="button"><span class="icon-cw" aria-hidden="true"></span>범위 내 NPC 재생성</button>
     <button id="fpb-korean-names" type="button"><span class="icon-cw" aria-hidden="true"></span>지명 한글화</button>
     <a href="legal/srd.html" target="_blank" rel="noopener">SRD 5.1 / 5.2.1 · CC BY 4.0</a></aside>
-    <main class="fpb-npc-main"><div class="fpb-npc-toolbar"><input id="fpb-npc-search" type="search" aria-label="NPC 검색" placeholder="이름 또는 역할 검색"><span id="fpb-npc-count" role="status"></span><button id="fpb-npc-export" title="NPC JSON 내보내기" aria-label="NPC JSON 내보내기" class="icon-download" type="button"></button></div>
+    <main class="fpb-npc-main"><div class="fpb-npc-toolbar"><input id="fpb-npc-search" type="search" aria-label="NPC 검색" placeholder="이름 또는 역할 검색"><span id="fpb-npc-count" role="status"></span><button id="fpb-npc-export" title="NPC 데이터 출력" aria-label="NPC 데이터 출력" class="icon-download" type="button">데이터 출력</button></div>
     <div class="fpb-npc-columns"><section class="fpb-npc-results" aria-label="NPC 목록"><div id="fpb-npc-list"></div><nav class="fpb-npc-pagination"><button id="fpb-npc-prev" type="button" class="icon-left-open" aria-label="이전 페이지" title="이전 페이지"></button><span id="fpb-npc-page"></span><button id="fpb-npc-next" type="button" class="icon-right-open" aria-label="다음 페이지" title="다음 페이지"></button></nav></section><section id="fpb-npc-detail" aria-label="NPC 상세"></section></div></main></div>`;
   document.body.append(dialog);
   const main = dialog.querySelector<HTMLElement>(".fpb-npc-main")!;
@@ -544,16 +546,23 @@ function renderNpcs(): void {
 
 function renderDetail(preview?: WorldNpc): void {
   const storedNpc = campaign?.npcs.find(n => n.id === selectedNpc);
-  const npc = preview || storedNpc;
+  const key = `npc:${selectedNpc}`;
+  const values = EditorDrafts.read(key);
+  const npc = preview || (values && storedNpc ? collectNpcDraft(storedNpc, values) : storedNpc);
   if (!npc) {
     el("fpb-npc-detail").replaceChildren();
     return;
   }
   const stats = NPC_STAT_BLOCKS[npc.templateId];
-  const combat = npcCombatProfile(npc);
-  const commoner = npcCommonerProfile(npc);
+  const validProgression = !npc.progression || isNpcProgression(npc.progression);
+  const combat = validProgression ? npcCombatProfile(npc) : undefined;
+  const commoner = validProgression ? npcCommonerProfile(npc) : undefined;
   const progression = npc.progression;
-  const epic = progression?.classId !== "none" && progression !== undefined && npcTier(progression.level) === "epic";
+  const epic =
+    validProgression &&
+    progression?.classId !== "none" &&
+    progression !== undefined &&
+    npcTier(progression.level) === "epic";
   const choices = (items: Record<string, string>, selected: string) =>
     Object.entries(items)
       .map(([id, name]) => `<option value="${id}" ${id === selected ? "selected" : ""}>${t(name)}</option>`)
@@ -575,7 +584,7 @@ function renderDetail(preview?: WorldNpc): void {
                   )
                   .join("")}</select></label>`
               : `<label>레벨<input name="level" type="number" min="1" max="${Number.MAX_SAFE_INTEGER}" step="1" value="${progression.level}" required></label>`
-          }<label>지위<select name="rank">${choices(NPC_RANKS, progression.rank)}</select></label><label>활동 범위<select name="scope">${choices(NPC_SCOPES, progression.scope)}</select></label><p>${progression.classId === "none" ? t("비모험가") : tierText(progression.level)} · ${t(COUNTRY_ARCHETYPES[progression.archetype])}</p>`
+          }<label>지위<select name="rank">${choices(NPC_RANKS, progression.rank)}</select></label><label>활동 범위<select name="scope">${choices(NPC_SCOPES, progression.scope)}</select></label><p>${!validProgression ? t("입력값 확인 필요") : progression.classId === "none" ? t("비모험가") : tierText(progression.level)} · ${t(COUNTRY_ARCHETYPES[progression.archetype])}</p>`
         : ""
     }
     ${commoner ? `<h4>${t("커머너 프로필")}</h4><div class="fpb-npc-stats"><span>CR <b>${commoner.cr}</b> · ${commoner.xp} XP</span><span>AC <b>${commoner.ac}</b></span><span>HP <b>${commoner.hp}</b></span><span>${t("명중")} +${commoner.attackBonus}</span><span>${t("근접 타격 피해")} ${commoner.damage}</span></div>${commoner.cr !== "0" ? `<p class="fpb-npc-rule">${t("앱 변형 커머너 · 지정 CR은 추정치")}</p>` : ""}` : ""}
@@ -605,8 +614,20 @@ function renderDetail(preview?: WorldNpc): void {
           `<label>${label}<textarea name="${key}" maxlength="4000" rows="2">${escapeHtml(npc[key])}</textarea></label>`
       )
       .join("")}
-    <div class="fpb-npc-edit-actions"><button type="submit" class="primary">변경 저장</button><button id="fpb-npc-delete" type="button" class="icon-trash" title="NPC 삭제" aria-label="NPC 삭제"></button><a href="${SRD_URL}#page=${stats.page}" target="_blank" rel="noopener">${t("규칙 원문 p.{page}", { page: stats.page })}</a></div></form>`;
+    <div class="fpb-npc-edit-actions"><button type="submit" class="primary">변경 적용</button><button id="fpb-npc-delete" type="button" class="icon-trash" title="NPC 삭제" aria-label="NPC 삭제"></button><a href="${SRD_URL}#page=${stats.page}" target="_blank" rel="noopener">${t("규칙 원문 p.{page}", { page: stats.page })}</a></div></form>`;
   const form = el<HTMLFormElement>("fpb-npc-form");
+  mountNpcPortrait({
+    form,
+    npc,
+    getDraft: () => collectNpcDraft(npc),
+    onChange: portrait => {
+      if (!storedNpc || !campaign?.npcs.includes(storedNpc)) return false;
+      storedNpc.portrait = npc.portrait = portrait;
+      storedNpc.edited = npc.edited = true;
+      changed();
+      return true;
+    }
+  });
   form.insertBefore(
     createRulesReferences("character", "2024", progression?.classId).element,
     form.querySelector(".fpb-npc-edit-actions")
@@ -630,37 +651,40 @@ function renderDetail(preview?: WorldNpc): void {
       draft[key] = draft[key].trim();
     draft.edited = true;
     Object.assign(storedNpc!, draft);
+    EditorDrafts.clear(key);
     changed();
     renderNpcs();
   };
   el("fpb-npc-delete").onclick = () => {
     if (!confirm(t("{name} NPC를 삭제할까요?", { name: npc.name }))) return;
     campaign!.npcs = campaign!.npcs.filter(n => n.id !== npc.id);
+    EditorDrafts.clear(key);
     changed();
     renderNpcs();
   };
+  EditorDrafts.bind(form, key, () => renderDetail(), !preview);
 }
 
-function collectNpcDraft(preview?: WorldNpc): WorldNpc | undefined {
+function collectNpcDraft(preview?: WorldNpc, values?: Record<string, string>): WorldNpc | undefined {
   const npc = preview || campaign?.npcs.find(item => item.id === selectedNpc);
   const form = el<HTMLFormElement>("fpb-npc-form");
-  if (!npc || !form) return;
-  const data = new FormData(form);
-  const draft = { ...npc, templateId: String(data.get("templateId")) as NpcTemplateId };
+  if (!npc || (!form && !values)) return;
+  const data = values ? new Map(Object.entries(values)) : new FormData(form);
+  const draft = { ...npc, templateId: String(data.get("templateId") ?? npc.templateId) as NpcTemplateId };
   if (npc.progression) {
     draft.progression = {
       ...npc.progression,
-      level: Number(data.get("level")),
-      classId: String(data.get("classId")) as NpcClassId,
-      rank: String(data.get("rank")) as NpcRank,
-      scope: String(data.get("scope")) as NpcScope
+      level: Number(data.get("level") ?? npc.progression.level),
+      classId: String(data.get("classId") ?? npc.progression.classId) as NpcClassId,
+      rank: String(data.get("rank") ?? npc.progression.rank) as NpcRank,
+      scope: String(data.get("scope") ?? npc.progression.scope) as NpcScope
     };
     if (draft.progression.classId === "none")
       draft.progression.commonerCr = String(data.get("commonerCr") || "0") as CommonerCr;
     else delete draft.progression.commonerCr;
   }
   for (const key of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const)
-    draft[key] = String(data.get(key) || "");
+    draft[key] = String(data.get(key) ?? npc[key]);
   return draft;
 }
 
@@ -683,27 +707,15 @@ function regenerate(): void {
   renderNpcs();
 }
 
-function exportNpcs(): void {
-  const payload = {
-    ruleset: "srd-5.2.1",
-    tierScheme: { id: "fpb-five-tier-v1", ranges: NPC_TIER_RANGES, epicMinLevel: NPC_EPIC_MIN_LEVEL },
-    units: campaign?.units,
-    npcs: filteredNpcs().map(npc => ({
-      ...npc,
-      narrativeTier: npc.progression && npc.progression.classId !== "none" ? npcTier(npc.progression.level) : undefined,
-      combatProfile: npcCombatProfile(npc) || npcCommonerProfile(npc),
-      statBlock: NPC_STAT_BLOCKS[npc.templateId],
-      statBlockUsage: "srd-base-reference-not-level-scaled"
-    })),
-    source: SRD_URL,
-    attribution: SRD_ATTRIBUTION
-  };
-  const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "world-npcs.json";
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 5000);
+async function exportNpcs(): Promise<void> {
+  const world = campaign;
+  if (!world) return;
+  const filtered = filteredNpcs();
+  const selected = world.npcs.filter(npc => npc.id === selectedNpc);
+  const { openWorldDataExport } = await import("./world-data-export");
+  if (campaign !== world) return;
+  openWorldDataExport({ kind: "npcs", world, all: world.npcs, filtered, selected,
+    hasDrafts: EditorDrafts.snapshot().some(draft => draft.key.startsWith("npc:")) });
 }
 
 function restore(world?: CampaignWorld): void {
@@ -712,11 +724,31 @@ function restore(world?: CampaignWorld): void {
   if (el("fpb-admin-level")) el<HTMLSelectElement>("fpb-admin-level").value = mapLevel;
   refresh();
   applyClassification();
+  if (el<HTMLDialogElement>("fpb-world-dialog")?.open) renderFilters();
 }
 
 export const Campaign = {
   init,
   restore,
+  rebalance: () => {
+    refresh();
+    if (!campaign) return;
+    if (rebalanceCampaignNpcs(campaign, snapshot(), true)) changed();
+    if (el<HTMLDialogElement>("fpb-world-dialog")?.open) renderNpcs();
+  },
+  openNpc: (id: string) => {
+    open();
+    el("fpb-tab-npcs")?.click();
+    const npc = campaign?.npcs.find(n => n.id === id);
+    if (!npc) return;
+    for (const level of levels) el<HTMLSelectElement>(`fpb-filter-${level}`).value = "";
+    el<HTMLInputElement>("fpb-npc-search").value = "";
+    renderFilters();
+    el<HTMLSelectElement>("fpb-filter-village").value = npc.villageId;
+    selectedNpc = id;
+    page = 0;
+    renderNpcs();
+  },
   get: () => {
     refresh();
     return campaign;

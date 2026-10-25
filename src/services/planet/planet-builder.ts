@@ -1,29 +1,53 @@
 import { Controllers } from "@/controllers";
 import { Campaign } from "@/controllers/campaign-world";
+import { initItemLibrary } from "@/controllers/item-library-button";
 import { initDungeonLocations } from "@/controllers/dungeon-locations";
+import { initLocalEncounters } from "@/controllers/local-encounters";
 import { initMapIconGroups } from "@/controllers/map-icon-groups";
+import { initMapTransportStyle } from "@/controllers/map-transport-style";
 import { initRpgMapAssets } from "@/controllers/rpg-map-assets";
+import { initSettlementTools } from "@/controllers/settlement-details";
 import { renderCloudProjectRow } from "@/renderers/cloud-project-row";
 import { Services } from "@/services";
+import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage, initUiLanguage, t } from "@/services/ui-language";
 import type { CloudProject, PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
 import { ensureEl } from "@/utils";
 import { ProjectConflictError, ProjectRepository } from "./bkend-repository";
+import { createDraftRecovery, readDraftRecovery } from "./draft-recovery";
 import { assertPlanetProject, ProjectCodec } from "./project-codec";
 import { ProjectSession } from "./project-session";
 import { isPlanetSettings } from "./project-validation";
+import { RecoveryRepository, type RecoverySnapshot } from "./recovery-repository";
 
 const UPSTREAM_COMMIT = "03a10502b0293b2afdb37b506f8b25178ce06c4f";
 const SETTINGS_KEY = "fpb-planet-settings";
-const AUTOSAVE_KEY = "lastPlanetProject";
 const AUTOSAVE_DELAY = 10_000;
+const DRAFT_AUTOSAVE_DELAY = 750;
+const DRAFT_MAX_DELAY = 3_000;
 const CLOUD_AUTOSAVE_DELAY = 60_000;
+const DRAFT_EDITOR_SCOPE =
+  "[data-fpb-draft], #fpb-world-dialog, #fpb-settings-panel, #fpb-recovery-dialog, [data-fpb-preference]";
 
 const isFirstRun = !localStorage.getItem(SETTINGS_KEY);
 let settings = loadSettings();
 const session = new ProjectSession();
+const recovery = new RecoveryRepository();
+let localProjectId: string = crypto.randomUUID();
+let localRevision = -1;
+let localDraftRevision = EditorDrafts.revision;
+let observedDraftRevision = EditorDrafts.revision;
+let localSnapshot: RecoverySnapshot | undefined;
+let draftSaveFailed = false;
+let draftRestoreRejected = false;
+let worldChangedDuringRestore = false;
+let cloudRevision = -1;
+let statusMessage = "로컬 프로젝트";
+let statusState = "local";
 let autosaveTimer = 0;
+let draftAutosaveTimer = 0;
+let draftMaxTimer = 0;
 let cloudAutosaveTimer = 0;
 let textureUpdateTimer = 0;
 let loadingProject = false;
@@ -34,9 +58,13 @@ async function init(): Promise<void> {
   if (document.getElementById("fpb-shell")) return;
   createShell();
   Campaign.init();
+  initItemLibrary();
+  initLocalEncounters();
+  initSettlementTools();
   initUiLanguage();
   initRpgMapAssets();
   initMapIconGroups();
+  initMapTransportStyle();
   initDungeonLocations();
   bindEvents();
   document.body.classList.add("fpb-ready");
@@ -75,6 +103,7 @@ function createShell(): void {
       <button id="fpb-settings-button" type="button" title="행성 설정"><span class="icon-cog"></span>행성 설정</button>
       <button id="fpb-save-button" type="button" title="FPB 프로젝트 저장"><span class="icon-download"></span>저장</button>
       <button id="fpb-load-button" type="button" title="FPB 또는 MAP 프로젝트 열기"><span class="icon-folder-open-empty"></span>열기</button>
+      <button id="fpb-recovery-button" type="button" title="로컬 복구 기록" aria-label="로컬 복구 기록"><span class="icon-history" aria-hidden="true"></span></button>
       <button id="fpb-cloud-button" type="button" title="개인 클라우드"><span class="icon-cloud"></span>클라우드</button>
     </div>
     <label class="fpb-language-control"><span class="icon-globe" aria-hidden="true"></span><select id="fpb-language" data-fpb-language data-fpb-preference aria-label="언어 / Language" title="언어 / Language"><option value="ko">한국어</option><option value="en">English</option></select></label>`;
@@ -116,7 +145,10 @@ function createShell(): void {
   fileInput.accept = ".fpb,.map,.gz";
   fileInput.hidden = true;
 
-  document.body.append(shell, panel, cloudDialog, fileInput);
+  const recoveryDialog = document.createElement("dialog");
+  recoveryDialog.id = "fpb-recovery-dialog";
+  recoveryDialog.innerHTML = `<header class="fpb-dialog-header"><h2>${t("로컬 복구 기록")}</h2><button id="fpb-recovery-close" class="fpb-icon-button icon-cancel" type="button" title="${t("닫기")}" aria-label="${t("닫기")}"></button></header><div id="fpb-storage-summary" role="status"></div><div id="fpb-recovery-list"></div>`;
+  document.body.append(shell, panel, cloudDialog, recoveryDialog, fileInput);
 }
 
 function bindEvents(): void {
@@ -140,6 +172,29 @@ function bindEvents(): void {
   ensureEl("fpb-screenshot-button").addEventListener("click", () => void saveGlobeScreenshot());
   ensureEl("fpb-cloud-button").addEventListener("click", () => void openCloud());
   ensureEl("fpb-cloud-close").addEventListener("click", () => ensureEl<HTMLDialogElement>("fpb-cloud-dialog").close());
+  ensureEl("fpb-recovery-button").addEventListener("click", () => void openRecovery());
+  ensureEl("fpb-recovery-close").addEventListener("click", () =>
+    ensureEl<HTMLDialogElement>("fpb-recovery-dialog").close()
+  );
+  window.addEventListener("project:drafts-changed", () => {
+    renderSaveStatus();
+    if (observedDraftRevision === EditorDrafts.revision) return;
+    observedDraftRevision = EditorDrafts.revision;
+    if (!loadingProject) scheduleDraftAutosave();
+  });
+  window.addEventListener("ui:language-changed", renderSaveStatus);
+  window.addEventListener("beforeunload", event => {
+    if (localDraftRevision === EditorDrafts.revision && localRevision === changeRevision) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (
+      document.visibilityState === "hidden" &&
+      (localRevision !== changeRevision || localDraftRevision !== EditorDrafts.revision)
+    )
+      void autosave();
+  });
 
   for (const id of ["fpb-tilt", "fpb-sea", "fpb-precip"]) {
     ensureEl<HTMLInputElement>(id).addEventListener("input", updateRangeOutputs);
@@ -164,13 +219,26 @@ function bindEvents(): void {
   document.addEventListener(
     "change",
     event => {
-      if (!(event.target as Element).closest?.("[data-fpb-preference]")) scheduleAutosave();
+      if (
+        !(event.target as Element).closest?.(
+          "[data-fpb-preference], [data-fpb-draft], #fpb-world-dialog, #fpb-cloud-dialog, #fpb-recovery-dialog"
+        )
+      )
+        scheduleAutosave();
     },
     true
   );
-  window.addEventListener("project:changed", scheduleAutosave);
+  window.addEventListener("project:changed", () => {
+    if (loadingProject) worldChangedDuringRestore = true;
+    else scheduleAutosave();
+  });
   document.addEventListener("pointerup", event => {
     if ((event.target as Element).closest?.("#map")) scheduleAutosave();
+    else if (!(event.target as Element).closest?.(DRAFT_EDITOR_SCOPE)) localSnapshot = undefined;
+  });
+  document.addEventListener("focusin", event => {
+    // Legacy editors do not all emit project changes; do not reuse a cached world across their interactions.
+    if (!(event.target as Element).closest?.(DRAFT_EDITOR_SCOPE)) localSnapshot = undefined;
   });
 }
 
@@ -216,6 +284,7 @@ function updateForm(): void {
   setValue("fpb-precip", settings.climate.precipitation);
   setValue("fpb-seed", settings.seed);
   updateRangeOutputs();
+  EditorDrafts.bind(ensureEl<HTMLFormElement>("fpb-settings-form"), "planet-settings", updateForm);
 }
 
 function collectSettings(): PlanetSettings {
@@ -240,14 +309,18 @@ function collectSettings(): PlanetSettings {
 
 async function generatePlanet(event: SubmitEvent): Promise<void> {
   event.preventDefault();
-  if (loadingProject) return;
+  if (loadingProject || customization) return;
+  if (!confirmReplace("planet-settings")) return;
+  const nextSettings = collectSettings();
   beginDocument();
-  settings = collectSettings();
+  settings = nextSettings;
+  updateForm();
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   applyPlanetSettingsToFmg(settings);
   closeSettings();
   setStatus("행성 생성 중", "saving");
-  regeneratePrompt(settings.seed ? { seed: settings.seed } : undefined);
+  // Replacement has already been confirmed; do not mutate settings before a second, cancelable prompt.
+  regenerateMap(settings.seed ? { seed: settings.seed } : undefined);
 }
 
 function applyPlanetSettingsToFmg(next: PlanetSettings): void {
@@ -322,6 +395,7 @@ async function buildProject(): Promise<PlanetProject> {
 }
 
 async function saveToMachine(): Promise<void> {
+  if (!confirmExport()) return;
   const generation = session.capture();
   const revision = changeRevision;
   try {
@@ -329,7 +403,7 @@ async function saveToMachine(): Promise<void> {
     const project = await buildProject();
     const blob = await ProjectCodec.encodePlanetProject(project);
     downloadBlob(blob, `${safeFilename(project.planet.name)}.fpb`);
-    if (session.isCurrent(generation) && revision === changeRevision) setStatus("기기에 저장됨", "saved");
+    if (session.isCurrent(generation) && revision === changeRevision) setStatus("파일 다운로드 요청됨", "local");
   } catch (error) {
     if (session.isCurrent(generation)) showError(error);
   }
@@ -339,26 +413,37 @@ async function loadFile(event: Event): Promise<void> {
   const input = event.currentTarget as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
+  if (!confirmReplace()) {
+    input.value = "";
+    return;
+  }
   const generation = session.capture();
 
   try {
     setStatus("프로젝트 여는 중", "saving");
+    const revision = changeRevision;
+    const draftRevision = EditorDrafts.revision;
     const project = file.name.toLowerCase().endsWith(".fpb")
       ? await ProjectCodec.decodePlanetProject(file)
       : await ProjectCodec.decodeLegacyMap(file, { fmgVersion: VERSION, upstreamCommit: UPSTREAM_COMMIT }, settings);
-    if (!session.isCurrent(generation)) return;
+    if (!session.isCurrent(generation) || revision !== changeRevision || draftRevision !== EditorDrafts.revision)
+      return;
     await loadProject(project);
     setStatus("프로젝트 열림", "saved");
   } catch (error) {
+    setStatus("프로젝트 열기 실패", "error");
     showError(error);
   } finally {
     input.value = "";
   }
 }
 
-async function loadProject(project: PlanetProject): Promise<void> {
+async function loadProject(project: PlanetProject, snapshot?: RecoverySnapshot): Promise<void> {
   assertPlanetProject(project);
   if (loadingProject) throw new Error("A project is already being opened");
+  const recoveredDrafts = snapshot
+    ? readDraftRecovery(snapshot.drafts, snapshot, project)
+    : { entries: [], rejected: false };
   loadingProject = true;
   beginDocument();
   const generation = session.capture();
@@ -369,11 +454,15 @@ async function loadProject(project: PlanetProject): Promise<void> {
     if (!session.isCurrent(generation)) throw new Error("Project changed during loading");
     settings = structuredClone(project.planet);
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    updateForm();
+    EditorDrafts.restore(recoveredDrafts.entries);
     Campaign.restore(project.campaign);
+    updateForm();
     await setView(project.view.mode);
     if (project.view.mode === "globe") await Controllers.View3d.setCameraState(project.view.camera);
     restored = true;
+    draftRestoreRejected = recoveredDrafts.rejected;
+    if (recoveredDrafts.rejected)
+      tip(t("일부 초안은 손상되었거나 현재 지도와 맞지 않아 복구에서 제외됐습니다."), true, "warn", 7000);
   } finally {
     loadingProject = false;
     if (restored) scheduleAutosave();
@@ -382,9 +471,36 @@ async function loadProject(project: PlanetProject): Promise<void> {
 
 function beginDocument(): void {
   session.reset();
+  EditorDrafts.clear();
+  localProjectId = crypto.randomUUID();
+  localRevision = -1;
+  localSnapshot = undefined;
+  localDraftRevision = EditorDrafts.revision;
+  observedDraftRevision = EditorDrafts.revision;
+  draftSaveFailed = false;
+  draftRestoreRejected = false;
+  worldChangedDuringRestore = false;
+  cloudRevision = -1;
   window.clearTimeout(autosaveTimer);
+  clearDraftTimers();
   window.clearTimeout(cloudAutosaveTimer);
   window.clearTimeout(textureUpdateTimer);
+}
+
+function clearDraftTimers(): void {
+  window.clearTimeout(draftAutosaveTimer);
+  window.clearTimeout(draftMaxTimer);
+  draftAutosaveTimer = draftMaxTimer = 0;
+}
+
+function scheduleDraftAutosave(): void {
+  const flush = () => {
+    clearDraftTimers();
+    void autosave();
+  };
+  window.clearTimeout(draftAutosaveTimer);
+  draftAutosaveTimer = window.setTimeout(flush, DRAFT_AUTOSAVE_DELAY);
+  if (!draftMaxTimer) draftMaxTimer = window.setTimeout(flush, DRAFT_MAX_DELAY);
 }
 
 function scheduleAutosave(): void {
@@ -411,13 +527,38 @@ function scheduleCloudSync(): void {
 async function restoreAutosave(): Promise<void> {
   const generation = session.capture();
   const revision = changeRevision;
+  const draftRevision = EditorDrafts.revision;
   try {
-    const blob = await ldb.get(AUTOSAVE_KEY);
-    if (!(blob instanceof Blob) || !blob.size) return;
-    const project = await ProjectCodec.decodePlanetProject(blob);
-    if (!session.isCurrent(generation) || revision !== changeRevision) return;
-    await loadProject(project);
-    setStatus("자동 저장 복구됨", "saved");
+    const snapshots = await recovery.list();
+    const legacy = snapshots.length ? undefined : await recovery.legacy();
+    const candidates: RecoverySnapshot[] = snapshots.length
+      ? snapshots.filter(snapshot => snapshot.projectId === snapshots[0].projectId)
+      : legacy
+        ? [
+            {
+              id: crypto.randomUUID(),
+              blob: legacy,
+              projectId: "legacy",
+              name: settings.name,
+              savedAt: new Date().toISOString()
+            }
+          ]
+        : [];
+    let lastError: unknown;
+    for (const snapshot of candidates) {
+      try {
+        const project = await ProjectCodec.decodePlanetProject(snapshot.blob);
+        if (!session.isCurrent(generation) || revision !== changeRevision || draftRevision !== EditorDrafts.revision)
+          return;
+        await loadProject(project, snapshot);
+        adoptSnapshot(snapshot, snapshots[0]?.id === snapshot.id && !draftRestoreRejected);
+        setStatus("자동 저장 복구됨", "saved");
+        return;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (lastError) throw lastError;
   } catch (error) {
     ERROR && console.error(error);
     setStatus("자동 저장 복구 실패", "error");
@@ -427,19 +568,63 @@ async function restoreAutosave(): Promise<void> {
 async function autosave(): Promise<void> {
   if (customization || loadingProject) return;
   const generation = session.capture();
-  const revision = changeRevision;
   try {
     await session.run("local", generation, async () => {
-      const blob = await ProjectCodec.encodePlanetProject(await buildProject());
+      if (
+        (localRevision === changeRevision && localDraftRevision === EditorDrafts.revision) ||
+        loadingProject ||
+        customization
+      )
+        return;
+      clearDraftTimers();
+      const revision = changeRevision;
+      const projectId = localProjectId;
+      let snapshot = localRevision === revision ? localSnapshot : undefined;
+      if (!snapshot) {
+        const project = await buildProject();
+        const blob = await ProjectCodec.encodePlanetProject(project);
+        snapshot = { id: crypto.randomUUID(), projectId, name: project.planet.name, savedAt: "", blob };
+      }
       if (!session.isCurrent(generation)) return;
-      await ldb.set(AUTOSAVE_KEY, blob);
-      if (session.isCurrent(generation) && revision === changeRevision) setStatus("자동 저장됨", "saved");
+      if (revision !== changeRevision) {
+        scheduleDraftAutosave();
+        return;
+      }
+      const draftRevision = EditorDrafts.revision;
+      const saved: RecoverySnapshot = {
+        ...snapshot,
+        ...createDraftRecovery(EditorDrafts.snapshot(), snapshot),
+        savedAt: new Date().toISOString()
+      };
+      await recovery.save(saved);
+      if (session.isCurrent(generation)) {
+        localSnapshot = saved;
+        localRevision = revision;
+        localDraftRevision = draftRevision;
+        draftSaveFailed = false;
+        if (revision === changeRevision && draftRevision === EditorDrafts.revision)
+          setStatus("로컬 복구본 저장됨", "saved");
+        else {
+          renderSaveStatus();
+          scheduleDraftAutosave();
+        }
+      }
     });
   } catch (error) {
     if (!session.isCurrent(generation)) return;
     ERROR && console.error(error);
-    setStatus("자동 저장 실패", "error");
+    draftSaveFailed = localDraftRevision !== EditorDrafts.revision;
+    setStatus(draftSaveFailed ? "초안 자동 보존 실패" : "자동 저장 실패", "error");
   }
+}
+
+function adoptSnapshot(snapshot: RecoverySnapshot, upToDate: boolean): void {
+  localProjectId = snapshot.projectId;
+  // Never mutate a historical record shared with another tab or a previous session.
+  localSnapshot = worldChangedDuringRestore ? undefined : { ...snapshot, id: crypto.randomUUID() };
+  localRevision = worldChangedDuringRestore ? -1 : changeRevision;
+  localDraftRevision = upToDate ? EditorDrafts.revision : -1;
+  if (!upToDate || worldChangedDuringRestore) scheduleDraftAutosave();
 }
 
 async function saveGlobeScreenshot(): Promise<void> {
@@ -488,6 +673,7 @@ async function authenticate(event: SubmitEvent): Promise<void> {
 }
 
 async function saveToCloud(): Promise<void> {
+  if (!confirmExport()) return;
   const generation = session.capture();
   try {
     setStatus("클라우드 저장 중", "saving");
@@ -538,6 +724,7 @@ async function persistCloud(generation: number, createCopy: boolean, status: str
     const saved = await ProjectRepository.save(project, blob, createCopy ? undefined : session.cloudProject);
     if (!session.isCurrent(generation)) return;
     session.cloudProject = saved;
+    cloudRevision = revision;
     if (revision === changeRevision) setStatus(status, "cloud");
     else scheduleCloudSync();
   });
@@ -565,15 +752,20 @@ async function handleCloudAction(button: HTMLElement, projects: CloudProject[]):
   if (!project) return;
   try {
     if (button.dataset.action === "open") {
+      if (!confirmReplace()) return;
       const generation = session.capture();
+      const revision = changeRevision;
+      const draftRevision = EditorDrafts.revision;
       const decoded = await ProjectCodec.decodePlanetProject(await ProjectRepository.load(project));
-      if (!session.isCurrent(generation)) return;
+      if (!session.isCurrent(generation) || revision !== changeRevision || draftRevision !== EditorDrafts.revision)
+        return;
       decoded.planet.name = project.name;
       const pending = loadProject(decoded);
       const openedGeneration = session.capture();
       await pending;
       if (!session.isCurrent(openedGeneration)) return;
       session.cloudProject = project;
+      cloudRevision = changeRevision;
       scheduleCloudSync();
       ensureEl<HTMLDialogElement>("fpb-cloud-dialog").close();
       setStatus("클라우드 프로젝트", "cloud");
@@ -615,6 +807,7 @@ async function handleCloudAction(button: HTMLElement, projects: CloudProject[]):
 async function signOut(): Promise<void> {
   session.reset();
   window.clearTimeout(cloudAutosaveTimer);
+  cloudRevision = -1;
   try {
     await ProjectRepository.signOut();
   } catch (error) {
@@ -632,11 +825,116 @@ function updateRangeOutputs(): void {
 }
 
 function setStatus(text: string, state: string): void {
+  statusMessage = text;
+  statusState = state;
+  renderSaveStatus();
+}
+
+function renderSaveStatus(): void {
   const status = document.getElementById("fpb-save-status");
   if (!status) return;
-  status.textContent = t(text);
-  status.title = t(text);
-  status.dataset.state = state;
+  const draftText = EditorDrafts.count
+    ? t("적용 전 초안 {count}개", { count: EditorDrafts.count })
+    : t("적용 전 초안 없음");
+  status.textContent = EditorDrafts.count
+    ? statusState === "error"
+      ? `${t(statusMessage)} · ${draftText}`
+      : draftText
+    : t(statusMessage);
+  status.title = `${draftText} · ${t(statusMessage)}`;
+  status.dataset.state = statusState === "error" ? "error" : EditorDrafts.count ? "dirty" : statusState;
+  const recoveryButton = document.getElementById("fpb-recovery-button");
+  if (recoveryButton) {
+    recoveryButton.title = `${t("로컬 복구 기록")} · ${status.title}`;
+    recoveryButton.dataset.state = status.dataset.state;
+  }
+  const summary = document.getElementById("fpb-storage-summary");
+  if (summary) {
+    summary.replaceChildren();
+    for (const text of [
+      draftText,
+      draftSaveFailed
+        ? "초안 보존 실패"
+        : localDraftRevision === EditorDrafts.revision
+          ? "초안 로컬 보존 최신"
+          : "초안 변경 보존 중",
+      localRevision === changeRevision ? "로컬 복구본 최신" : "로컬 복구본 미반영",
+      !session.cloudProject ? "클라우드 미연결" : cloudRevision === changeRevision ? "클라우드 최신" : "클라우드 미반영"
+    ]) {
+      const line = document.createElement("p");
+      line.textContent = t(text);
+      summary.append(line);
+    }
+  }
+}
+
+function confirmExport(): boolean {
+  return (
+    !EditorDrafts.count ||
+    window.confirm(t("적용 전 초안은 파일과 클라우드에 포함되지 않습니다. 확정된 프로젝트만 저장할까요?"))
+  );
+}
+
+function confirmReplace(except?: string): boolean {
+  const draftCount = EditorDrafts.count - (except && EditorDrafts.read(except) ? 1 : 0);
+  if (!draftCount && localRevision === changeRevision && localDraftRevision === EditorDrafts.revision) return true;
+  return window.confirm(
+    t("현재 프로젝트를 바꿀까요? 적용 전 초안과 로컬 복구본에 반영되지 않은 변경은 사라질 수 있습니다.")
+  );
+}
+
+async function openRecovery(): Promise<void> {
+  const dialog = ensureEl<HTMLDialogElement>("fpb-recovery-dialog");
+  dialog.showModal();
+  renderSaveStatus();
+  const list = ensureEl("fpb-recovery-list");
+  list.textContent = t("복구 기록을 불러오는 중...");
+  try {
+    const snapshots = await recovery.list();
+    list.replaceChildren();
+    if (!snapshots.length) list.textContent = t("로컬 복구 기록이 없습니다.");
+    for (const snapshot of snapshots) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "fpb-recovery-row";
+      const name = document.createElement("strong");
+      name.textContent = snapshot.name;
+      name.dataset.i18nSkip = "";
+      const time = document.createElement("small");
+      time.textContent = `${new Date(snapshot.savedAt).toLocaleString(getUiLanguage())} · ${(snapshot.blob.size / 1024 / 1024).toFixed(2)} MB`;
+      if (Array.isArray(snapshot.drafts?.entries) && snapshot.drafts.entries.length) {
+        time.textContent += ` · ${t("초안 {count}개 포함", { count: snapshot.drafts.entries.length })}`;
+      }
+      row.append(name, time);
+      row.onclick = () => void restoreSnapshot(snapshot, row);
+      list.append(row);
+    }
+  } catch (error) {
+    list.textContent = t("복구 기록을 불러오지 못했습니다.");
+    showError(error);
+  }
+}
+
+async function restoreSnapshot(snapshot: RecoverySnapshot, button: HTMLButtonElement): Promise<void> {
+  if (!confirmReplace()) return;
+  const generation = session.capture();
+  const revision = changeRevision;
+  const draftRevision = EditorDrafts.revision;
+  button.disabled = true;
+  try {
+    const project = await ProjectCodec.decodePlanetProject(snapshot.blob);
+    if (!session.isCurrent(generation) || revision !== changeRevision || draftRevision !== EditorDrafts.revision)
+      return;
+    await loadProject(project, snapshot);
+    adoptSnapshot(snapshot, false);
+    ensureEl<HTMLDialogElement>("fpb-recovery-dialog").close();
+    setStatus("로컬 복구본 열림", "saved");
+  } catch (error) {
+    setStatus("프로젝트 열기 실패", "error");
+    showError(error);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function setFmgInput(id: string, value: string | number): void {

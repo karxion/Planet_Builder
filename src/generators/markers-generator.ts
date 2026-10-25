@@ -1,10 +1,12 @@
 import { mean } from "d3";
 import { getDungeonUrl } from "@/data/dungeon-locations";
+import { createLocalEncounterNote } from "@/data/local-encounter";
+import { INSCRIPTION_DESCRIPTION } from "@/data/marker-localization";
 import { migrateMarkerIcon } from "@/data/rpg-map-assets";
 import type { AdventureSite } from "@/types/adventure-site";
 import type { DungeonInterior } from "@/types/dungeon-interior";
 import type { PackedGraph } from "@/types/PackedGraph";
-import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rand, rn, rw } from "../utils";
+import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rn, rw } from "../utils";
 import { ADMINISTRATIVE_ONLY } from "./administration-policy";
 import { populateAdventureMarkers } from "./adventure-site-markers";
 
@@ -1275,25 +1277,13 @@ class MarkersModule {
       "Effigy",
       "Idol"
     ];
-    const scripts = {
-      cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿      ",
-      geez: "ሀለሐመሠረሰቀበተኀነአከወዐዘየደገጠጰጸፀፈፐ   ",
-      coptic: "ⲲⲴⲶⲸⲺⲼⲾⳀⳁⳂⳃⳄⳆⳈⳊⳌⳎⳐⳒⳔⳖⳘⳚⳜⳞⳠⳢⳤ⳥⳧⳩⳪ⳫⳬⳭⳲ⳹⳾   ",
-      tibetan: "ༀ༁༂༃༄༅༆༇༈༉༊་༌༐༑༒༓༔༕༖༗༘༙༚༛༜༠༡༢༣༤༥༦༧༨༩༪༫༬༭༮༯༰༱༲༳༴༵༶༷༸༹༺༻༼༽༾༿",
-      mongolian: "᠀᠐᠑᠒ᠠᠡᠦᠧᠨᠩᠪᠭᠮᠯᠰᠱᠲᠳᠵᠻᠼᠽᠾᠿᡀᡁᡆᡍᡎᡏᡐᡑᡒᡓᡔᡕᡖᡗᡙᡜᡝᡞᡟᡠᡡᡭᡮᡯᡰᡱᡲᡳᡴᢀᢁᢂᢋᢏᢐᢑᢒᢓᢛᢜᢞᢟᢠᢡᢢᢤᢥᢦ"
-    };
 
     const culture = cells.culture[cell];
 
     const variant = ra(variants);
     const name = `${Names.getCulture(culture)} ${variant}`;
-    const script = scripts[ra(Object.keys(scripts)) as keyof typeof scripts] as string;
-    const inscription = Array(rand(40, 100))
-      .fill(null)
-      .map(() => ra(script.split("")))
-      .join("");
-    const legend = `An ancient ${variant.toLowerCase()}. It has an inscription, but no one can translate it:
-        <div style="font-size: 1.8em; line-break: anywhere;">${inscription}</div>`;
+    const legend = `An ancient ${variant.toLowerCase()}.
+        <p>${INSCRIPTION_DESCRIPTION}</p>`;
     notes.push({ id, name, legend });
   }
 
@@ -1656,11 +1646,8 @@ class MarkersModule {
     return cells.i.filter(i => !this.occupied[i] && cells.h[i] >= 20 && cells.pop[i] > 1);
   }
 
-  private addEncounter(id: string, cell: number) {
-    const name = "Random encounter";
-    const encounterSeed = cell; // use just cell Id to not overwhelm the Vercel KV database
-    const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
-    notes.push({ id, name, legend });
+  private addEncounter(id: string, _cell: number) {
+    notes.push(createLocalEncounterNote(id));
   }
 }
 

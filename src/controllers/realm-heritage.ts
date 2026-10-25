@@ -3,6 +3,7 @@ import { ALIGNMENTS, DEITY_RANKS, ITEM_RARITIES } from "@/data/realm-heritage";
 import { isRealmHeritage } from "@/data/realm-heritage-validation";
 import { belongsTo } from "@/generators/campaign-generator";
 import { eligibleItemReferences, referencePowerSummary } from "@/generators/magic-item-generator";
+import { EditorDrafts } from "@/services/editor-drafts";
 import { t } from "@/services/ui-language";
 import type { CampaignWorld } from "@/types/campaign-world";
 import type { ItemReferenceEdition } from "@/types/magic-item-reference";
@@ -26,7 +27,7 @@ const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
 
 export function createHeritagePanel(host: HTMLElement, context: HeritagePanelContext) {
   host.innerHTML = `<div class="fpb-npc-toolbar"><input type="search" id="fpb-heritage-search" aria-label="보물·종교 검색" placeholder="보물·종교 검색"><span id="fpb-heritage-count" role="status"></span><button type="button" id="fpb-heritage-export" class="icon-download" aria-label="세계관 JSON 내보내기" title="세계관 JSON 내보내기"></button></div>
-    <div class="fpb-heritage-options"><form id="fpb-history-form"><label>건국 경과 (년)<input id="fpb-history-age" type="number" min="0" max="10000" step="1" required disabled></label><button type="submit" class="icon-ok" title="역사 저장" aria-label="역사 저장" disabled></button></form><label class="fpb-headquarters-toggle"><input id="fpb-show-headquarters" type="checkbox">총본산 지도 표시</label></div>
+    <div class="fpb-heritage-options"><form id="fpb-history-form"><label>건국 경과 (년)<input id="fpb-history-age" name="age" type="number" min="0" max="10000" step="1" required disabled></label><button type="submit" class="icon-ok" title="역사 저장" aria-label="역사 저장" disabled></button></form><label class="fpb-headquarters-toggle"><input id="fpb-show-headquarters" type="checkbox">총본산 지도 표시</label></div>
     <div class="fpb-npc-columns"><section class="fpb-npc-results"><div id="fpb-heritage-list"></div><nav class="fpb-npc-pagination"><button id="fpb-heritage-prev" type="button" class="icon-left-open" title="이전 페이지" aria-label="이전 페이지"></button><span id="fpb-heritage-page"></span><button id="fpb-heritage-next" type="button" class="icon-right-open" title="다음 페이지" aria-label="다음 페이지"></button></nav></section><section id="fpb-heritage-detail"></section></div>`;
   const get = <T extends HTMLElement = HTMLElement>(id: string) => host.querySelector<T>(`#${id}`)!;
   let view: HeritageView = "treasures";
@@ -45,11 +46,7 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
   editionLabel.append(edition);
   host.querySelector(".fpb-heritage-options")!.append(editionLabel);
   edition.onchange = () => {
-    if (
-      !confirm(
-        t("자동 생성 보물의 참고 판본을 변경할까요? 저장한 수동 편집은 유지되며 저장하지 않은 편집은 취소됩니다.")
-      )
-    ) {
+    if (!confirm(t("자동 생성 보물의 참고 판본을 변경할까요? 적용한 수동 편집과 적용 전 초안은 유지됩니다."))) {
       edition.value = context.world()?.heritage?.itemReferenceEdition || "mixed";
       return;
     }
@@ -107,11 +104,14 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     form.append(wrapper);
   }
 
-  function readDraft(record: RealmTreasure | RealmReligion): RealmTreasure | RealmReligion {
+  function readDraft(
+    record: RealmTreasure | RealmReligion,
+    values?: Record<string, string>
+  ): RealmTreasure | RealmReligion {
     const form = host.querySelector<HTMLFormElement>("#fpb-heritage-form");
-    if (!form || form.dataset.record !== record.id) return { ...record };
+    if (!values && (!form || form.dataset.record !== record.id)) return { ...record };
     const draft = { ...record };
-    const data = new FormData(form);
+    const data = values ? new Map(Object.entries(values)) : new FormData(form!);
     for (const [key, value] of data)
       if (key in draft && typeof value === "string") Object.assign(draft, { [key]: value.trim() });
     if ("rarity" in draft && data.has("referenceId")) {
@@ -142,7 +142,9 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
       root.append(node("p", "조건에 맞는 기록이 없습니다."));
       return;
     }
-    const value = draft || record;
+    const key = `heritage:${record.id}`;
+    const values = EditorDrafts.read(key);
+    const value = draft || (values ? readDraft(record, values) : record);
     const form = node("form");
     form.id = "fpb-heritage-form";
     form.dataset.record = record.id;
@@ -197,7 +199,7 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     }
     const actions = node("div");
     actions.className = "fpb-npc-edit-actions";
-    const save = node("button", "변경 저장");
+    const save = node("button", "변경 적용");
     save.type = "submit";
     save.className = "primary";
     const focus = node("button");
@@ -232,16 +234,16 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
         return;
       }
       Object.assign(record, candidate);
+      EditorDrafts.clear(key);
       context.changed();
       render(view, scope);
-      get("fpb-heritage-detail").querySelector('[role="status"]')!.textContent = t("저장됨");
+      get("fpb-heritage-detail").querySelector('[role="status"]')!.textContent = t("프로젝트에 적용됨");
     };
     root.append(form);
+    EditorDrafts.bind(form, key, () => render(view, scope, selected), !draft);
   }
 
   function render(nextView: HeritageView, nextScope: string, selectId?: string) {
-    const old = visible.find(record => record.id === selected);
-    const draft = old && nextView === view && !selectId ? readDraft(old) : undefined;
     if (nextView !== view || nextScope !== scope) {
       page = 0;
       selected = "";
@@ -297,14 +299,22 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     age.disabled = !nation;
     get<HTMLButtonElement>("fpb-history-form").querySelector("button")!.disabled = !nation;
     age.value = nation ? String(nation.ageYears) : "";
+    const historyForm = get<HTMLFormElement>("fpb-history-form");
+    const historyKey = `history:${nation?.stateId || "none"}`;
+    historyForm.onsubmit = event => {
+      event.preventDefault();
+      const value = Number(age.value);
+      if (!nation || !historyForm.reportValidity() || !Number.isInteger(value)) return;
+      context.historyChanged(nation.stateId, value);
+      EditorDrafts.clear(historyKey);
+      render(view, scope, selected);
+    };
+    EditorDrafts.bind(historyForm, historyKey, () => render(view, scope, selected));
     show.checked = context.world()?.heritage?.showHeadquarters ?? true;
     edition.value = context.world()?.heritage?.itemReferenceEdition || "mixed";
     editionLabel.hidden = view !== "treasures";
     show.closest("label")!.hidden = view !== "religions";
-    detail(
-      shown.find(record => record.id === selected),
-      draft?.id === selected ? draft : undefined
-    );
+    detail(shown.find(record => record.id === selected));
   }
 
   search.oninput = () => {
@@ -318,15 +328,6 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
   get("fpb-heritage-next").onclick = () => {
     page++;
     render(view, scope);
-  };
-  get<HTMLFormElement>("fpb-history-form").onsubmit = event => {
-    event.preventDefault();
-    const stateId = selectedCountry();
-    const value = Number(age.value);
-    if (stateId && age.checkValidity() && Number.isInteger(value) && value >= 0 && value <= 10000) {
-      context.historyChanged(stateId, value);
-      render(view, scope);
-    }
   };
   show.onchange = () => {
     const heritage = context.world()?.heritage;

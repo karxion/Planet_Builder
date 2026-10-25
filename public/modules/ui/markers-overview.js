@@ -77,7 +77,7 @@ function overviewMarkers() {
     if (searchText) {
       markers = markers.filter(marker => {
         const type = (marker.type || "").toLowerCase();
-        return type.includes(searchText);
+        return `${type} ${window.fpbTranslateUiText(type)}`.toLowerCase().includes(searchText);
       });
     }
 

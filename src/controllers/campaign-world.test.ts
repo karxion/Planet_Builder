@@ -7,6 +7,7 @@ vi.mock("@/generators/korean-world-names", async importOriginal => ({
   koreanizeWorldNames: () => false
 }));
 vi.mock("@/renderers/administration-renderer", () => ({ drawAdministration: vi.fn() }));
+vi.mock("@/services/npc-portrait-image", () => ({ prepareNpcPortrait: vi.fn() }));
 
 describe("NPC progression controls", () => {
   let Campaign: typeof import("./campaign-world").Campaign;
@@ -44,6 +45,28 @@ describe("NPC progression controls", () => {
     control.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
+  it("persists an uploaded portrait when applying an existing text draft and restoring the world", async () => {
+    const { prepareNpcPortrait } = await import("@/services/npc-portrait-image");
+    const portrait = "data:image/jpeg;base64,/9j/2Q==";
+    vi.mocked(prepareNpcPortrait).mockResolvedValue(portrait);
+    const firstId = document.querySelector<HTMLButtonElement>("[data-npc]")!.dataset.npc!;
+    change("notes", "작업 중인 메모");
+    const input = document.querySelector<HTMLInputElement>('#fpb-npc-form [type="file"]')!;
+    Object.defineProperty(input, "files", { value: [new File(["image"], "npc.png", { type: "image/png" })] });
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(Campaign.get()!.npcs.find(npc => npc.id === firstId)!.portrait).toBe(portrait);
+    document.getElementById("fpb-npc-form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    const saved = Campaign.get()!.npcs.find(npc => npc.id === firstId)!;
+    expect(saved.notes).toBe("작업 중인 메모");
+    expect(saved.portrait).toBe(portrait);
+    expect(saved.edited).toBe(true);
+    const snapshot = structuredClone(Campaign.get()!);
+    Campaign.restore(snapshot);
+    Campaign.openNpc(firstId);
+    expect(document.querySelector<HTMLImageElement>(".fpb-npc-portrait img")!.src).toBe(portrait);
+  });
+
   it("switches between NPC, treasure and religion lists with accessible tabs", () => {
     document.getElementById("fpb-tab-treasures")!.click();
     expect(document.getElementById("fpb-npc-panel")!.hidden).toBe(true);
@@ -54,6 +77,83 @@ describe("NPC progression controls", () => {
     expect(document.querySelector('#fpb-heritage-form [name="deityRank"]')).not.toBeNull();
     document.getElementById("fpb-tab-npcs")!.click();
     expect(document.getElementById("fpb-npc-panel")!.hidden).toBe(false);
+  });
+
+  it("preserves separate NPC drafts through selection, search and tab changes without committing them", async () => {
+    const before = structuredClone(Campaign.get()!.npcs);
+    const firstId = document.querySelector<HTMLButtonElement>("[data-npc]")!.dataset.npc!;
+    change("name", "Pending NPC name");
+    change("classId", "wizard");
+    document.querySelectorAll<HTMLButtonElement>("[data-npc]")[1].click();
+    change("notes", "Second draft");
+    document.querySelector<HTMLButtonElement>(`[data-npc="${firstId}"]`)!.click();
+    document.getElementById("fpb-tab-treasures")!.click();
+    document.getElementById("fpb-tab-npcs")!.click();
+    const search = document.getElementById("fpb-npc-search") as HTMLInputElement;
+    search.dispatchEvent(new Event("input"));
+    expect(document.querySelector<HTMLInputElement>('#fpb-npc-form [name="name"]')!.value).toBe("Pending NPC name");
+    expect(document.querySelector<HTMLSelectElement>('#fpb-npc-form [name="classId"]')!.value).toBe("wizard");
+    expect(Campaign.get()!.npcs).toEqual(before);
+    const { EditorDrafts } = await import("@/services/editor-drafts");
+    expect(EditorDrafts.count).toBe(2);
+    document.getElementById("fpb-npc-form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(EditorDrafts.count).toBe(1);
+    expect(Campaign.get()!.npcs.find(npc => npc.id === firstId)!.name).toBe("Pending NPC name");
+  });
+
+  it("preserves treasure and religion drafts through tabs and explicitly discards them", async () => {
+    document.getElementById("fpb-tab-treasures")!.click();
+    const original = Campaign.get()!.heritage!.treasures[0].name;
+    const field = document.querySelector<HTMLInputElement>('#fpb-heritage-form [name="name"]')!;
+    field.value = "Pending treasure";
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("fpb-tab-religions")!.click();
+    const deity = document.querySelector<HTMLInputElement>('[name="deityName"]')!;
+    deity.value = "Pending deity";
+    deity.dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("fpb-tab-treasures")!.click();
+    expect(document.querySelector<HTMLInputElement>('#fpb-heritage-form [name="name"]')!.value).toBe(
+      "Pending treasure"
+    );
+    expect(Campaign.get()!.heritage!.treasures[0].name).toBe(original);
+    document.querySelector<HTMLButtonElement>("#fpb-heritage-form .fpb-draft-notice button")!.click();
+    expect(document.querySelector<HTMLInputElement>('#fpb-heritage-form [name="name"]')!.value).toBe(original);
+    const { EditorDrafts } = await import("@/services/editor-drafts");
+    expect(EditorDrafts.count).toBe(1);
+    document.getElementById("fpb-tab-religions")!.click();
+    expect(document.querySelector<HTMLInputElement>('[name="deityName"]')!.value).toBe("Pending deity");
+  });
+
+  it("reopens a restored empty NPC level without inventing combat values or committing it", async () => {
+    const world = structuredClone(Campaign.get()!);
+    const npc = world.npcs[0];
+    change("classId", "wizard");
+    const { EditorDrafts } = await import("@/services/editor-drafts");
+    const saved = EditorDrafts.snapshot();
+    saved[0].values.level = "";
+    EditorDrafts.restore(saved);
+    expect(() => Campaign.restore(world)).not.toThrow();
+    expect(document.querySelector<HTMLInputElement>('#fpb-npc-form [name="level"]')!.value).toBe("");
+    expect(document.getElementById("fpb-npc-detail")!.textContent).toContain("입력값 확인 필요");
+    expect(document.getElementById("fpb-npc-detail")!.textContent).not.toContain("레벨 기반 간이 프로필");
+    document.getElementById("fpb-npc-form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(Campaign.get()!.npcs.find(record => record.id === npc.id)).toEqual(npc);
+  });
+
+  it("fills missing optional draft fields from the stored NPC instead of producing invalid classes", async () => {
+    const world = structuredClone(Campaign.get()!);
+    const npc = world.npcs[0];
+    const { EditorDrafts } = await import("@/services/editor-drafts");
+    EditorDrafts.restore([
+      {
+        key: `npc:${npc.id}`,
+        baseline: { name: npc.name, templateId: npc.templateId },
+        values: { name: "Recovered name", templateId: npc.templateId }
+      }
+    ]);
+    expect(() => Campaign.restore(world)).not.toThrow();
+    expect(document.querySelector<HTMLInputElement>('#fpb-npc-form [name="name"]')!.value).toBe("Recovered name");
+    expect(document.querySelector<HTMLInputElement>('#fpb-npc-form [name="role"]')!.value).toBe(npc.role);
   });
 
   it("links the selected NPC class to the matching Wikidot reference without changing its generated profile", () => {

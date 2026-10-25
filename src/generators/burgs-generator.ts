@@ -1,4 +1,5 @@
 import { quadtree } from "d3-quadtree";
+import type { SettlementRecord } from "@/types/settlement-map";
 import { each, ensureEl, gauss, minmax, normalize, P, rn } from "../utils";
 import { isSettlementPositionOccupied, MIN_SETTLEMENT_DISTANCE } from "../utils/settlementTokens";
 import { type CultureType, DEFAULT_CULTURE_TYPE } from "./cultures-generator";
@@ -8,6 +9,7 @@ import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
 export interface Burg {
+  settlement?: SettlementRecord;
   cell: number;
   x: number;
   y: number;

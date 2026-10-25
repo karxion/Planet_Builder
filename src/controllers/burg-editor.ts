@@ -1,5 +1,6 @@
 import { drag, pointer, type Selection, select } from "d3";
 import { Controllers } from "@/controllers";
+import { mountSettlementDetails } from "@/controllers/settlement-details";
 import { t } from "@/services/ui-language";
 import type { Burg } from "../generators/burgs-generator";
 import { convertTemperature, ensureEl, getTemperatureLikeness, parseTransform, rn } from "../utils";
@@ -126,6 +127,7 @@ function updateBurgValues(): void {
   ensureEl("burgEmblem").setAttribute("href", `#${coaID}`);
 
   updateBurgPreview(b);
+  mountSettlementDetails(b);
 }
 
 function dragBurgLabel(this: SVGTextElement, event: any): void {

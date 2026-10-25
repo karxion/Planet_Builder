@@ -28,8 +28,7 @@ function editNotes(id, name) {
     }
 
     notesSelect.value = id;
-    notesName.value = note.name;
-    notesLegend.innerHTML = sanitizeNoteHtml(note.legend);
+    setNoteInputs(note);
     initEditor();
     updateNotesBox(note);
   } else {
@@ -62,6 +61,25 @@ function editNotes(id, name) {
     uploadFile(this, uploadLegends);
   });
   ensureEl("notesRemove").addEventListener("click", triggerNotesRemove);
+  window.addEventListener("ui:language-changed", () => {
+    if (!ensureEl("notesEditor").offsetParent) return;
+    const note = notes.find(note => note.id === notesSelect.value);
+    if (!note) return;
+    const current = window.tinymce?.activeEditor?.getContent() ?? notesLegend.innerHTML;
+    if (sanitizeNoteHtml(current) !== notesLegend.dataset.renderedLegend) return;
+    setNoteInputs(note);
+    if (window.tinymce?.activeEditor) {
+      tinymce.activeEditor.setContent(notesLegend.innerHTML);
+      notesLegend.dataset.renderedLegend = sanitizeNoteHtml(tinymce.activeEditor.getContent());
+    }
+  });
+
+  function setNoteInputs(note) {
+    const localized = window.localizedMapNote(note);
+    notesName.value = localized.name;
+    notesLegend.innerHTML = localized.legend;
+    notesLegend.dataset.renderedLegend = sanitizeNoteHtml(localized.legend);
+  }
 
   async function initEditor() {
     if (!window.tinymce) {
@@ -93,6 +111,7 @@ function editNotes(id, name) {
         browser_spellcheck: true,
         contextmenu: false,
         setup: editor => {
+          editor.on("init", () => { notesLegend.dataset.renderedLegend = sanitizeNoteHtml(editor.getContent()); });
           editor.on("Change", updateLegend);
         }
       });
@@ -104,25 +123,30 @@ function editNotes(id, name) {
     if (!note) return tip("Note element is not found", true, "error", 4000);
 
     const isTinyEditorActive = window.tinymce?.activeEditor;
-    note.legend = sanitizeNoteHtml(isTinyEditorActive ? tinymce.activeEditor.getContent() : notesLegend.innerHTML);
+    const legend = window.stripDeorumContent(sanitizeNoteHtml(isTinyEditorActive ? tinymce.activeEditor.getContent() : notesLegend.innerHTML));
+    if (legend !== notesLegend.dataset.renderedLegend) {
+      note.legend = legend;
+      notesLegend.dataset.renderedLegend = legend;
+    }
     updateNotesBox(note);
   }
 
   function updateNotesBox(note) {
-    ensureEl("notesHeader").textContent = note.name;
-    ensureEl("notesBody").innerHTML = sanitizeNoteHtml(note.legend);
+    window.renderMapNote(note);
   }
 
   function changeElement() {
     const note = notes.find(note => note.id === this.value);
     if (!note) return tip("Note element is not found", true, "error", 4000);
 
-    notesName.value = note.name;
-    const legend = sanitizeNoteHtml(note.legend);
-    notesLegend.innerHTML = legend;
+    setNoteInputs(note);
+    const legend = notesLegend.innerHTML;
     updateNotesBox(note);
 
-    if (window.tinymce) tinymce.activeEditor.setContent(legend);
+    if (window.tinymce?.activeEditor) {
+      tinymce.activeEditor.setContent(legend);
+      notesLegend.dataset.renderedLegend = sanitizeNoteHtml(tinymce.activeEditor.getContent());
+    }
   }
 
   function changeName() {
@@ -149,11 +173,12 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === notesSelect.value);
 
     let prompt = `Respond with description. Use simple dry language. Invent facts, names and details. Split to paragraphs and format to HTML. Remove h tags, remove markdown.`;
+    prompt += document.documentElement.lang === "en" ? " Write the description in English." : " 설명은 한국어로 작성해주세요.";
     if (note?.name) prompt += ` Name: ${note.name}.`;
     if (note?.legend) prompt += ` Data: ${note.legend}`;
 
     const onApply = result => {
-      const legend = sanitizeNoteHtml(result);
+      const legend = window.stripDeorumContent(sanitizeNoteHtml(result));
       notesLegend.innerHTML = legend;
       if (note) {
         note.legend = legend;
@@ -174,6 +199,7 @@ function editNotes(id, name) {
   function uploadLegends(dataLoaded) {
     if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
     notes = JSON.parse(dataLoaded);
+    notes.forEach(note => { note.legend = window.stripDeorumContent(note.legend); });
     notesSelect.options.length = 0;
     editNotes(notes[0].id, notes[0].name);
   }

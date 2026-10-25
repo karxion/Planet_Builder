@@ -1,0 +1,56 @@
+{
+  "before": {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "resources": 62,
+    "groupedResources": 45,
+    "terrainNearResources": 62
+  },
+  "after1440": {
+    "badgesNearResources": 0,
+    "cleared": 207,
+    "groupedResources": 0,
+    "leaders": 55,
+    "resourcePairs": 0,
+    "resources": 62,
+    "settlementsNearResources": 2,
+    "terrainNearResources": 0,
+    "unresolved": 3,
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "after1920": {
+    "badgesNearResources": 0,
+    "cleared": 135,
+    "groupedResources": 0,
+    "leaders": 58,
+    "resourcePairs": 0,
+    "resources": 62,
+    "settlementsNearResources": 0,
+    "terrainNearResources": 0,
+    "unresolved": 0,
+    "viewport": {
+      "height": 1080,
+      "width": 1920
+    }
+  },
+  "layerRestored": {
+    "badgesNearResources": 0,
+    "cleared": 135,
+    "groupedResources": 0,
+    "leaders": 58,
+    "resourcePairs": 0,
+    "resources": 62,
+    "settlementsNearResources": 0,
+    "terrainNearResources": 0,
+    "unresolved": 0,
+    "viewport": {
+      "height": 1080,
+      "width": 1920
+    }
+  }
+}

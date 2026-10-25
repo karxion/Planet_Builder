@@ -1,4 +1,5 @@
 import type { RealmHeritage } from "./realm-heritage";
+import type { ItemLibrary } from "./world-item";
 
 export type AdministrationLevel = "village" | "fief" | "region" | "country";
 export type NpcTemplateId = "commoner" | "guard" | "scout" | "noble";
@@ -60,6 +61,7 @@ export interface WorldNpc {
   notes: string;
   edited: boolean;
   progression?: NpcProgression;
+  portrait?: string;
 }
 
 export interface CampaignWorld {
@@ -73,6 +75,7 @@ export interface CampaignWorld {
   npcProfiles?: CountryNpcProfile[];
   npcGenerationVersion?: 1;
   heritage?: RealmHeritage;
+  itemLibrary?: ItemLibrary;
 }
 
 export interface NpcStatBlock {

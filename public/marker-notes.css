@@ -1,0 +1,24 @@
+body.fpb-ready #notes {
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 24px));
+  max-width: min(440px, calc(100vw - 24px));
+  top: calc(var(--fpb-header-height, 58px) + 12px);
+  right: 12px;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+  padding: 14px 16px;
+  border: 1px solid #9e895e;
+  border-radius: 4px;
+  background: #202822f5;
+  color: #f0eee5;
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-align: left;
+}
+body.fpb-ready #notesHeader { color: #e5c98c; font-size: 16px; line-height: 1.5; padding: 0 0 8px; border-color: #786a4e; }
+body.fpb-ready #notesBody { font-size: 14px; line-height: 1.65; padding: 10px 0 0; max-height: none; overflow: visible; }
+body.fpb-ready #notesBody p { margin: 8px 0; }
+body.fpb-ready #notesBody a { color: #b7d9ee; text-decoration: underline; }

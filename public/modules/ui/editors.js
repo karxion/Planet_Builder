@@ -29,6 +29,7 @@ function clicked() {
   else if (parent.id === "terrain") editReliefIcon();
   else if (el.closest("#markers")) {
     const marker = el.closest('svg[id^="marker"]');
+    if (!d3.event.shiftKey && window.openLocalEncounter?.(Number(marker?.id.slice(6)))) return;
     if (!window.openDungeonInterior?.(Number(marker?.id.slice(6)))) editMarker();
   }
   else if (grand.id === "markets" && el.tagName !== "path") window.Controllers.MarketOverview.open(Number(parent.dataset.id));

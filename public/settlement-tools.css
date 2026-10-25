@@ -1,0 +1,26 @@
+#fpb-burg-details { border-top: 1px solid #89966e; margin: 12px 0; padding-top: 10px; text-align: left; max-width: 480px; color: #e4e9dc; line-height: 1.6; letter-spacing: 0; }
+#fpb-burg-details h3, #fpb-burg-details h4 { font-size: 14px; margin: 6px 0; color: #e2c580; }
+#fpb-burg-details p { overflow-wrap: anywhere; margin: 6px 0; }
+#fpb-burg-details ul { margin: 0 0 10px; padding: 0; list-style: none; max-height: 180px; overflow-y: auto; }
+#fpb-burg-details li { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid #49554a; font-size: 12px; }
+#fpb-burg-details li button { text-align: left; color: #a9dce8; padding: 0; background: none; border: 0; text-decoration: underline; }
+#fpb-burg-details li span { overflow-wrap: anywhere; }
+body.fpb-ready #burgEditor { max-height: 78vh !important; overflow-y: auto; max-width: min(520px, 90vw); }
+#fpb-city-map-dialog { width: min(1200px, 96vw); max-width: 96vw; height: min(900px, 94vh); max-height: 94vh; padding: 0; border: 1px solid #9caa7c; border-radius: 6px; background: #202820; color: #e3eadd; box-sizing: border-box; overflow-y: auto; font: 13px/1.6 Arial, "Malgun Gothic", sans-serif; letter-spacing: 0; }
+#fpb-city-map-dialog::backdrop { background: #0b1617bb; }
+#fpb-city-map-dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #68775d; }
+#fpb-city-map-dialog h2 { font-size: 20px; margin: 0; overflow-wrap: anywhere; }
+#fpb-city-map-dialog button, #fpb-city-map-dialog select, #fpb-city-map-dialog input { color: #eef0e2; background: #303c2d; border: 1px solid #819171; border-radius: 4px; font: inherit; min-height: 32px; box-sizing: border-box; padding: 4px 8px; }
+#fpb-city-map-dialog button[aria-pressed="true"] { color: #fff4c6; background: #4a5d3d; border-color: #dfca88; }
+#fpb-city-map-dialog button:disabled, #fpb-city-map-dialog select:disabled { opacity: .45; }
+#fpb-city-map-dialog .fpb-city-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
+#fpb-city-map-dialog label { display: flex; align-items: center; gap: 6px; }
+#fpb-city-map-dialog input[type="checkbox"] { width: 16px; height: 16px; min-height: 0; accent-color: #d8c47a; }
+#fpb-city-map-dialog input:not([type="checkbox"]) { width: 190px; max-width: 45vw; }
+#fpb-city-map-dialog .fpb-city-viewport { width: 100%; aspect-ratio: 3 / 2; max-height: 64vh; background: #638267; overflow: hidden; }
+#fpb-city-map-dialog .fpb-city-viewport svg { display: block; width: 100%; height: 100%; }
+#fpb-city-map-dialog > p, #fpb-city-map-dialog > details { margin: 8px 16px; }
+#fpb-city-map-dialog textarea { width: 100%; box-sizing: border-box; resize: vertical; color: #e2e8df; background: #151f1a; border: 1px solid #64765f; margin: 8px 0; font: 12px/1.6 Arial, sans-serif; }
+#fpb-city-map-dialog a { color: #a5dfed; text-decoration: underline; margin-left: 14px; }
+#fpb-city-map-dialog :focus-visible, #fpb-burg-details :focus-visible { outline: 2px solid #ebd28b; outline-offset: 2px; }
+@media (max-width: 600px) { #fpb-city-map-dialog .fpb-city-toolbar { padding: 8px; gap: 6px; } #fpb-city-map-dialog h2 { font-size: 16px; } #fpb-burg-details li { grid-template-columns: 1fr; gap: 1px; } }

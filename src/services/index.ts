@@ -1,7 +1,9 @@
 import { createRegistry } from "@/utils/registry";
 import "./autosave";
 import "./fonts";
+import "./external-character-policy";
 import "./content-sanitizer";
+import "./marker-notes";
 import "./planet/init";
 
 export const Services = createRegistry({

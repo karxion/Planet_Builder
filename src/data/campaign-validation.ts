@@ -1,5 +1,7 @@
 import { COMMONER_CR_PROFILES, COUNTRY_ARCHETYPES, NPC_CLASSES, NPC_RANKS, NPC_SCOPES } from "@/data/npc-progression";
 import { isRealmHeritage } from "@/data/realm-heritage-validation";
+import { isNpcPortrait } from "@/data/npc-portrait";
+import { isItemLibrary } from "@/data/world-item-validation";
 import type { CampaignWorld, NpcProgression } from "@/types/campaign-world";
 
 export function isNpcProgression(value: unknown): value is NpcProgression {
@@ -23,6 +25,7 @@ export function isNpcProgression(value: unknown): value is NpcProgression {
 export function isCampaignWorld(value: unknown): value is CampaignWorld {
   if (!value || typeof value !== "object") return false;
   const world = value as CampaignWorld;
+  if (world.itemLibrary !== undefined && !isItemLibrary(world.itemLibrary)) return false;
   if (world.heritage !== undefined && !isRealmHeritage(world.heritage)) return false;
   if (world.npcGenerationVersion !== undefined && world.npcGenerationVersion !== 1) return false;
   if (world.npcProfiles !== undefined) {
@@ -94,6 +97,7 @@ export function isCampaignWorld(value: unknown): value is CampaignWorld {
     )
       return false;
     if (npc.progression !== undefined && !isNpcProgression(npc.progression)) return false;
+    if (npc.portrait !== undefined && !isNpcPortrait(npc.portrait)) return false;
     for (const field of ["name", "role", "appearance", "personality", "goal", "secret", "notes"] as const) {
       if (typeof npc[field] !== "string" || npc[field].length > 4000) return false;
     }

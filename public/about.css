@@ -1,0 +1,75 @@
+body.fpb-ready #options #aboutContent {
+  color: #e5e9df;
+  background: #202621;
+  font-family: var(--fpb-font);
+  font-size: 13px;
+  line-height: 1.7;
+  letter-spacing: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+body.fpb-ready #options #aboutContent h2 {
+  margin: 0 0 4px;
+  color: #ffffff;
+  font-size: 19px;
+  line-height: 1.4;
+}
+
+body.fpb-ready #options #aboutContent h3 {
+  margin: 0 0 8px;
+  color: #edddaf;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+body.fpb-ready #options #aboutContent p {
+  margin: 8px 0;
+  color: #e5e9df;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.7;
+  text-align: left;
+}
+
+body.fpb-ready #options #aboutContent .fpb-about-intro {
+  margin-top: 0;
+  color: #bdc9bb;
+}
+
+body.fpb-ready #options #aboutContent section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #56614e;
+}
+
+body.fpb-ready #options #aboutContent a,
+body.fpb-ready #options #aboutContent a:visited {
+  color: #91d5e8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+body.fpb-ready #options #aboutContent a:hover,
+body.fpb-ready #options #aboutContent a:focus-visible {
+  color: #ffe0a1;
+}
+
+body.fpb-ready #options #aboutContent a:focus-visible {
+  outline: 2px solid #ffe0a1;
+  outline-offset: 3px;
+}
+
+body.fpb-ready #options #aboutContent dl {
+  display: grid;
+  grid-template-columns: minmax(64px, auto) minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 12px 0 0;
+}
+
+body.fpb-ready #options #aboutContent dt { color: #bdc9bb; }
+body.fpb-ready #options #aboutContent dd { margin: 0; color: #ffffff; }
+body.fpb-ready #options #aboutContent .fpb-about-links { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+body.fpb-ready #options #aboutContent .fpb-about-email { display: inline-block; padding: 4px 0; }
+body.fpb-ready #options #aboutContent #startTourButton { margin-top: 12px; }

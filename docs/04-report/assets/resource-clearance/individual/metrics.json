@@ -1,0 +1,112 @@
+{
+  "individual1440": {
+    "badges": 0,
+    "duplicateIcons": [
+      {
+        "id": "burg122",
+        "representative": "burg436"
+      }
+    ],
+    "duplicateLabels": 1,
+    "icons": 823,
+    "markers": 0,
+    "near": 0,
+    "overlaps": 0,
+    "settlements": 823,
+    "unresolved": 0,
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "markers1440": {
+    "badges": 0,
+    "duplicateIcons": [
+      {
+        "id": "burg122",
+        "representative": "burg436"
+      }
+    ],
+    "duplicateLabels": 1,
+    "icons": 888,
+    "markers": 65,
+    "near": 0,
+    "overlaps": 0,
+    "settlements": 823,
+    "unresolved": 0,
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "markers1920": {
+    "badges": 0,
+    "duplicateIcons": [
+      {
+        "id": "burg122",
+        "representative": "burg436"
+      }
+    ],
+    "duplicateLabels": 1,
+    "icons": 888,
+    "markers": 65,
+    "near": 0,
+    "overlaps": 0,
+    "settlements": 823,
+    "unresolved": 0,
+    "viewport": {
+      "height": 1080,
+      "width": 1920
+    }
+  },
+  "resources1920": {
+    "badgesNearResources": 0,
+    "cleared": 204,
+    "groupedResources": 0,
+    "leaders": 26,
+    "resourcePairs": 0,
+    "resources": 62,
+    "settlementsNearResources": 0,
+    "terrainNearResources": 0,
+    "unresolved": 1,
+    "viewport": {
+      "height": 1080,
+      "width": 1920
+    }
+  },
+  "reloadedIndividual1440": {
+    "badges": 0,
+    "duplicateIcons": [
+      {
+        "id": "burg122",
+        "representative": "burg436"
+      }
+    ],
+    "duplicateLabels": 1,
+    "icons": 823,
+    "markers": 0,
+    "near": 0,
+    "overlaps": 0,
+    "settlements": 823,
+    "unresolved": 0,
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  },
+  "reloadedResources1440": {
+    "badgesNearResources": 0,
+    "cleared": 257,
+    "groupedResources": 0,
+    "leaders": 28,
+    "resourcePairs": 0,
+    "resources": 62,
+    "settlementsNearResources": 0,
+    "terrainNearResources": 0,
+    "unresolved": 3,
+    "viewport": {
+      "height": 900,
+      "width": 1440
+    }
+  }
+}

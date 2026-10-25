@@ -36,7 +36,9 @@ function editMarker(markerI) {
     close: closeMarkerEditor
   });
 
+  window.addEventListener("ui:language-changed", updateInputs);
   const listeners = [
+    () => window.removeEventListener("ui:language-changed", updateInputs),
     listen(markerType, "change", changeMarkerType),
     listen(markerIconSelect, "click", changeMarkerIcon),
     listen(markerIconSize, "input", changeIconSize),
@@ -97,7 +99,7 @@ function editMarker(markerI) {
   function updateInputs() {
     ensureEl("markerIcon").innerHTML = window.rpgIconPreview(marker.icon);
 
-    markerType.value = marker.type || "";
+    markerType.value = window.fpbTranslateUiText(marker.type || "");
     markerIconSize.value = marker.px ?? (marker.icon.startsWith("#rpg-") ? 26 : 12);
     markerIconShiftX.value = marker.dx || 50;
     markerIconShiftY.value = marker.dy || 50;
@@ -110,7 +112,8 @@ function editMarker(markerI) {
   }
 
   function changeMarkerType() {
-    marker.type = this.value;
+    const configured = Markers.getConfig().find(({type}) => window.fpbTranslateUiText(type) === this.value);
+    marker.type = configured?.type || this.value;
   }
 
   function changeMarkerIcon() {

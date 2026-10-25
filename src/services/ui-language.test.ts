@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NPC_STAT_BLOCKS } from "@/data/npc-stat-blocks";
 import { UI_TRANSLATIONS } from "@/data/ui-translations";
-import { translateText } from "./ui-language";
+import { translateText } from "@/services/ui-language";
 
 describe("UI language catalog", () => {
   it("translates English legacy labels and Korean app labels in both directions", () => {
@@ -50,6 +50,19 @@ describe("UI language catalog", () => {
         expect(translateText(text, "en")).not.toMatch(/[가-힣]/);
       }
     }
+  });
+
+  it("localizes map hints and dynamic population without translating proper names", () => {
+    expect(translateText("Click to edit the Marker. Hold Shift to keep the associated note open", "ko")).toContain(
+      "표식"
+    );
+    expect(translateText("리온 city. Population: 1234. Click to edit", "ko")).toBe(
+      "리온 · 도시 · 인구: 1234. 클릭하여 편집"
+    );
+    expect(translateText("에린. Click to edit the Route", "ko")).toBe("에린. 클릭하여 도로를 편집합니다");
+    expect(translateText("Layers. Shortcut: L", "ko")).toBe("레이어. 단축키: L");
+    expect(translateText("statues", "ko")).toBe("석상·비석");
+    expect(translateText("석상·비석", "en")).toBe("statues");
   });
 
   it("has no conflicting English source keys", () => {

@@ -157,7 +157,7 @@ declare global {
   var focusOn: () => void;
   var fitMapToScreen: (reset?: boolean) => void;
   var cleanupData: () => void;
-  var regenerateMap: (reason?: string) => void;
+  var regenerateMap: (config?: string | { seed?: string; graph?: unknown }) => void;
   var generateMapOnLoad: () => void;
   var addCustomColorScheme: (scheme: string) => void;
   var updateTextureSelectValue: (href: string) => void;

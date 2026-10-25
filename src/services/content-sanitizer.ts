@@ -83,4 +83,9 @@ export const sanitizeSvgDefinitions = (markup: string) => getSanitizer().sanitiz
 export const sanitizeImportedNotes = (notes: unknown) => getSanitizer().sanitizeImportedNotes(notes);
 export const sanitizeNoteHtml = (markup: string) => getSanitizer().sanitizeNoteHtml(markup);
 
+declare global {
+  interface Window {
+    sanitizeNoteHtml: typeof sanitizeNoteHtml;
+  }
+}
 window.sanitizeNoteHtml = sanitizeNoteHtml;
