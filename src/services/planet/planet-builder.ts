@@ -1,5 +1,6 @@
 import { Controllers } from "@/controllers";
 import { Campaign } from "@/controllers/campaign-world";
+import { initBorderDiplomacy } from "@/controllers/border-diplomacy";
 import { initItemLibrary } from "@/controllers/item-library-button";
 import { initDungeonLocations } from "@/controllers/dungeon-locations";
 import { initLocalEncounters } from "@/controllers/local-encounters";
@@ -65,6 +66,7 @@ async function init(): Promise<void> {
   initRpgMapAssets();
   initMapIconGroups();
   initMapTransportStyle();
+  initBorderDiplomacy();
   initDungeonLocations();
   bindEvents();
   document.body.classList.add("fpb-ready");

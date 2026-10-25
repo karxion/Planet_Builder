@@ -15,6 +15,11 @@ function editDiplomacy() {
   if (layerIsOn("toggleReligions")) toggleReligions();
 
   const relations = {
+    BloodAlly: {
+      inText: "is bound by a blood oath to",
+      color: "#ad70c9",
+      tip: "Blood allies share a sworn bond beyond an ordinary alliance"
+    },
     Ally: {
       inText: "is an ally of",
       color: "#00b300",
@@ -100,6 +105,7 @@ function editDiplomacy() {
   function refreshDiplomacyEditor() {
     diplomacyEditorAddLines();
     showStateRelations();
+    window.dispatchEvent(new Event("diplomacy:changed"));
   }
 
   // add line for each state
@@ -370,6 +376,8 @@ function editDiplomacy() {
     else if (newRelation === "Rival") chronicle.push(rival());
     else chronicle.push(change());
 
+    window.dispatchEvent(new Event("project:changed"));
+
     refreshDiplomacyEditor();
     if (diplomacyMatrix.offsetParent) {
       document.getElementById("diplomacyMatrixBody").innerHTML = "";
@@ -380,6 +388,7 @@ function editDiplomacy() {
   function regenerateRelations() {
     States.generateDiplomacy();
     refreshDiplomacyEditor();
+    window.dispatchEvent(new Event("project:changed"));
   }
 
   function resetRelations() {
@@ -395,6 +404,7 @@ function editDiplomacy() {
     });
 
     refreshDiplomacyEditor();
+    window.dispatchEvent(new Event("project:changed"));
   }
 
   function showRelationsHistory() {

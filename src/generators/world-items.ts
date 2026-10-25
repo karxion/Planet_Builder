@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { synchronizeUniqueItemBonus } from "./unique-item-bonuses";
 import {
   ALL_REFERENCE_OPTIONS,
   MAGIC_ITEM_BY_ID,
@@ -41,7 +42,7 @@ export function createWorldItem(
   const rarity = national ? (random() < 0.25 ? "legendary" : "veryRare") : "rare";
   const options = ALL_REFERENCE_OPTIONS.filter(option => option.rarity === rarity);
   const option = options[Math.floor(random() * options.length)];
-  return {
+  const item: WorldMagicItem = {
     id,
     name: `${name}의 ${TREASURE_FORMS[option.reference.category]}`.slice(0, 200),
     category: option.reference.category,
@@ -56,6 +57,8 @@ export function createWorldItem(
     ...(option.variant ? { variant: option.variant } : {}),
     edited: false
   };
+  synchronizeUniqueItemBonus(seed, item);
+  return item;
 }
 
 export function synchronizeItemLibrary(
@@ -121,6 +124,7 @@ export function synchronizeItemLibrary(
       reward: { markerId: dungeon.markerId, cell: dungeon.cell, name: dungeon.name }
     }));
   }
+  for (const item of library.items) if (synchronizeUniqueItemBonus(world.seed, item)) changed = true;
   return changed;
 }
 

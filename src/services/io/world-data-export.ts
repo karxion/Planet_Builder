@@ -5,6 +5,8 @@ import {
   referenceSourceUrl
 } from "@/data/magic-item-references";
 import { isNpcPortrait } from "@/data/npc-portrait";
+import { UNIQUE_ITEM_POLICY, UNIQUE_ITEM_LIMITS, UNIQUE_ITEM_EQUIPMENT, UNIQUE_ITEM_CONSUMABLE, uniqueItemBonusLines } from "@/data/unique-item-bonuses";
+import { createUniqueItemBonus } from "@/generators/unique-item-bonuses";
 import {
   COUNTRY_ARCHETYPES,
   NPC_CLASSES,
@@ -220,6 +222,7 @@ export function buildWorldDataExport(
       "category",
       "rarity",
       "unique",
+      "uniqueBonus",
       "ownerKind",
       "owner",
       "ownerId",
@@ -242,6 +245,7 @@ export function buildWorldDataExport(
       "아이템 유형",
       "희귀도",
       "유니크",
+      "유니크 추가 특성",
       "소유주 유형",
       "소유주",
       "소유주 ID",
@@ -262,6 +266,7 @@ export function buildWorldDataExport(
     const owners = new Map<string, { id: string; name: string; role: string; villageId: string }>();
     const records = source[scope].map(item => {
       const { notes, image, ...publicItem } = structuredClone(item);
+      const uniqueBonus = createUniqueItemBonus(source.world.seed, item);
       const reference = item.referenceId ? MAGIC_ITEM_BY_ID.get(item.referenceId) : undefined;
       const owner = item.owner;
       const target =
@@ -280,6 +285,11 @@ export function buildWorldDataExport(
         category: tr(MAGIC_ITEM_CATEGORIES[item.category]),
         rarity: tr(ITEM_RARITY_LABELS[item.rarity]),
         unique: tr(item.unique ? "예" : "아니요"),
+        uniqueBonus: uniqueBonus ? [
+          tr(UNIQUE_ITEM_POLICY), ...uniqueItemBonusLines(uniqueBonus, tr),
+          tr(item.category === "potion" || item.category === "scroll" ? UNIQUE_ITEM_CONSUMABLE : UNIQUE_ITEM_EQUIPMENT),
+          tr(UNIQUE_ITEM_LIMITS)
+        ].join("\n") : "",
         ownerKind: tr(
           owner.kind === "npc"
             ? "NPC"
@@ -318,6 +328,8 @@ export function buildWorldDataExport(
       });
       return {
         ...publicItem,
+        uniqueBonus,
+        ...(uniqueBonus ? { uniqueBonusPolicy: "fpb-homebrew-not-official-srd", uniqueBonusRules: row.uniqueBonus } : {}),
         ...(options.includePrivate ? { notes } : {}),
         ...(portrait ? { image: portrait } : {}),
         ownerName: row.owner,

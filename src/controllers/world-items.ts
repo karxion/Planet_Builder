@@ -7,6 +7,8 @@ import {
 } from "@/data/magic-item-references";
 import { isDungeonLocation } from "@/data/dungeon-locations";
 import { isWorldMagicItem } from "@/data/world-item-validation";
+import { UNIQUE_ITEM_POLICY, UNIQUE_ITEM_LIMITS, UNIQUE_ITEM_EQUIPMENT, UNIQUE_ITEM_CONSUMABLE, uniqueItemBonusLines } from "@/data/unique-item-bonuses";
+import { createUniqueItemBonus } from "@/generators/unique-item-bonuses";
 import {
   createWorldItem,
   itemImagePrompt,
@@ -70,7 +72,7 @@ function createDialog(): void {
     item.edited = true;
     world.itemLibrary!.items.push(item);
     selected = item.id;
-    page = 0;
+    page = Math.floor((world.itemLibrary!.items.length - 1) / 40);
     get<HTMLInputElement>("fpb-items-search").value = "";
     get<HTMLSelectElement>("fpb-items-rarity").value = "";
     get<HTMLSelectElement>("fpb-items-source").value = "";
@@ -251,6 +253,7 @@ function readItem(form: HTMLFormElement, item: WorldMagicItem): WorldMagicItem {
   draft.category = String(data.get("category")) as WorldMagicItem["category"];
   draft.rarity = String(data.get("rarity")) as WorldMagicItem["rarity"];
   draft.unique = data.has("unique");
+  draft.uniqueBonus = createUniqueItemBonus(world.seed, draft);
   const kind = String(data.get("ownerKind"));
   const id = String(data.get("ownerId") || "");
   if (kind === "none") draft.owner = { kind: "none" };
@@ -311,6 +314,16 @@ function renderDetail(): void {
   unique.checked = item.unique;
   uniqueLabel.prepend(unique);
   form.append(uniqueLabel);
+  if (item.uniqueBonus) {
+    const bonus = node("section");
+    bonus.id = "fpb-item-unique-bonus";
+    bonus.className = "fpb-item-unique-bonus";
+    bonus.append(node("h4", "유니크 추가 특성"), node("small", UNIQUE_ITEM_POLICY));
+    const list = node("ul");
+    for (const line of uniqueItemBonusLines(item.uniqueBonus, t)) list.append(node("li", line));
+    bonus.append(list, node("p", item.category === "potion" || item.category === "scroll" ? UNIQUE_ITEM_CONSUMABLE : UNIQUE_ITEM_EQUIPMENT), node("p", UNIQUE_ITEM_LIMITS));
+    form.append(bonus);
+  }
   field(form, "소유주 유형", "ownerKind", item.owner.kind, [
     ["none", t("소유주 없음")],
     ["npc", "NPC"],
@@ -471,7 +484,7 @@ function renderDetail(): void {
     }
     drafts.set(item.id, draft);
     status.textContent = t("적용 전 변경사항");
-    if (["ownerKind", "rarity", "category", "reference", "reward"].includes(name)) renderDetail();
+    if (["unique", "ownerKind", "rarity", "category", "reference", "reward"].includes(name)) renderDetail();
   };
   form.onsubmit = event => {
     event.preventDefault();
@@ -482,6 +495,8 @@ function renderDetail(): void {
       return;
     }
     Object.assign(stored, draft);
+    for (const key of ["referenceId", "variant", "reward", "uniqueBonus"] as const)
+      if (draft[key] === undefined) delete stored[key];
     drafts.delete(item.id);
     changed();
     renderList();

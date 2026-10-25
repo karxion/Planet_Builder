@@ -56,6 +56,7 @@ class MilitaryModule {
     const rate = {
       x: 0,
       Ally: -0.2,
+      BloodAlly: -0.2,
       Friendly: -0.1,
       Neutral: 0,
       Suspicion: 0.1,

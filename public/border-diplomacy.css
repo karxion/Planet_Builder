@@ -1,0 +1,23 @@
+.fpb-border-token { cursor: pointer; }
+.fpb-border-token image { pointer-events: none; }
+.fpb-border-token:hover > circle, .fpb-border-token:focus > circle { stroke: #fff; stroke-width: 2; fill: #fff4; }
+.fpb-border-token:focus { outline: none; }
+#fpb-border-relations-dialog { box-sizing: border-box; width: min(760px, calc(100vw - 28px)); max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid #b39c62; border-radius: 4px; padding: 20px; color: #e7e8de; background: #202822; font: 14px/1.6 "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif; }
+#fpb-border-relations-dialog::backdrop { background: #0009; }
+#fpb-border-relations-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+#fpb-border-relations-dialog h2 { margin: 0; font-size: 21px; color: #e7cd8f; }
+.fpb-border-pair { border-block: 1px solid #59634e; padding-block: 12px; overflow-wrap: anywhere; font-weight: 600; }
+#fpb-border-relations-dialog fieldset { border: 0; margin: 0; padding: 0; }
+#fpb-border-relations-dialog legend { margin-bottom: 10px; }
+.fpb-border-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.fpb-border-choices label { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 6px; border: 1px solid #52644b; border-radius: 4px; padding: 12px 8px; cursor: pointer; }
+.fpb-border-choices label:has(input:checked) { background: #3b4e38; border-color: #dfc280; }
+#fpb-border-relations-dialog input[type=radio] { display: inline-block !important; width: 16px; height: 16px; accent-color: #dfc280; margin: 0; }
+.fpb-border-choices img { width: 56px; height: 56px; justify-self: center; }
+.fpb-border-choices span { grid-column: 1 / -1; text-align: center; overflow-wrap: anywhere; }
+#fpb-border-relations-dialog button { background: #354834; color: #eee6cf; border: 1px solid #71835c; border-radius: 3px; min-height: 36px; padding: 6px 12px; font: inherit; }
+#fpb-border-relations-dialog select { display: block; width: 100%; min-height: 38px; margin-top: 5px; padding: 6px; border: 1px solid #71835c; color: #e7e8de; background: #141c16; font: inherit; }
+#fpb-border-relations-dialog .fpb-border-dependent { display: block; margin-top: 15px; }
+#fpb-border-relations-dialog [hidden] { display: none !important; }
+#fpb-border-relations-dialog :focus-visible { outline: 2px solid #dfc280; outline-offset: 3px; }
+@media(max-width:600px) { .fpb-border-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } #fpb-border-relations-dialog { padding: 14px; } }

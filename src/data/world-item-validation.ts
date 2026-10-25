@@ -1,4 +1,6 @@
 import { isNpcPortrait } from "@/data/npc-portrait";
+import { UNIQUE_ITEM_SKILLS, UNIQUE_ITEM_BUDGETS } from "@/data/unique-item-bonuses";
+import type { MagicItemRarity } from "@/types/magic-item-reference";
 import type { ItemLibrary, ItemOwner, WorldMagicItem } from "@/types/world-item";
 
 const text = (value: unknown, max = 4000): value is string => typeof value === "string" && value.length <= max;
@@ -29,6 +31,15 @@ export function isWorldMagicItem(value: unknown): value is WorldMagicItem {
   )
     return false;
   if (typeof value.unique !== "boolean" || typeof value.edited !== "boolean") return false;
+  if (value.uniqueBonus !== undefined) {
+    const bonus = value.uniqueBonus;
+    const budget = UNIQUE_ITEM_BUDGETS[value.rarity as MagicItemRarity];
+    const effect = value.category === "weapon" ? "forceDamage" : value.category === "potion" ? "healing" : "temporaryHp";
+    if (!value.unique || !record(bonus) || bonus.version !== 1 ||
+      !Object.hasOwn(UNIQUE_ITEM_SKILLS, String(bonus.skill)) ||
+      bonus.checkBonus !== budget.check || bonus.effect !== effect ||
+      bonus.magnitude !== (effect === "temporaryHp" ? budget.hp : budget.dice)) return false;
+  }
   if (![value.appearance, value.power, value.history, value.notes].every(part => text(part))) return false;
   if (value.image !== undefined && !isNpcPortrait(value.image)) return false;
   if (

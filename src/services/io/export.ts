@@ -2,6 +2,8 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { connectVertices, ensureEl, getBase64, getCoordinates, getGridPolygon, rn, unique } from "@/utils";
 import { clearMapIconGroups } from "@/renderers/map-icon-groups";
+import { inlineDiplomacyAssets } from "./diplomacy-assets";
+import { scaleBorderTokens } from "@/renderers/border-diplomacy";
 
 type MapSelection = Selection<SVGSVGElement, unknown, null, undefined>;
 
@@ -265,6 +267,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
     // reset transform to show the whole map
     clone.attr("width", graphWidth).attr("height", graphHeight);
     clone.select("#viewbox").attr("transform", null);
+    const borderView = cloneEl.querySelector<SVGGElement>("#viewbox");
+    if (borderView) scaleBorderTokens(borderView);
 
     if (!noScaleBar) {
       drawScaleBar(clone.select("#scaleBar") as unknown as Parameters<typeof drawScaleBar>[0], 1);
@@ -276,6 +280,8 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (type === "svg") removeUnusedElements(clone);
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
+  try { await inlineDiplomacyAssets(cloneEl); }
+  catch (error) { cloneEl.remove(); throw error; }
 
   // remove unused filters
   const filters = cloneEl.querySelectorAll("filter");

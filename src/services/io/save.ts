@@ -95,6 +95,7 @@ function prepareMapData(): string {
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   clearMapIconGroups(cloneEl);
+  cloneEl.querySelector("#diplomacy")?.remove();
   cloneEl.querySelector("#fpb-headquarters")?.remove();
   for (const id of ["cults", "relig", "zones", "fpb-administration"])
     cloneEl.querySelector(`#${id}`)?.replaceChildren();

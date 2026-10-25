@@ -1,5 +1,23 @@
 import type { MagicItemCategory, MagicItemRarity } from "./magic-item-reference";
 
+export type UniqueItemSkill =
+  | "athletics"
+  | "stealth"
+  | "perception"
+  | "arcana"
+  | "insight"
+  | "persuasion"
+  | "survival"
+  | "medicine";
+
+export interface UniqueItemBonus {
+  version: 1;
+  skill: UniqueItemSkill;
+  checkBonus: number;
+  effect: "forceDamage" | "temporaryHp" | "healing";
+  magnitude: number;
+}
+
 export type ItemOwner =
   | { kind: "none" }
   | { kind: "npc" | "unit"; id: string; label: string }
@@ -17,6 +35,7 @@ export interface WorldMagicItem {
   category: MagicItemCategory;
   rarity: MagicItemRarity;
   unique: boolean;
+  uniqueBonus?: UniqueItemBonus;
   appearance: string;
   power: string;
   history: string;

@@ -62,3 +62,7 @@
   .fpb-items-toolbar input { flex-basis: 100%; }
   #fpb-item-detail { flex: 1; padding: 14px; }
 }
+#fpb-item-unique-bonus { border-left: 3px solid #d6b768; padding: 10px 14px; background: #27382c; color: #f1efdf; overflow-wrap: anywhere; }
+#fpb-item-unique-bonus h4 { margin: 0 0 6px; color: #edd18c; font-size: 16px; }
+#fpb-item-unique-bonus ul { padding-left: 20px; margin: 10px 0; line-height: 1.65; }
+#fpb-item-unique-bonus p { font-size: 13px; line-height: 1.6; margin: 6px 0; }

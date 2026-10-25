@@ -35,6 +35,22 @@ function npcSource(value = world()): WorldDataExportSource {
 }
 
 describe("World data export", () => {
+  it("exports unique numerical traits and homebrew provenance in JSON, CSV and print cards", () => {
+    const value = world();
+    const item = { ...createWorldItem("export", "item:unique", "보물"), category: "weapon" as const, rarity: "legendary" as const };
+    const source: WorldDataExportSource = { kind: "items", world: value, all: [item], filtered: [item], selected: [item] };
+    const before = structuredClone(item);
+    const output = buildWorldDataExport(source, "all", options);
+    expect(output.payload).toMatchObject({ items: [{ uniqueBonus: { effect: "forceDamage", magnitude: 3 }, uniqueBonusPolicy: "fpb-homebrew-not-official-srd" }] });
+    expect(exportCsv(output)).toContain("역장 피해 3d6");
+    expect(JSON.stringify(output.cards)).toContain("GM 승인 필요");
+    expect(item).toEqual(before);
+    const english = buildWorldDataExport(source, "all", { ...options, language: "en" });
+    expect(english.rows[0].uniqueBonus).toContain("3d6 force damage");
+    expect(english.rows[0].uniqueBonus).not.toMatch(/[가-힣]/);
+    item.unique = false;
+    expect(buildWorldDataExport(source, "all", options).rows[0].uniqueBonus).toBe("");
+  });
   it("exports all filtered pages, selected or all records independently", () => {
     const value = world();
     value.npcs = Array.from({ length: 65 }, (_, i) => npc(`npc:${i}`));

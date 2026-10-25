@@ -61,6 +61,19 @@ describe("Item library editor", () => {
   }
   const submit = () =>
     document.getElementById("fpb-item-form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+  it("keeps a newly added item selected when it starts a new page", () => {
+    const first = world.itemLibrary!.items[0];
+    world.itemLibrary!.items = Array.from({ length: 40 }, (_, index) => ({ ...first, id: `item:test:${index}` }));
+    open();
+    document.getElementById("fpb-item-add")!.click();
+    const added = world.itemLibrary!.items.at(-1)!;
+    expect(document.querySelector('[aria-pressed="true"]')?.getAttribute("data-item")).toBe(added.id);
+    expect(document.getElementById("fpb-items-page")!.textContent).toBe("2 / 2");
+    change("name", "새 유니크 검");
+    submit();
+    expect(added.name).toBe("새 유니크 검");
+    expect(first.name).not.toBe("새 유니크 검");
+  });
   it("places the top-level item button immediately next to World/NPC", async () => {
     const { initItemLibrary } = await import("@/controllers/item-library-button");
     initItemLibrary();
@@ -118,6 +131,37 @@ describe("Item library editor", () => {
     submit();
     expect(document.querySelector(".fpb-item-heading img")).toBeNull();
     expect(document.querySelector(".fpb-item-heading")!.textContent).toContain("<img");
+  });
+  it("previews rarity-scaled unique traits and removes them on save when unchecked", () => {
+    const stored = world.itemLibrary!.items[0];
+    const originalPower = stored.power;
+    change("category", "weapon");
+    change("rarity", "legendary");
+    expect(document.getElementById("fpb-item-unique-bonus")!.textContent).toContain("3d6");
+    expect(stored.rarity).not.toBe("legendary");
+    submit();
+    expect(stored.uniqueBonus).toMatchObject({ checkBonus: 3, effect: "forceDamage", magnitude: 3 });
+    expect(stored.referenceId).toBeUndefined();
+    expect(stored.power).toBe(originalPower);
+    const unique = document.querySelector<HTMLInputElement>('[name="unique"]')!;
+    unique.checked = false;
+    unique.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.getElementById("fpb-item-unique-bonus")).toBeNull();
+    submit();
+    expect(stored.uniqueBonus).toBeUndefined();
+    expect(isItemLibrary(world.itemLibrary)).toBe(true);
+    open();
+    expect(stored.uniqueBonus).toBeUndefined();
+  });
+  it("persists removal of an existing dungeon reward link", () => {
+    change("reward", "7:12");
+    submit();
+    expect(world.itemLibrary!.items[0].reward).toBeDefined();
+    change("reward", "");
+    submit();
+    expect(world.itemLibrary!.items[0].reward).toBeUndefined();
+    open();
+    expect(world.itemLibrary!.items[0].reward).toBeUndefined();
   });
   it("opens output with the item filters and excludes unapplied drafts", async () => {
     const committed = world.itemLibrary!.items[0].name;
