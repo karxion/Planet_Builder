@@ -127,6 +127,7 @@ function editNotes(id, name) {
     if (legend !== notesLegend.dataset.renderedLegend) {
       note.legend = legend;
       notesLegend.dataset.renderedLegend = legend;
+      window.dispatchEvent(new Event("project:changed"));
     }
     updateNotesBox(note);
   }
@@ -153,7 +154,9 @@ function editNotes(id, name) {
     const note = notes.find(note => note.id === notesSelect.value);
     if (!note) return tip("Note element is not found", true, "error", 4000);
 
+    if (note.name === this.value) return;
     note.name = this.value;
+    window.dispatchEvent(new Event("project:changed"));
   }
 
   function validateHighlightElement() {
@@ -184,6 +187,8 @@ function editNotes(id, name) {
         note.legend = legend;
         updateNotesBox(note);
         if (window.tinymce) tinymce.activeEditor.setContent(note.legend);
+        notesLegend.dataset.renderedLegend = legend;
+        window.dispatchEvent(new Event("project:changed"));
       }
     };
 
@@ -198,15 +203,24 @@ function editNotes(id, name) {
 
   function uploadLegends(dataLoaded) {
     if (!dataLoaded) return tip("Cannot load the file. Please check the data format", false, "error");
-    notes = JSON.parse(dataLoaded);
-    notes.forEach(note => { note.legend = window.stripDeorumContent(note.legend); });
+    let imported;
+    try {
+      imported = window.sanitizeImportedNotes(JSON.parse(dataLoaded));
+      if (!imported.length) throw new Error("Empty notes import");
+      imported.forEach(note => { note.legend = window.stripDeorumContent(note.legend); });
+    } catch {
+      return tip("Cannot load the file. Please check the data format", false, "error");
+    }
+    notes = imported;
+    window.dispatchEvent(new Event("project:changed"));
     notesSelect.options.length = 0;
-    editNotes(notes[0].id, notes[0].name);
+    editNotes(notes[0]?.id, notes[0]?.name);
   }
 
   function triggerNotesRemove() {
     function removeLegend() {
       notes = notes.filter(({id}) => id !== notesSelect.value);
+      window.dispatchEvent(new Event("project:changed"));
 
       if (!notes.length) {
         $("#notesEditor").dialog("close");

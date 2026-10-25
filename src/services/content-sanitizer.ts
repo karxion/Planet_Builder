@@ -58,16 +58,19 @@ export function createContentSanitizer(host: WindowLike) {
 
   function sanitizeImportedNotes(value: unknown): ImportedNote[] {
     if (!Array.isArray(value)) throw new Error("Invalid map notes");
+    const ids = new Set<string>();
     return value.map(note => {
       if (
         !note ||
         typeof note !== "object" ||
         typeof note.id !== "string" ||
         typeof note.name !== "string" ||
-        typeof note.legend !== "string"
+        typeof note.legend !== "string" ||
+        !note.id.trim() || ids.has(note.id)
       ) {
         throw new Error("Invalid map notes");
       }
+      ids.add(note.id);
       return { id: note.id, name: note.name, legend: sanitizeNoteHtml(note.legend) };
     });
   }
@@ -86,6 +89,8 @@ export const sanitizeNoteHtml = (markup: string) => getSanitizer().sanitizeNoteH
 declare global {
   interface Window {
     sanitizeNoteHtml: typeof sanitizeNoteHtml;
+    sanitizeImportedNotes: typeof sanitizeImportedNotes;
   }
 }
 window.sanitizeNoteHtml = sanitizeNoteHtml;
+window.sanitizeImportedNotes = sanitizeImportedNotes;

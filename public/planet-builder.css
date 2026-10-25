@@ -615,7 +615,7 @@ body.fpb-ready #options button:hover { background: #43543c; border-color: #b09a6
 body.fpb-ready #toolsContent .separator { color: #d4bd82; background: transparent; border-color: #5c6049; font: 600 15px var(--fpb-display); padding: 8px 0; }
 body.fpb-ready #toolsContent > .grid { gap: 5px; }
 body.fpb-ready #toolsContent button { margin: 0; padding: 7px 4px; white-space: normal; overflow-wrap: anywhere; }
-body.fpb-ready .ui-dialog { background: #222923; color: #e2e7da; border: 1px solid #9c8557; border-radius: 4px; box-shadow: 0 16px 48px #0008; font-family: var(--fpb-font); max-width: calc(100vw - 16px); }
+body.fpb-ready .ui-dialog { z-index: 1100; background: #222923; color: #e2e7da; border: 1px solid #9c8557; border-radius: 4px; box-shadow: 0 16px 48px #0008; font-family: var(--fpb-font); max-width: calc(100vw - 16px); }
 body.fpb-ready .ui-dialog .ui-dialog-titlebar { background: #29392d; color: #e8d8ab; border: 0; border-bottom: 1px solid #85754e; padding: 10px 12px; border-radius: 0; font-family: var(--fpb-display); }
 body.fpb-ready .ui-dialog .ui-dialog-content { background: #222923; color: #e2e7da; font-family: var(--fpb-font); }
 body.fpb-ready .ui-dialog :is(input, select, textarea) { background: #151d17; color: #e2e7da; border-color: #5b6852; color-scheme: dark; }

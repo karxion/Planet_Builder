@@ -3,6 +3,7 @@ import "./autosave";
 import "./fonts";
 import "./external-character-policy";
 import "./content-sanitizer";
+import "./io/csv";
 import "./marker-notes";
 import "./planet/init";
 

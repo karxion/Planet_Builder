@@ -1,11 +1,12 @@
 import type { PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
 import { isPlanetProject } from "./project-validation";
+import { ImportSizeLimitError, MAX_IMPORT_BYTES, readBoundedStream } from "@/services/io/bounded-stream";
 
 const MIME_TYPE = "application/x-fantasy-planet-builder";
 const GZIP_MAGIC = [0x1f, 0x8b] as const;
 // Bound both stored files and expanded JSON, including gzip bombs.
-export const MAX_PROJECT_BYTES = 128 * 1024 * 1024;
+export const MAX_PROJECT_BYTES = MAX_IMPORT_BYTES;
 
 export class InvalidPlanetProjectError extends Error {
   constructor(message = "유효한 판타지 행성 프로젝트 파일이 아닙니다") {
@@ -122,25 +123,17 @@ function assertSize(size: number): void {
 }
 
 async function readContent(stream: ReadableStream<Uint8Array>): Promise<string> {
-  const reader = stream.getReader();
   const decoder = new TextDecoder("utf-8", { fatal: true });
   const chunks: string[] = [];
-  let size = 0;
   try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      assertSize(size);
+    await readBoundedStream(stream, value => {
       chunks.push(decoder.decode(value, { stream: true }));
-    }
+    });
     chunks.push(decoder.decode());
     return chunks.join("");
   } catch (error) {
-    await reader.cancel().catch(() => {});
+    if (error instanceof ImportSizeLimitError) assertSize(MAX_PROJECT_BYTES + 1);
     throw error;
-  } finally {
-    reader.releaseLock();
   }
 }
 

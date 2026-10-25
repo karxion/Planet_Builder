@@ -38,4 +38,25 @@ describe("promise-based map loading", () => {
     vi.spyOn(file, "arrayBuffer").mockRejectedValue(new Error("read failed"));
     await expect(Load.loadMap(file)).rejects.toThrow("read failed");
   });
+  it("rejects oversized files before allocating their contents", async () => {
+    const { Load } = await import("./load");
+    const file = new Blob(["small"]);
+    Object.defineProperty(file, "size", { value: 128 * 1024 * 1024 + 1 });
+    const read = vi.spyOn(file, "arrayBuffer");
+    await expect(Load.loadMap(file)).rejects.toThrow("128 MiB");
+    expect(read).not.toHaveBeenCalled();
+  });
+  it("rejects a gzip stream that expands beyond the import budget", async () => {
+    const { MAX_IMPORT_BYTES } = await import("./bounded-stream");
+    const cancel = vi.fn();
+    const chunk = new Uint8Array(1);
+    Object.defineProperty(chunk, "byteLength", { value: MAX_IMPORT_BYTES + 1 });
+    vi.stubGlobal("DecompressionStream", class {
+      readable = new ReadableStream({ start(controller) { controller.enqueue(chunk); }, cancel });
+      writable = new WritableStream();
+    });
+    const { Load } = await import("./load");
+    await expect(Load.loadMap(new Blob([new Uint8Array([0x1f, 0x8b, 0])]))).rejects.toThrow("Invalid map file");
+    expect(cancel).toHaveBeenCalledOnce();
+  });
 });

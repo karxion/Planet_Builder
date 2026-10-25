@@ -136,6 +136,11 @@ describe("map notes", () => {
   it("isolates note IDs that could clobber application properties", () => {
     expect(sanitizer.sanitizeNoteHtml('<p id="fpb-shell">본문</p>')).toContain('id="user-content-fpb-shell"');
   });
+  it("rejects blank and duplicate note IDs before replacing existing notes", () => {
+    const note = { id: "marker1", name: "기록", legend: "본문" };
+    expect(() => sanitizer.sanitizeImportedNotes([note, note])).toThrow("Invalid map notes");
+    expect(() => sanitizer.sanitizeImportedNotes([{ ...note, id: " " }])).toThrow("Invalid map notes");
+  });
 });
 
 it("fails closed when DOM sanitization is unavailable", () => {

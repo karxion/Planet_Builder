@@ -1,0 +1,16 @@
+{
+  "jquery": {
+    "version": "3.7.1",
+    "file": "jquery-3.7.1.min.js",
+    "source": "https://code.jquery.com/jquery-3.7.1.min.js",
+    "sha256": "fc9a93dd241f6b045cbff0481cf4e1901becd0e12fb45166a8f17f95823f0b1a",
+    "license": "MIT"
+  },
+  "jquery-ui": {
+    "version": "1.13.3",
+    "file": "jquery-ui-1.13.3.min.js",
+    "source": "https://code.jquery.com/ui/1.13.3/jquery-ui.min.js",
+    "sha256": "b30d2234d5e63896d085816e0bd385da43a50f929029ed72e657c19f80bd4a38",
+    "license": "MIT"
+  }
+}

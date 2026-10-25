@@ -20,6 +20,7 @@ import { npcCombatProfile, npcCommonerProfile, npcTier } from "@/generators/npc-
 import { ITEM_RARITY_LABELS } from "@/generators/world-items";
 import { translateText } from "@/services/ui-language";
 import type { AdministrativeUnit } from "@/types/campaign-world";
+import { encodeCsvRows } from "./csv";
 import type {
   DataExportOptions,
   DataExportScope,
@@ -350,18 +351,10 @@ export function buildWorldDataExport(
 }
 
 export function exportCsv(document: WorldDataExport): string {
-  const cell = (value: string) => {
-    // Quoting alone does not prevent spreadsheet formula execution.
-    const safe = /^[\s\u0000-\u001f]*[=+@-]/.test(value) || /^[\t\r\n]/.test(value) ? `'${value}` : value;
-    return `"${safe.replaceAll('"', '""')}"`;
-  };
-  return (
-    "\uFEFF" +
-    [
-      document.columns.map(([, label]) => cell(label)).join(","),
-      ...document.rows.map(row => document.columns.map(([key]) => cell(row[key] || "")).join(","))
-    ].join("\r\n")
-  );
+  return encodeCsvRows([
+    document.columns.map(([, label]) => label),
+    ...document.rows.map(row => document.columns.map(([key]) => row[key] || ""))
+  ]);
 }
 
 export function exportFilename(kind: "npcs" | "items", scope: DataExportScope, format: "json" | "csv"): string {

@@ -1,4 +1,5 @@
 import type { CloudProject, PlanetProject } from "@/types/planet-project";
+import { readBoundedResponse } from "@/services/io/bounded-stream";
 
 type AuthSession = { accessToken: string; refreshToken?: string; email?: string };
 type JsonRecord = Record<string, unknown>;
@@ -286,7 +287,7 @@ async function load(project: CloudProject): Promise<Blob> {
   if (!url) throw new Error("다운로드 URL을 만들지 못했습니다");
   const response = await fetch(url);
   if (!response.ok) throw new Error("클라우드 프로젝트를 내려받지 못했습니다");
-  return response.blob();
+  return readBoundedResponse(response);
 }
 
 async function rename(project: CloudProject, name: string): Promise<CloudProject> {

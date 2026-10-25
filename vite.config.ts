@@ -5,6 +5,7 @@ export default {
     base: process.env.DEPLOY_BASE_PATH ?? (process.env.NETLIFY ? '/' : '/Fantasy-Planet-Builder/'),
     build: {
         outDir: '../dist',
+        emptyOutDir: true,
         assetsDir: './',
     },
     publicDir: '../public',

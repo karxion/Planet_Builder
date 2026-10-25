@@ -1,5 +1,8 @@
 "use strict";
 function editDiplomacy() {
+  const escape = value => String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
   if (customization) return;
   if (pack.states.filter(s => s.i && !s.removed).length < 2)
     return tip("There should be at least 2 states to edit the diplomacy", false, "error");
@@ -116,14 +119,15 @@ function editDiplomacy() {
     const selectedName = states[selectedId].name;
 
     COArenderer.trigger("stateCOA" + selectedId, states[selectedId].coa);
-    let lines = /* html */ `<div class="states Self" data-id=${selectedId} data-tip="List below shows relations to ${selectedName}">
-      <div style="width: max-content">${states[selectedId].fullName}</div>
+    let lines = /* html */ `<div class="states Self" data-id="${escape(selectedId)}" data-tip="List below shows relations to ${escape(selectedName)}">
+      <div style="width: max-content">${escape(states[selectedId].fullName)}</div>
       <svg class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${selectedId}"></use></svg>
     </div>`;
 
     for (const state of states) {
       if (!state.i || state.removed || state.i === selectedId) continue;
-      const relation = state.diplomacy[selectedId];
+      const rawRelation = state.diplomacy?.[selectedId];
+      const relation = Object.hasOwn(relations, rawRelation) ? rawRelation : "Unknown";
       const {color, inText} = relations[relation];
 
       const tip = `${state.name} ${inText} ${selectedName}`;
@@ -133,10 +137,10 @@ function editDiplomacy() {
       const name = state.fullName.length < 23 ? state.fullName : state.name;
       COArenderer.trigger("stateCOA" + state.i, state.coa);
 
-      lines += /* html */ `<div class="states" data-id=${state.i} data-name="${name}" data-relations="${relation}">
-        <svg data-tip="${tipSelect}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${state.i}"></use></svg>
-        <div data-tip="${tipSelect}" style="width: 12em">${name}</div>
-        <div data-tip="${tipChange}" class="changeRelations" style="width: 6em">
+      lines += /* html */ `<div class="states" data-id="${escape(state.i)}" data-name="${escape(name)}" data-relations="${relation}">
+        <svg data-tip="${escape(tipSelect)}" class="coaIcon" viewBox="0 0 200 200"><use href="#stateCOA${escape(state.i)}"></use></svg>
+        <div data-tip="${escape(tipSelect)}" style="width: 12em">${escape(name)}</div>
+        <div data-tip="${escape(tipChange)}" class="changeRelations" style="width: 6em">
           <fill-box fill="${color}" size=".9em"></fill-box>
           ${relation}
         </div>
@@ -240,14 +244,14 @@ function editDiplomacy() {
       .filter(s => s.i && !s.removed && s.i !== subjectId)
       .map(
         s => /* html */ `
-          <div data-tip="${s.fullName}">
+          <div data-tip="${escape(s.fullName)}">
             <input id="selectState${s.i}" class="checkbox" type="checkbox" name="objectSelect" value="${s.i}"
             ${s.i === objectId && "checked"} />
             <label for="selectState${s.i}" class="checkbox-label">
               <svg class="coaIcon" viewBox="0 0 200 200">
                 <use href="#stateCOA${s.i}"></use>
               </svg>
-              ${s.fullName}
+              ${escape(s.fullName)}
             </label>
           </div>
         `
@@ -260,7 +264,7 @@ function editDiplomacy() {
           <svg class="coaIcon" viewBox="0 0 200 200">
             <use href="#stateCOA${subject.i}"></use>
           </svg>
-          <b>${subject.fullName}</b>
+          <b>${escape(subject.fullName)}</b>
         </header>
 
         <main style='display: flex; gap: 1em;'>
@@ -327,7 +331,7 @@ function editDiplomacy() {
   }
 
   function changeRelation(subjectId, objectId, oldRelation, newRelation) {
-    if (newRelation === oldRelation) return;
+    if (!Object.hasOwn(relations, newRelation) || newRelation === oldRelation) return;
     const states = pack.states;
     const chronicle = states[0].diplomacy;
 
@@ -413,9 +417,9 @@ function editDiplomacy() {
     let message = /* html */ `<div autocorrect="off" spellcheck="false">`;
     chronicle.forEach((entry, index) => {
       message += `<div>`;
-      entry.forEach((l, entryIndex) => {
+      (Array.isArray(entry) ? entry : [entry]).forEach((l, entryIndex) => {
         message += /* html */ `<div contenteditable="true" data-id="${index}-${entryIndex}"
-          ${entryIndex ? "" : "style='font-weight:bold'"}>${l}</div>`;
+          ${entryIndex ? "" : "style='font-weight:bold'"}>${escape(l)}</div>`;
       });
       message += `&#8205;</div>`;
     });
@@ -443,6 +447,7 @@ function editDiplomacy() {
         },
         Clear: function () {
           pack.states[0].diplomacy = [];
+          window.dispatchEvent(new Event("project:changed"));
           $(this).dialog("close");
         },
         Close: function () {
@@ -455,10 +460,11 @@ function editDiplomacy() {
   function changeReliationsHistory() {
     const i = this.dataset.id.split("-");
     const group = pack.states[0].diplomacy[i[0]];
-    if (this.innerHTML === "") {
+    if (this.textContent === "") {
       group.splice(i[1], 1);
       this.remove();
-    } else group[i[1]] = this.innerHTML;
+    } else group[i[1]] = this.textContent;
+    window.dispatchEvent(new Event("project:changed"));
   }
 
   function showRelationsMatrix() {
@@ -467,21 +473,21 @@ function editDiplomacy() {
     const diplomacyMatrixBody = document.getElementById("diplomacyMatrixBody");
 
     let table = `<table><thead><tr><th data-tip='&#8205;'></th>`;
-    table += states.map(state => `<th data-tip='Relations to ${state.fullName}'>${state.name}</th>`).join("") + `</tr>`;
+    table += states.map(state => `<th data-tip='Relations to ${escape(state.fullName)}'>${escape(state.name)}</th>`).join("") + `</tr>`;
     table += `<tbody>`;
 
     states.forEach(state => {
       table +=
-        `<tr data-id=${state.i}><th data-tip='Relations of ${state.fullName}'>${state.name}</th>` +
+        `<tr data-id="${escape(state.i)}"><th data-tip='Relations of ${escape(state.fullName)}'>${escape(state.name)}</th>` +
         state.diplomacy
           .filter((v, i) => valid.includes(i))
           .map((relation, index) => {
-            const relationObj = relations[relation];
-            if (!relationObj) return `<td class='${relation}'>${relation}</td>`;
+            const relationObj = Object.hasOwn(relations, relation) ? relations[relation] : undefined;
+            if (!relationObj) return `<td>${escape(relation)}</td>`;
 
             const objectState = pack.states[valid[index]];
             const tip = `${state.fullName} ${relationObj.inText} ${objectState.fullName}`;
-            return `<td data-id=${objectState.i} data-tip='${tip}' class='${relation}'>${relation}</td>`;
+            return `<td data-id="${escape(objectState.i)}" data-tip='${escape(tip)}' class='${escape(relation)}'>${escape(relation)}</td>`;
           })
           .join("") +
         "</tr>";
@@ -515,11 +521,10 @@ function editDiplomacy() {
     const states = pack.states.filter(s => s.i && !s.removed);
     const valid = states.map(s => s.i);
 
-    let data = "," + states.map(s => s.name).join(",") + "\n"; // headers
-    states.forEach(s => {
-      const rels = s.diplomacy.filter((v, i) => valid.includes(i));
-      data += s.name + "," + rels.join(",") + "\n";
-    });
+    const rows = [["", ...states.map(s => s.name)], ...states.map(state => [
+      state.name, ...valid.map(id => String(state.diplomacy?.[id] ?? "Unknown"))
+    ])];
+    const data = window.encodeFpbCsvRows(rows);
 
     const name = getFileName("Relations") + ".csv";
     downloadFile(data, name);

@@ -4,6 +4,7 @@ import { Services } from "@/services";
 import { sanitizeImportedNotes, sanitizeMapSvg, sanitizeSvgDefinitions } from "@/services/content-sanitizer";
 import { removeDeorumFromNotes } from "@/services/external-character-policy";
 import { calculateVoronoi, ensureEl, last, link, minmax, parseError, rn } from "@/utils";
+import { ImportSizeLimitError, MAX_IMPORT_BYTES, readBoundedBytes, readBoundedResponse } from "./bounded-stream";
 
 async function quickLoad(): Promise<void> {
   const blob = await ldb.get("lastMap");
@@ -85,7 +86,7 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
     const response = await fetch(url, { method: "GET", mode: "cors", signal: controller.signal });
     if (!response.ok) throw new Error("Cannot load map from URL");
 
-    const blob = await response.blob();
+    const blob = await readBoundedResponse(response);
     uploadMap(blob);
   } catch (error) {
     const message =
@@ -101,10 +102,22 @@ async function loadMapFromURL(maplink: string, random?: boolean): Promise<void> 
 
 function showUploadErrorMessage(error: string, maplink: string, random?: boolean): void {
   ERROR && console.error(error);
-  alertMessage.innerHTML = /* html */ `Cannot load map from the ${link(maplink, "link provided")}. ${
-    random ? `A new random map is generated. ` : ""
-  } Please ensure the
-  linked file is reachable and CORS is allowed on server side`;
+  const source = document.createElement("a");
+  source.textContent = "link provided";
+  try {
+    const url = new URL(maplink, location.href);
+    if (["http:", "https:"].includes(url.protocol) && !url.username && !url.password) {
+      source.href = url.href;
+      source.rel = "noopener noreferrer";
+      source.target = "_blank";
+    }
+  } catch {
+    // Invalid URLs remain plain text rather than becoming an HTML attribute.
+  }
+  alertMessage.replaceChildren(
+    document.createTextNode("Cannot load map from the "), source,
+    document.createTextNode(`. ${random ? "A new random map is generated. " : ""}Please ensure the linked file is reachable and CORS is allowed on server side`)
+  );
   $("#alert").dialog({
     title: "Loading error",
     width: "32em",
@@ -121,6 +134,7 @@ let uploadTimeStart = 0;
 
 // Promise-based entry point for callers that must wait for the complete map restore.
 async function loadMap(file: Blob): Promise<void> {
+  if (file.size > MAX_IMPORT_BYTES) throw new ImportSizeLimitError();
   uploadTimeStart = performance.now();
   const { mapData, mapVersion } = await parseLoadedResult(await file.arrayBuffer());
   if (!mapData || !mapVersion || !isValidVersion(mapVersion) || mapData.length < 10 || !mapData[5]) {
@@ -134,6 +148,7 @@ async function loadMap(file: Blob): Promise<void> {
 }
 
 function uploadMap(file: Blob, callback?: () => void): void {
+  if (file.size > MAX_IMPORT_BYTES) return tip("Map file size limit exceeded (128 MiB)", true, "error", 4000);
   uploadTimeStart = performance.now();
 
   const fileReader = new FileReader();
@@ -167,12 +182,7 @@ async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | nul
   try {
     const uncompressedStream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("gzip"));
 
-    let uncompressedData: number[] = [];
-    for await (const chunk of uncompressedStream) {
-      uncompressedData = uncompressedData.concat(Array.from(chunk));
-    }
-
-    return new Uint8Array(uncompressedData);
+    return await readBoundedBytes(uncompressedStream);
   } catch (error) {
     ERROR && console.error(error);
     return null;
@@ -180,8 +190,10 @@ async function uncompress(compressedData: ArrayBuffer): Promise<Uint8Array | nul
 }
 
 async function parseLoadedResult(
-  result: ArrayBuffer | Uint8Array
+  result: ArrayBuffer | Uint8Array,
+  expanded = false
 ): Promise<{ mapData: string[] | null; mapVersion: string | null }> {
+  if (result.byteLength > MAX_IMPORT_BYTES) return { mapData: null, mapVersion: null };
   try {
     const resultAsString = new TextDecoder().decode(result);
 
@@ -203,8 +215,10 @@ async function parseLoadedResult(
 
     return { mapData, mapVersion };
   } catch (error) {
+    const header = result instanceof Uint8Array ? result : new Uint8Array(result);
+    if (expanded || header[0] !== 0x1f || header[1] !== 0x8b) return { mapData: null, mapVersion: null };
     const uncompressedData = await uncompress(result as ArrayBuffer); // file can be gzip compressed
-    if (uncompressedData) return parseLoadedResult(uncompressedData);
+    if (uncompressedData) return parseLoadedResult(uncompressedData, true);
 
     ERROR && console.error(error);
     return { mapData: null, mapVersion: null };
