@@ -1,3 +1,4 @@
+import type { WorldSpacesData } from "./world-spaces";
 import type { CampaignWorld } from "./campaign-world";
 
 export type PlanetViewMode = "map" | "globe";
@@ -35,6 +36,7 @@ export interface PlanetProject {
   };
   savedAt: string;
   campaign?: CampaignWorld;
+  worldSpaces?: WorldSpacesData;
 }
 
 export interface CloudProject {

@@ -2,6 +2,10 @@ import { GOVERNMENT_NAMES } from "@/generators/korean-world-names";
 
 // English is the fallback; world content is deliberately not part of this catalog.
 export const UI_TRANSLATIONS: readonly (readonly [string, string])[] = [
+  ["Surface map", "지상 지도"],
+  ["Underwater map", "수중 지도"],
+  ["Underground map", "지저 지도"],
+  ["More views", "추가 보기"],
   ["Cloud concurrency protection must be configured. Save a local FPB file instead", "클라우드 충돌 방지 설정이 필요합니다. 로컬 FPB 파일로 저장해 주세요"],
   ["Invalid cloud revision list", "클라우드 리비전 목록이 올바르지 않습니다"],
   ["Invalid cloud revision response", "클라우드 리비전 응답이 올바르지 않습니다"],

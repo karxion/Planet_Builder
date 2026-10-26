@@ -1,0 +1,157 @@
+import type { SpaceSite, WorldSpace, WorldSpacesData } from "@/types/world-spaces";
+
+const NS = "http://www.w3.org/2000/svg";
+const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
+  const node = document.createElementNS(NS, name);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+/** Renders separate records; never writes to the ground map, its cells or world state. */
+export function drawWorldSpaces(input: {
+  parent: SVGGElement;
+  data: WorldSpacesData;
+  width: number;
+  height: number;
+  selected: string;
+  labels: Record<WorldSpace, string>;
+  landPath?: string;
+  landMask?: boolean;
+}): void {
+  const { parent, data, width, height, selected, labels } = input;
+  parent.querySelector("#fpb-world-spaces")?.remove();
+  const root = element("g", { id: "fpb-world-spaces", "data-space": data.activeSpace });
+  if (data.activeSpace !== "surface") {
+    root.append(element("rect", { width, height, fill: data.activeSpace === "underwater" ? "#102f42" : "#201d2b" }));
+    if (input.landMask)
+      root.append(
+        element("rect", { width, height, fill: "#a8adac", opacity: 0.15, mask: "url(#land)", "pointer-events": "none" })
+      );
+    if (input.landPath)
+      root.append(element("path", { d: input.landPath, fill: "#a8adac", opacity: 0.12, "pointer-events": "none" }));
+  }
+  const byId = new Map(data.sites.map(site => [site.id, site]));
+  const sites = data.sites.filter(s => s.space === data.activeSpace);
+  const point = (s: SpaceSite) => [s.x * width, s.y * height];
+  const color = (s: SpaceSite) => data.factions.find(f => f.id === s.factionId)?.color || "#d9ca8b";
+  for (const site of sites.filter(s => s.kind === "terrain" || s.kind === "territory")) {
+    const [cx, cy] = point(site);
+    const fills = {
+      plain: "#2b6472",
+      reef: "#507e69",
+      trench: "#071a31",
+      cavern: "#665877",
+      lake: "#23596a",
+      rock: "#39333d"
+    };
+    root.append(
+      element("ellipse", {
+        cx,
+        cy,
+        rx: site.radius * width,
+        ry: site.radius * height,
+        fill: site.kind === "terrain" ? fills[site.terrain] : color(site),
+        "fill-opacity": site.kind === "terrain" ? 0.7 : 0.2,
+        stroke: selected === site.id ? "#fff" : color(site),
+        "stroke-width": 1.5,
+        "stroke-dasharray": site.kind === "territory" ? "5 3" : "none",
+        "vector-effect": "non-scaling-stroke",
+        "data-space-site": site.id
+      })
+    );
+  }
+  for (const link of data.links) {
+    const from = byId.get(link.from)!;
+    const to = byId.get(link.to)!;
+    if (from.space === data.activeSpace && to.space === data.activeSpace) {
+      const [x1, y1] = point(from);
+      const [x2, y2] = point(to);
+      const line = element("line", {
+        x1,
+        y1,
+        x2,
+        y2,
+        stroke: "#bca874",
+        "stroke-width": 2,
+        "stroke-dasharray": "6 4",
+        "vector-effect": "non-scaling-stroke"
+      });
+      line.append(element("title", {}, link.name));
+      root.append(line);
+    } else {
+      const origin = from.space === data.activeSpace ? from : to.space === data.activeSpace ? to : undefined;
+      if (!origin) continue;
+      const target = origin === from ? to : from;
+      const [x, y] = point(origin);
+      const portal = element(
+        "text",
+        {
+          x: x + 8,
+          y: y + 16,
+          fill: "#fff0b5",
+          "font-size": 11,
+          cursor: "pointer",
+          "data-space-travel": target.id,
+          role: "button",
+          tabindex: 0
+        },
+        `↪ ${labels[target.space]}`
+      );
+      portal.append(element("title", {}, `${link.name} → ${target.name} (${target.depth} m)`));
+      root.append(portal);
+    }
+  }
+  for (const site of sites) {
+    const [x, y] = point(site);
+    const group = element("g", {
+      "data-space-site": site.id,
+      role: "button",
+      tabindex: 0,
+      cursor: "pointer",
+      "aria-label": site.name
+    });
+    if (site.kind === "city" || site.kind === "gateway")
+      group.append(
+        element(
+          site.kind === "city" ? "circle" : "rect",
+          site.kind === "city"
+            ? {
+                cx: x,
+                cy: y,
+                r: 4,
+                fill: color(site),
+                stroke: selected === site.id ? "white" : "#111",
+                "stroke-width": 1.5
+              }
+            : {
+                x: x - 4,
+                y: y - 4,
+                width: 8,
+                height: 8,
+                fill: color(site),
+                stroke: selected === site.id ? "white" : "#111",
+                transform: `rotate(45 ${x} ${y})`
+              }
+        )
+      );
+    group.append(
+      element(
+        "text",
+        {
+          x: x + 7,
+          y: y - 6,
+          fill: "#f8edca",
+          stroke: "#18201e",
+          "stroke-width": 3,
+          "paint-order": "stroke",
+          "font-size": 11
+        },
+        site.name
+      )
+    );
+    group.append(element("title", {}, `${site.name} · ${site.depth} m${site.residents ? ` · ${site.residents}` : ""}`));
+    root.append(group);
+  }
+  parent.append(root);
+}

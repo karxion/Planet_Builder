@@ -243,7 +243,13 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   const cloneEl = (document.getElementById("map") as unknown as SVGSVGElement).cloneNode(true) as SVGSVGElement; // clone svg
   if (fullMap || noLabels) clearMapIconGroups(cloneEl);
   cloneEl.id = "fantasyMap";
-  document.body.appendChild(cloneEl);
+  // Texture/export preparation can await fonts. Keep its full-size clone out of the
+  // visible map and document scroll bounds when switching spaces or resizing.
+  const exportHost = document.createElement("div");
+  exportHost.inert = true;
+  exportHost.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none";
+  document.body.append(exportHost);
+  exportHost.append(cloneEl);
   const clone: MapSelection = select(cloneEl);
   if (!debug) clone.select("#debug").remove();
 
@@ -281,7 +287,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   if (customization && type === "mesh") updateMeshCells(clone);
   inlineStyle(clone);
   try { await inlineDiplomacyAssets(cloneEl); }
-  catch (error) { cloneEl.remove(); throw error; }
+  catch (error) { exportHost.remove(); throw error; }
 
   // remove unused filters
   const filters = cloneEl.querySelectorAll("filter");
@@ -482,7 +488,10 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   const usedFonts = getUsedFonts(cloneEl);
   const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
-    const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
+    const dataURLfonts = await loadFontsAsDataURI(fontsToLoad).catch(error => {
+      exportHost.remove();
+      throw error;
+    });
 
     const fontFaces = dataURLfonts
       .map(({ family, src, unicodeRange = "", variant = "normal" }) => {
@@ -497,6 +506,7 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   }
 
   clone.remove();
+  exportHost.remove();
 
   const serialized = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>${new XMLSerializer().serializeToString(cloneEl)}`;
   const blob = new Blob([serialized], { type: "image/svg+xml;charset=utf-8" });

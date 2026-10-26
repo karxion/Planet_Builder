@@ -89,6 +89,11 @@ export function readDraftRecovery(
     return { entries: [], rejected: true };
   }
   const allowed = new Map<string, string>([["planet-settings", settingsFields]]);
+  allowed.set("space-link:new", "name from to");
+  for (const site of project.worldSpaces?.sites || [])
+    allowed.set(`space-site:${site.id}`, "name depth population residents factionId radius terrain notes");
+  for (const faction of project.worldSpaces?.factions || [])
+    allowed.set(`space-faction:${faction.id}`, "name color notes");
   for (const npc of project.campaign?.npcs || []) allowed.set(`npc:${npc.id}`, npcFields);
   for (const item of project.campaign?.itemLibrary?.items || []) allowed.set(`item:${item.id}`, itemFields);
   for (const treasure of project.campaign?.heritage?.treasures || [])

@@ -1,3 +1,6 @@
+import { initWorldSpaces, refreshWorldSpaces, renderSpacePanel } from "@/controllers/world-spaces";
+import { WorldSpaces } from "@/services/world-spaces/state";
+import type { WorldSpace } from "@/types/world-spaces";
 import { renderDrivePanel } from "@/controllers/google-drive-panel";
 import { Controllers } from "@/controllers";
 import { Campaign } from "@/controllers/campaign-world";
@@ -30,7 +33,7 @@ const DRAFT_AUTOSAVE_DELAY = 750;
 const DRAFT_MAX_DELAY = 3_000;
 const CLOUD_AUTOSAVE_DELAY = 60_000;
 const DRAFT_EDITOR_SCOPE =
-  "[data-fpb-draft], #fpb-world-dialog, #fpb-settings-panel, #fpb-recovery-dialog, [data-fpb-preference]";
+  "[data-fpb-draft], #fpb-world-dialog, #fpb-settings-panel, #fpb-recovery-dialog, #fpb-space-panel, [data-fpb-preference]";
 
 const isFirstRun = !localStorage.getItem(SETTINGS_KEY);
 let settings = loadSettings();
@@ -69,6 +72,7 @@ async function init(): Promise<void> {
   initMapTransportStyle();
   initBorderDiplomacy();
   initDungeonLocations();
+  initWorldSpaces(switchSpace);
   bindEvents();
   document.body.classList.add("fpb-ready");
   fitMapToScreen();
@@ -107,8 +111,10 @@ function createShell(): void {
       <div><strong>판타지 행성 빌더</strong><small>Azgaar FMG 기반 · MIT</small></div>
     </div>
     <div class="fpb-view-switch" role="group" aria-label="보기 모드">
-      <button id="fpb-map-view" class="active" type="button"><span class="icon-map-o"></span>2D 지도</button>
-      <button id="fpb-globe-view" type="button"><span class="icon-globe"></span>3D 행성</button>
+      <button id="fpb-map-view" class="active" type="button"><span class="icon-map-o"></span>지상 지도</button>
+      <button id="fpb-space-underwater" type="button">수중 지도</button>
+      <button id="fpb-space-underground" type="button">지저 지도</button>
+      <details class="fpb-extra-view"><summary>추가 보기</summary><button id="fpb-globe-view" type="button"><span class="icon-globe"></span>3D 행성</button></details>
     </div>
     <div class="fpb-actions">
       <span id="fpb-save-status" class="fpb-status" data-state="local">로컬 프로젝트</span>
@@ -165,8 +171,13 @@ function createShell(): void {
 }
 
 function bindEvents(): void {
-  ensureEl("fpb-map-view").addEventListener("click", () => void setView("map"));
-  ensureEl("fpb-globe-view").addEventListener("click", () => void setView("globe"));
+  ensureEl("fpb-map-view").addEventListener("click", () => void switchSpace("surface"));
+  ensureEl("fpb-space-underwater").addEventListener("click", () => void switchSpace("underwater"));
+  ensureEl("fpb-space-underground").addEventListener("click", () => void switchSpace("underground"));
+  ensureEl("fpb-globe-view").addEventListener("click", () => {
+    ensureEl("fpb-globe-view").closest("details")?.removeAttribute("open");
+    void setView("globe");
+  });
   ensureEl("fpb-settings-button").addEventListener("click", toggleSettings);
   const editorButton = ensureEl("fpb-editor-button");
   editorButton.addEventListener("click", () => {
@@ -214,7 +225,7 @@ function bindEvents(): void {
   }
 
   window.addEventListener("map:generated", () => {
-    beginDocument();
+    beginDocument(true);
     mapName.value = settings.name;
     setStatus("저장되지 않은 변경", "dirty");
     scheduleAutosave();
@@ -234,7 +245,7 @@ function bindEvents(): void {
     event => {
       if (
         !(event.target as Element).closest?.(
-          "[data-fpb-preference], [data-fpb-draft], #fpb-world-dialog, #fpb-cloud-dialog, #fpb-recovery-dialog"
+          "[data-fpb-preference], [data-fpb-draft], #fpb-world-dialog, #fpb-cloud-dialog, #fpb-recovery-dialog, #fpb-space-panel"
         )
       )
         scheduleAutosave();
@@ -255,9 +266,21 @@ function bindEvents(): void {
   });
 }
 
+async function switchSpace(space: WorldSpace): Promise<void> {
+  if (viewMode !== "map") await setView("map");
+  WorldSpaces.update(d => { d.activeSpace = space; });
+  refreshWorldSpaces();
+  renderSpacePanel();
+}
+
 async function setView(mode: PlanetViewMode): Promise<void> {
   viewMode = mode;
-  ensureEl("fpb-map-view").classList.toggle("active", mode === "map");
+  if (mode === "globe") {
+    WorldSpaces.update(d => { d.activeSpace = "surface"; });
+    refreshWorldSpaces();
+    renderSpacePanel();
+  }
+  ensureEl("fpb-map-view").classList.toggle("active", mode === "map" && WorldSpaces.snapshot().activeSpace === "surface");
   ensureEl("fpb-globe-view").classList.toggle("active", mode === "globe");
   if (mode === "globe") await Controllers.View3d.open("viewGlobe");
   else {
@@ -392,7 +415,7 @@ async function buildProject(): Promise<PlanetProject> {
   const activeLayers = Array.from(document.querySelectorAll("#map > #viewbox > g"))
     .filter(element => getComputedStyle(element).display !== "none")
     .map(element => element.id)
-    .filter(Boolean);
+    .filter(id => Boolean(id) && id !== "fpb-world-spaces");
   const project = ProjectCodec.createPlanetProject({
     mapPayload,
     settings,
@@ -402,6 +425,7 @@ async function buildProject(): Promise<PlanetProject> {
     activeLayers
   });
   project.campaign = structuredClone(Campaign.get());
+  project.worldSpaces = WorldSpaces.snapshot();
   if (project.view.mode === "globe") project.view.camera = await Controllers.View3d.getCameraState();
   if (!session.isCurrent(generation)) throw new Error("Project changed during export");
   return project;
@@ -469,6 +493,8 @@ async function loadProject(project: PlanetProject, snapshot?: RecoverySnapshot):
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     EditorDrafts.restore(recoveredDrafts.entries);
     Campaign.restore(project.campaign);
+    WorldSpaces.restore(project.worldSpaces);
+    window.dispatchEvent(new Event("world-spaces:restored"));
     updateForm();
     await setView(project.view.mode);
     if (project.view.mode === "globe") await Controllers.View3d.setCameraState(project.view.camera);
@@ -482,9 +508,15 @@ async function loadProject(project: PlanetProject, snapshot?: RecoverySnapshot):
   }
 }
 
-function beginDocument(): void {
+function beginDocument(preserveSpaces = false): void {
+  if (!preserveSpaces) {
+    WorldSpaces.restore();
+    window.dispatchEvent(new Event("world-spaces:restored"));
+  }
   session.reset();
+  const spaceDrafts = preserveSpaces ? EditorDrafts.snapshot().filter(draft => draft.key.startsWith("space-")) : [];
   EditorDrafts.clear();
+  if (spaceDrafts.length) EditorDrafts.restore(spaceDrafts);
   localProjectId = crypto.randomUUID();
   localRevision = -1;
   localSnapshot = undefined;
@@ -498,6 +530,8 @@ function beginDocument(): void {
   clearDraftTimers();
   window.clearTimeout(cloudAutosaveTimer);
   window.clearTimeout(textureUpdateTimer);
+  // Regeneration keeps space drafts; persist them promptly rather than waiting for the full-map timer.
+  if (spaceDrafts.length) scheduleDraftAutosave();
 }
 
 function clearDraftTimers(): void {

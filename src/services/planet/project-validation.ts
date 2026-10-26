@@ -1,3 +1,4 @@
+import { isWorldSpaces } from "@/services/world-spaces/model";
 import { isCampaignWorld } from "@/data/campaign-validation";
 import type { CampaignWorld } from "@/types/campaign-world";
 import type { PlanetProject, PlanetSettings } from "@/types/planet-project";
@@ -76,6 +77,7 @@ export function isPlanetProject(value: unknown): value is PlanetProject {
     value.mapPayload.includes("\r\n") &&
     value.mapPayload.split("\r\n", 1)[0].includes("|") &&
     isProjectView(value.view) &&
-    (value.campaign === undefined || isProjectCampaign(value.campaign))
+    (value.campaign === undefined || isProjectCampaign(value.campaign)) &&
+    (value.worldSpaces === undefined || isWorldSpaces(value.worldSpaces))
   );
 }
