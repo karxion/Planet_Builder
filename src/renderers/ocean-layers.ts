@@ -65,7 +65,10 @@ class OceanModule {
   }
 
   draw() {
-    const outline = this.oceanLayers.attr("layers");
+    // Older imports/autosaves may have lost this custom SVG attribute.
+    const storedOutline = this.oceanLayers.attr("layers");
+    const outline =
+      storedOutline && /^(?:none|random|-[1-9](?:,-[1-9])*)$/.test(storedOutline) ? storedOutline : "-6,-3,-1";
     if (outline === "none") return;
     TIME && console.time("drawOceanLayers");
     this.oceanLayers.selectAll("path").remove();

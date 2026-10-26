@@ -5,6 +5,7 @@ const SVG_POLICY: Config = {
   USE_PROFILES: { svg: true, svgFilters: true },
   // FMG uses local <use> references for terrain, markers and resource tokens.
   ADD_TAGS: ["use"],
+  ADD_ATTR: ["layers"],
   FORBID_TAGS: ["style", "a", "animate", "animateMotion", "animateTransform", "set"],
   RETURN_DOM_FRAGMENT: true
 };
@@ -24,6 +25,12 @@ export function createContentSanitizer(host: WindowLike) {
   const purifier = createDOMPurify(host);
   if (!purifier.isSupported) throw new Error("This browser cannot safely import map content");
   purifier.addHook("uponSanitizeAttribute", (node, attribute) => {
+    // Preserve only the ocean contour configuration, never arbitrary custom attributes.
+    if (attribute.attrName === "layers") {
+      attribute.keepAttr = node.namespaceURI === SVG_NS && node.localName === "g" &&
+        node.getAttribute("id") === "oceanLayers" && /^(?:none|random|-[1-9](?:,-[1-9])*)$/.test(attribute.attrValue);
+      return;
+    }
     if (node.namespaceURI !== SVG_NS || node.localName !== "use") return;
     if (["href", "xlink:href"].includes(attribute.attrName) && !/^#[^\s]+$/.test(attribute.attrValue)) {
       attribute.keepAttr = false;

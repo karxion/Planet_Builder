@@ -15,6 +15,24 @@ beforeEach(() => {
 });
 
 describe("imported map SVG", () => {
+  it.each(["none", "random", "-6,-3,-1", "-9,-8,-7,-6,-5,-4,-3,-2,-1"])(
+    "preserves ocean layers %s through FPB/map import", layers => {
+      const map = sanitizer.sanitizeMapSvg(`<svg id="map"><g id="oceanLayers" layers="${layers}"/></svg>`);
+      expect(map.querySelector("#oceanLayers")?.getAttribute("layers")).toBe(layers);
+    }
+  );
+
+  it.each(["", "bad", "-1,Infinity", "javascript:alert(1)"])("removes invalid ocean layers %s", layers => {
+    const map = sanitizer.sanitizeMapSvg(`<svg id="map"><g id="oceanLayers" layers="${layers}"/></svg>`);
+    expect(map.querySelector("#oceanLayers")?.hasAttribute("layers")).toBe(false);
+  });
+
+  it("does not allow layers on other SVG groups or note HTML", () => {
+    const map = sanitizer.sanitizeMapSvg('<svg id="map"><g id="other" layers="-1"/></svg>');
+    expect(map.querySelector("g")?.hasAttribute("layers")).toBe(false);
+    expect(sanitizer.sanitizeNoteHtml('<div layers="-1">note</div>')).not.toContain("layers=");
+  });
+
   it("removes scripts, handlers, foreign HTML, animation and global styles", () => {
     const map = sanitizer.sanitizeMapSvg(`<svg id="map" onload="alert(1)">
       <script>alert(1)</script><style>body { display:none }</style>
