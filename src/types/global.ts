@@ -196,7 +196,7 @@ declare global {
   var calculateTemperatures: () => void;
   var reGraph: () => void;
   var createDefaultRuler: () => void;
-  var showStatistics: () => void;
+  var showStatistics: (isGenerated?: boolean) => void;
   var closeDialogs: (except?: string) => void;
   var editWorld: () => void;
   var showExportPane: () => void;

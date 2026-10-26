@@ -6,8 +6,8 @@ import { rn } from "./numberUtils";
  * @param {number} decimals - Number of decimal places (default is 1)
  * @returns {string} - The string with rounded numbers
  */
-export const round = (inputString: string = "", decimals: number = 1) => {
-  return inputString.replace(/[\d.-][\d.e-]*/g, (n: string) => {
+export const round = (inputString: string | null = "", decimals: number = 1) => {
+  return (inputString ?? "").replace(/[\d.-][\d.e-]*/g, (n: string) => {
     return rn(parseFloat(n), decimals).toString();
   });
 };

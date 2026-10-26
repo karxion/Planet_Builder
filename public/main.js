@@ -1264,7 +1264,7 @@ function rankCells() {
 }
 
 // show map stats on generation complete
-function showStatistics() {
+function showStatistics(isGenerated = true) {
   const heightmap = ensureEl("templateInput").value;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
@@ -1284,13 +1284,13 @@ function showStatistics() {
     Culture set: ${culturesSet.value}
     Cultures: ${pack.cultures.length - 1}`;
 
-  mapId = Date.now(); // unique map id is it's creation date number
+  if (isGenerated) mapId = Date.now(); // keep the saved map identity on import
   window.mapId = mapId; // expose for test automation
   mapHistory.push({ seed, width: graphWidth, height: graphHeight, template: heightmap, created: mapId });
   INFO && console.info(stats);
 
   // Dispatch event for test automation and external integrations
-  window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
+  if (isGenerated) window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed, mapId } }));
 }
 
 const regenerateMap = debounce(async function (config) {

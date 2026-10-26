@@ -861,7 +861,7 @@ async function parseLoadedData(data: string[], mapVersion: string | null): Promi
     invokeActiveZooming();
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - uploadTimeStart) / 1000, 2)}s`);
-    showStatistics();
+    showStatistics(false);
     INFO && console.groupEnd();
     tip("Map is successfully loaded", true, "success", 7000);
     return true;

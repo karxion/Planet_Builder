@@ -80,11 +80,21 @@ async function init(): Promise<void> {
       setStatus("첫 행성 생성 중", "saving");
       regeneratePrompt();
     };
-    if (mapHistory.length) window.setTimeout(createFirstPlanet, 0);
-    else window.addEventListener("map:generated", () => window.setTimeout(createFirstPlanet, 0), { once: true });
-  } else if (mapHistory.length) window.setTimeout(() => void restoreAutosave(), 0);
-  else
-    window.addEventListener("map:generated", () => window.setTimeout(() => void restoreAutosave(), 0), { once: true });
+    whenMapReady(createFirstPlanet);
+  } else whenMapReady(() => void restoreAutosave());
+}
+
+function whenMapReady(callback: () => void): void {
+  const ready = () => {
+    window.removeEventListener("map:generated", ready);
+    window.removeEventListener("map:loaded", ready);
+    window.setTimeout(callback, 0);
+  };
+  if (mapHistory.length) ready();
+  else {
+    window.addEventListener("map:generated", ready, { once: true });
+    window.addEventListener("map:loaded", ready, { once: true });
+  }
 }
 
 function createShell(): void {
