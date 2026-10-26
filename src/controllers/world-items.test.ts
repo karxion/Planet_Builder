@@ -102,6 +102,42 @@ describe("Item library editor", () => {
     expect(document.querySelector<HTMLTextAreaElement>('[name="notes"]')!.value).toBe("아직 저장 안 한 메모");
     expect(world.itemLibrary!.items[0].notes).toBe("");
   });
+  it("restores raw item drafts from recovery in a fresh editor without applying them", async () => {
+    const { EditorDrafts } = await import("@/services/editor-drafts");
+    const { createDraftRecovery, readDraftRecovery } = await import("@/services/planet/draft-recovery");
+    const { bkendPlanetProject } = await import("@/services/planet/bkend-test-helpers");
+    const stored = world.itemLibrary!.items[0];
+    change("name", "복구할 유니크 검");
+    change("ownerKind", "custom");
+    change("ownerLabel", "행방불명된 기사");
+    change("notes", "복구 전용 비밀");
+    const owner = { id: "snapshot", projectId: "project" };
+    const project = { ...bkendPlanetProject(), campaign: world };
+    const saved = createDraftRecovery(EditorDrafts.snapshot(), owner);
+    const restored = readDraftRecovery(saved.drafts, owner, project);
+    expect(restored.rejected).toBe(false);
+    expect(readDraftRecovery(saved.drafts, { ...owner, projectId: "different" }, project).rejected).toBe(true);
+    EditorDrafts.clear();
+    document.getElementById("fpb-items-dialog")!.remove();
+    EditorDrafts.restore(restored.entries);
+    open();
+    expect(document.querySelector<HTMLInputElement>('[name="name"]')!.value).toBe("복구할 유니크 검");
+    expect(document.querySelector<HTMLInputElement>('[name="ownerLabel"]')!.value).toBe("행방불명된 기사");
+    expect(stored.name).not.toBe("복구할 유니크 검");
+    expect(stored.notes).toBe("");
+    expect(document.querySelector(".fpb-draft-notice")?.hasAttribute("hidden")).toBe(false);
+    submit();
+    expect(stored.notes).toBe("복구 전용 비밀");
+    expect(EditorDrafts.count).toBe(0);
+  });
+  it("discards a pending item change without changing saved data", async () => {
+    const { EditorDrafts } = await import("@/services/editor-drafts");
+    const original = world.itemLibrary!.items[0].name;
+    change("name", "discard me");
+    document.querySelector<HTMLButtonElement>(".fpb-draft-notice button")!.click();
+    expect(document.querySelector<HTMLInputElement>('[name="name"]')!.value).toBe(original);
+    expect(EditorDrafts.count).toBe(0);
+  });
   it("does not resurrect deleted automatic items after reopening", () => {
     vi.stubGlobal("confirm", () => true);
     const removed = world.itemLibrary!.items[0].id;

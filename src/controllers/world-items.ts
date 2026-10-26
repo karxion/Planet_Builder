@@ -18,6 +18,7 @@ import {
   type TreasureItemSeed
 } from "@/generators/world-items";
 import { t } from "@/services/ui-language";
+import { EditorDrafts } from "@/services/editor-drafts";
 import type { CampaignWorld } from "@/types/campaign-world";
 import type { ItemDungeonChoice, WorldMagicItem } from "@/types/world-item";
 import { Campaign } from "./campaign-world";
@@ -28,7 +29,8 @@ let world: CampaignWorld;
 let selected = "";
 let page = 0;
 let dungeons: ItemDungeonChoice[] = [];
-const drafts = new Map<string, WorldMagicItem>();
+const draftKey = (id: string) => `item:${id}`;
+const itemDraftCount = () => EditorDrafts.snapshot().filter(entry => entry.key.startsWith("item:")).length;
 const get = <T extends HTMLElement = HTMLElement>(id: string) => dialog.querySelector<T>(`#${id}`)!;
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, label = "") => {
   const element = document.createElement(tag);
@@ -60,11 +62,6 @@ function createDialog(): void {
     <div class="fpb-items-toolbar"><input id="fpb-items-search" type="search"><select id="fpb-items-rarity"></select><select id="fpb-items-source"></select></div>
     <div class="fpb-items-layout"><section class="fpb-items-results"><div id="fpb-items-list"></div><nav><button id="fpb-items-prev" type="button" class="icon-left-open"></button><span id="fpb-items-page"></span><button id="fpb-items-next" type="button" class="icon-right-open"></button></nav></section><section id="fpb-item-detail"></section></div>`;
   document.body.append(dialog);
-  window.addEventListener("beforeunload", event => {
-    if (!drafts.size) return;
-    event.preventDefault();
-    event.returnValue = "";
-  });
   get("fpb-items-close").onclick = () => dialog.close();
   get("fpb-item-add").onclick = () => {
     const item = createWorldItem(world.seed, `item:manual:${crypto.randomUUID()}`, t("새 아이템"));
@@ -99,7 +96,7 @@ function createDialog(): void {
     const { openWorldDataExport } = await import("./world-data-export");
     if (Campaign.get() !== current) return;
     openWorldDataExport({ kind: "items", world: current, all: current.itemLibrary!.items,
-      filtered, selected: chosen, hasDrafts: drafts.size > 0 });
+      filtered, selected: chosen, hasDrafts: itemDraftCount() > 0 });
   };
   window.addEventListener("ui:language-changed", () => {
     if (dialog.open) {
@@ -110,7 +107,6 @@ function createDialog(): void {
   for (const event of ["map:generated", "map:loaded"])
     window.addEventListener(event, () => {
       dialog.close();
-      drafts.clear();
     });
 }
 
@@ -154,7 +150,6 @@ export function openItemLibrary(): void {
   if (!current) return;
   if (current !== world) {
     world = current;
-    drafts.clear();
     selected = "";
     page = 0;
   }
@@ -246,29 +241,42 @@ function field(
 }
 
 function readItem(form: HTMLFormElement, item: WorldMagicItem): WorldMagicItem {
-  const data = new FormData(form);
+  const values = Object.fromEntries([...new FormData(form)].map(([key, value]) => [key, String(value)]));
+  values.unique = String(form.querySelector<HTMLInputElement>('[name="unique"]')!.checked);
+  return readItemValues(values, item);
+}
+
+function readItemValues(data: Record<string, string>, item: WorldMagicItem): WorldMagicItem {
   const draft = { ...item, edited: true };
   for (const key of ["name", "appearance", "power", "history", "notes"] as const)
-    draft[key] = String(data.get(key) || "");
-  draft.category = String(data.get("category")) as WorldMagicItem["category"];
-  draft.rarity = String(data.get("rarity")) as WorldMagicItem["rarity"];
-  draft.unique = data.has("unique");
+    draft[key] = data[key] || "";
+  draft.category = data.category as WorldMagicItem["category"];
+  draft.rarity = data.rarity as WorldMagicItem["rarity"];
+  draft.unique = data.unique === "true";
   draft.uniqueBonus = createUniqueItemBonus(world.seed, draft);
-  const kind = String(data.get("ownerKind"));
-  const id = String(data.get("ownerId") || "");
+  const kind = data.ownerKind;
+  const id = data.ownerId || "";
   if (kind === "none") draft.owner = { kind: "none" };
-  else if (kind === "custom") draft.owner = { kind: "custom", label: String(data.get("ownerLabel") || "").trim() };
+  else if (kind === "custom") draft.owner = { kind: "custom", label: (data.ownerLabel || "").trim() };
   else {
     const found =
       kind === "npc" ? world.npcs.find(value => value.id === id) : world.units.find(value => value.id === id);
     const old = item.owner;
     draft.owner = { kind: kind as "npc" | "unit", id, label: found?.name || (old.kind !== "none" ? old.label : "") };
   }
-  const reward = String(data.get("reward") || "");
+  const reward = data.reward || "";
   if (!reward) delete draft.reward;
   else {
     const found = dungeons.find(value => dungeonKey(value) === reward);
     if (found) draft.reward = { markerId: found.markerId, cell: found.cell, name: found.name };
+  }
+  const reference = ALL_REFERENCE_OPTIONS.find(option => optionKey(option) === data.reference);
+  if (reference) {
+    draft.referenceId = reference.reference.id;
+    draft.variant = reference.variant;
+  } else {
+    delete draft.referenceId;
+    delete draft.variant;
   }
   return draft;
 }
@@ -281,7 +289,8 @@ function renderDetail(): void {
     host.append(node("p", "아이템을 추가하거나 선택해주세요"));
     return;
   }
-  const item = drafts.get(stored.id) || { ...stored };
+  const pending = EditorDrafts.read(draftKey(stored.id));
+  const item = pending ? readItemValues(pending, stored) : { ...stored };
   const activeWorld = world;
   const form = node("form");
   form.id = "fpb-item-form";
@@ -334,6 +343,7 @@ function renderDetail(): void {
   if (item.owner.kind === "npc" || item.owner.kind === "unit") {
     const owner = item.owner;
     const search = field(form, "소유주 검색", "ownerSearch", "") as HTMLInputElement;
+    search.dataset.fpbPreference = "";
     const selector = field(form, "소유주", "ownerId", owner.id, []) as HTMLSelectElement;
     selector.required = true;
     const unitNames = new Map(world.units.map(unit => [unit.id, unit.name]));
@@ -436,7 +446,7 @@ function renderDetail(): void {
     details.append(rules, link);
     form.append(details);
   }
-  const status = node("p", drafts.has(item.id) ? "적용 전 변경사항" : "");
+  const status = node("p", pending ? "적용 전 변경사항" : "");
   status.id = "fpb-item-status";
   status.setAttribute("role", "status");
   form.append(status);
@@ -459,36 +469,27 @@ function renderDetail(): void {
       (event.target as HTMLElement).closest(".fpb-npc-portrait-request, [name=ownerSearch]")
     )
       return;
-    drafts.set(item.id, readItem(form, item));
-    status.textContent = t("적용 전 변경사항");
+    status.textContent = EditorDrafts.read(draftKey(item.id)) ? t("적용 전 변경사항") : "";
   };
   form.onchange = event => {
-    const draft = readItem(form, item);
     const name = (event.target as HTMLInputElement).name;
     if (!name || name === "ownerSearch") return;
     if (["rarity", "category"].includes(name)) {
-      delete draft.referenceId;
-      delete draft.variant;
+      form.querySelector<HTMLSelectElement>('[name="reference"]')!.value = "";
     }
     if (name === "reference") {
       const value = new FormData(form).get("reference");
       const option = ALL_REFERENCE_OPTIONS.find(option => optionKey(option) === value);
       if (option) {
-        draft.referenceId = option.reference.id;
-        draft.variant = option.variant;
-        draft.power = `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""} · SRD ${option.reference.edition} 원본 규칙 참조`;
-      } else {
-        delete draft.referenceId;
-        delete draft.variant;
+        form.querySelector<HTMLTextAreaElement>('[name="power"]')!.value = `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""} · SRD ${option.reference.edition} 원본 규칙 참조`;
       }
     }
-    drafts.set(item.id, draft);
-    status.textContent = t("적용 전 변경사항");
+    form.dispatchEvent(new Event("input", { bubbles: true }));
     if (["unique", "ownerKind", "rarity", "category", "reference", "reward"].includes(name)) renderDetail();
   };
   form.onsubmit = event => {
     event.preventDefault();
-    const draft = readItem(form, drafts.get(item.id) || item);
+    const draft = readItem(form, stored);
     draft.name = draft.name.trim();
     if (!isWorldMagicItem(draft)) {
       status.textContent = t("이름·소유주 등 입력값을 확인해주세요");
@@ -497,7 +498,7 @@ function renderDetail(): void {
     Object.assign(stored, draft);
     for (const key of ["referenceId", "variant", "reward", "uniqueBonus"] as const)
       if (draft[key] === undefined) delete stored[key];
-    drafts.delete(item.id);
+    EditorDrafts.clear(draftKey(item.id));
     changed();
     renderList();
   };
@@ -506,7 +507,7 @@ function renderDetail(): void {
     const library = world.itemLibrary!;
     library.items = library.items.filter(value => value.id !== item.id);
     if (!library.deletedIds.includes(item.id)) library.deletedIds.push(item.id);
-    drafts.delete(item.id);
+    EditorDrafts.clear(draftKey(item.id));
     selected = "";
     changed();
     renderList();
@@ -524,10 +525,9 @@ function renderDetail(): void {
       if (Campaign.get() !== activeWorld || !activeWorld.itemLibrary?.items.includes(stored)) return false;
       stored.image = item.image = image;
       stored.edited = true;
-      const draft = drafts.get(item.id);
-      if (draft) draft.image = image;
       changed();
       return true;
     }
   });
+  EditorDrafts.bind(form, draftKey(item.id), renderDetail);
 }

@@ -1,6 +1,7 @@
 import { COMMONER_CR_PROFILES, NPC_CLASSES, NPC_RANKS, NPC_SCOPES } from "@/data/npc-progression";
 import { NPC_STAT_BLOCKS } from "@/data/npc-stat-blocks";
 import { ALIGNMENTS, DEITY_RANKS, ITEM_RARITIES } from "@/data/realm-heritage";
+import { MAGIC_ITEM_CATEGORIES } from "@/data/magic-item-references";
 import type { DraftRecovery, EditorDraftSnapshot, EditorDraftValues } from "@/types/editor-draft";
 import type { PlanetProject } from "@/types/planet-project";
 
@@ -9,6 +10,7 @@ const MAX_BYTES = 4 * 1024 * 1024;
 const npcFields = "name role templateId appearance personality goal secret notes classId level rank scope commonerCr";
 const treasureFields = "name rarity symbolism rpEffect power history notes referenceEdition referenceId";
 const religionFields = "name symbol alignment deityName deityRank doctrine headquartersId notes";
+const itemFields = "name category rarity unique ownerKind ownerId ownerLabel reward appearance power history notes reference";
 const settingsFields =
   "name radiusKm rotationHours axialTiltDeg heightmapPreset seaLevel equatorC northPoleC southPoleC precipitation seed";
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -32,11 +34,19 @@ function validChoices(values: EditorDraftValues, key: string): boolean {
     rarity: ITEM_RARITIES,
     alignment: ALIGNMENTS,
     deityRank: DEITY_RANKS,
+    category: MAGIC_ITEM_CATEGORIES,
+    unique: { true: true, false: true },
+    ownerKind: { none: true, npc: true, unit: true, custom: true },
     referenceEdition: { mixed: true, 2014: true, 2024: true },
     heightmapPreset: { pangea: true, continents: true, archipelago: true, shattered: true }
   };
   if (!Object.hasOwn(values, "name") && !key.startsWith("history:")) return false;
   if (key.startsWith("npc:") && !Object.hasOwn(values, "templateId")) return false;
+  if (key.startsWith("item:")) {
+    if ("name category rarity unique ownerKind appearance power history notes reference reward".split(" ").some(name => !Object.hasOwn(values, name))) return false;
+    if (["npc", "unit"].includes(values.ownerKind) && !Object.hasOwn(values, "ownerId")) return false;
+    if (values.ownerKind === "custom" && !Object.hasOwn(values, "ownerLabel")) return false;
+  }
   return Object.entries(values).every(([name, value]) => !choices[name] || Object.hasOwn(choices[name], value));
 }
 
@@ -80,6 +90,7 @@ export function readDraftRecovery(
   }
   const allowed = new Map<string, string>([["planet-settings", settingsFields]]);
   for (const npc of project.campaign?.npcs || []) allowed.set(`npc:${npc.id}`, npcFields);
+  for (const item of project.campaign?.itemLibrary?.items || []) allowed.set(`item:${item.id}`, itemFields);
   for (const treasure of project.campaign?.heritage?.treasures || [])
     allowed.set(`heritage:${treasure.id}`, treasureFields);
   for (const religion of project.campaign?.heritage?.religions || [])
