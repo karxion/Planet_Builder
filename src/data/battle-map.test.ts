@@ -46,9 +46,10 @@ describe("battle map scale", () => {
 
 describe("PNG-only output budget", () => {
   it.each([
-    [8192, 4096, 5460, 2730],
-    [4096, 8192, 2730, 5460],
-    [4608, 2592, 4608, 2592]
+    [8192, 4096, 3000, 1500],
+    [4096, 8192, 1500, 3000],
+    [4608, 2592, 3000, 1687],
+    [1600, 896, 1600, 896]
   ])("fits %ix%i while preserving orientation", (width, height, expectedWidth, expectedHeight) => {
     expect(scenePngSize(width, height)).toEqual({ width: expectedWidth, height: expectedHeight });
   });

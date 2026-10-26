@@ -5,7 +5,8 @@ export type SceneAssetView = "overview" | "battle";
 export type SceneAssetId = "house" | "keep" | "wall" | "gate" | "well" | "barn" | "paving" | "tree";
 export const SCENE_ASSET_IDS = Object.keys(manifest) as SceneAssetId[];
 const base = () => import.meta.env.BASE_URL || "/";
-export const sceneAssetUrl = (id: SceneAssetId) => `${base()}assets/scene-maps/${id}.png`;
+export const sceneAssetUrl = (id: SceneAssetId) =>
+  `${base()}assets/scene-maps/${id}.png?v=${manifest[id].sha256.slice(0, 12)}`;
 /** Each original PNG stores two isolated views; SVG viewports select a half without editing the image. */
 export function sceneAssetDefs(view: SceneAssetView, prefix = "scene", ids: SceneAssetId[] = SCENE_ASSET_IDS): string {
   return ids

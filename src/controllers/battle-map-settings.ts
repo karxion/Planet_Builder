@@ -67,7 +67,7 @@ export function battleMapControls(
       return;
     }
     const size = scenePngSize(next.columns * next.cellPixels, next.rows * next.cellPixels);
-    pngHint.textContent = `PNG: ${size.width} × ${size.height}px · ${text("한 변 최대 5460px, 초과 시 비율 유지 축소", "Max 5460px per axis; oversized PNGs are reduced proportionally")}`;
+    pngHint.textContent = `PNG: ${size.width} × ${size.height}px · ${text("한 변 최대 3000px, 초과 시 비율 유지 축소", "Max 3000px per axis; oversized PNGs are reduced proportionally")}`;
   };
   host.addEventListener("input", showPngSize);
   host.addEventListener("change", showPngSize);
@@ -77,8 +77,8 @@ export function battleMapControls(
     const next = { columns: Number(cols.value), rows: Number(rows.value), cellPixels: Number(pixels.value) };
     if (!isBattleMapSettings(next)) {
       status.textContent = text(
-        "가로·세로 8~256칸, 한 칸 16~128px 범위에서 큰 지도는 칸 해상도를 낮춰 주세요. PNG는 한 변 최대 5460px로 출력합니다.",
-        "Use 8–256 squares per axis and 16–128 pixels per square. Reduce pixels per square for larger maps. PNG output is capped at 5460px per axis."
+        "가로·세로 8~256칸, 한 칸 16~128px 범위에서 큰 지도는 칸 해상도를 낮춰 주세요. PNG는 한 변 최대 3000px로 출력합니다.",
+        "Use 8–256 squares per axis and 16–128 pixels per square. Reduce pixels per square for larger maps. PNG output is capped at 3000px per axis."
       );
       return;
     }

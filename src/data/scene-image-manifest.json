@@ -1,50 +1,74 @@
 {
   "house": {
-    "width": 1774,
-    "height": 887,
-    "sha256": "cc47e55bea39eabbc10dfee6e5e6fee8f4aea98c8f38e50597bf44e07ef66868",
-    "battleInset": 64
+    "width": 1182,
+    "height": 591,
+    "sha256": "2247d054e2759d9152e6ffa7b412b2321ff8667c86ae9d8ee514b2fba6c122fa",
+    "battleInset": 43,
+    "originalWidth": 1774,
+    "originalHeight": 887,
+    "originalSha256": "cc47e55bea39eabbc10dfee6e5e6fee8f4aea98c8f38e50597bf44e07ef66868"
   },
   "keep": {
-    "width": 1774,
-    "height": 887,
-    "sha256": "fdb1ee5f9f3bd9ae5cbc925ffbde82c9a92798c8f14eca8a7df2953203b37621",
-    "battleInset": 0
+    "width": 1182,
+    "height": 591,
+    "sha256": "279aa6db19c15d9ce95ddf6d19ea21a53d826b11cb63815831097d38c8e7ebbd",
+    "battleInset": 0,
+    "originalWidth": 1774,
+    "originalHeight": 887,
+    "originalSha256": "fdb1ee5f9f3bd9ae5cbc925ffbde82c9a92798c8f14eca8a7df2953203b37621"
   },
   "wall": {
-    "width": 2172,
-    "height": 724,
-    "sha256": "2754d3486a977c481c75201861f57b5becf889795317f93e1672a79d6c2ed356",
-    "battleInset": 0
+    "width": 1448,
+    "height": 483,
+    "sha256": "e6c07ef480a4a1f54bee329119711b36a3aa0fb7f5b910e8e3a90214e16b8433",
+    "battleInset": 0,
+    "originalWidth": 2172,
+    "originalHeight": 724,
+    "originalSha256": "2754d3486a977c481c75201861f57b5becf889795317f93e1672a79d6c2ed356"
   },
   "gate": {
-    "width": 1774,
-    "height": 887,
-    "sha256": "c7996f02e4a3a4158250c448dee26cd4be4965e366af3d76d9110eb4a7898795",
-    "battleInset": 0
+    "width": 1182,
+    "height": 591,
+    "sha256": "9336354d145bf174f46ce80616e9cb882e3369c3664ef95887a146da4c92e06a",
+    "battleInset": 0,
+    "originalWidth": 1774,
+    "originalHeight": 887,
+    "originalSha256": "c7996f02e4a3a4158250c448dee26cd4be4965e366af3d76d9110eb4a7898795"
   },
   "well": {
-    "width": 1774,
-    "height": 887,
-    "sha256": "6cb2b9ac1818f175eecedfba4bca101617df750428eaaf6a00bca4f892d1a02a",
-    "battleInset": 0
+    "width": 1182,
+    "height": 591,
+    "sha256": "fab622065495be274b33795d908c05e9b4eea498469376a26df9a2751e2b35e6",
+    "battleInset": 0,
+    "originalWidth": 1774,
+    "originalHeight": 887,
+    "originalSha256": "6cb2b9ac1818f175eecedfba4bca101617df750428eaaf6a00bca4f892d1a02a"
   },
   "barn": {
-    "width": 1942,
-    "height": 809,
-    "sha256": "26982058271f07445e154ab44b5cc771358c49d5a845ea5645420a55135a2d03",
-    "battleInset": 64
+    "width": 1294,
+    "height": 539,
+    "sha256": "8c59b23e2747251d31dd322ed2de28f40e8fc11be56841c9c8cbadb3249198f6",
+    "battleInset": 43,
+    "originalWidth": 1942,
+    "originalHeight": 809,
+    "originalSha256": "26982058271f07445e154ab44b5cc771358c49d5a845ea5645420a55135a2d03"
   },
   "paving": {
-    "width": 1774,
-    "height": 887,
-    "sha256": "96963d8fdec9dd0bcdacdcba85295a8ac90f753f1d54dcc41d77346b212b2287",
-    "battleInset": 64
+    "width": 1182,
+    "height": 591,
+    "sha256": "090431c53e76dde1526b5c2a1db9784129b5094784ed8b07aea906dc1cf0c413",
+    "battleInset": 43,
+    "originalWidth": 1774,
+    "originalHeight": 887,
+    "originalSha256": "96963d8fdec9dd0bcdacdcba85295a8ac90f753f1d54dcc41d77346b212b2287"
   },
   "tree": {
-    "width": 1774,
-    "height": 887,
-    "sha256": "4dc88ecf3bb1d36de9e1b89b9e883b427838af9875c81ee33944edbae0b4508a",
-    "battleInset": 32
+    "width": 1182,
+    "height": 591,
+    "sha256": "3cadcc2d01d8730f710732daf88082965771b86930269fed5c21b0a92c6a252c",
+    "battleInset": 21,
+    "originalWidth": 1774,
+    "originalHeight": 887,
+    "originalSha256": "4dc88ecf3bb1d36de9e1b89b9e883b427838af9875c81ee33944edbae0b4508a"
   }
 }
