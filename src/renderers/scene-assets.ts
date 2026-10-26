@@ -1,3 +1,4 @@
+import { scenePngSize } from "@/data/battle-map";
 import manifest from "@/data/scene-image-manifest.json";
 
 export type SceneAssetView = "overview" | "battle";
@@ -66,7 +67,12 @@ export async function inlineSceneImages(markup: string): Promise<string> {
 
 export async function scenePng(markup: string): Promise<Blob> {
   const svg = await inlineSceneImages(markup);
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
+  const root = parsed.documentElement;
+  const size = scenePngSize(Number(root.getAttribute("width")), Number(root.getAttribute("height")));
+  root.setAttribute("width", String(size.width));
+  root.setAttribute("height", String(size.height));
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(root)], { type: "image/svg+xml" }));
   try {
     const image = new Image();
     await new Promise<void>((resolve, reject) => {

@@ -31,9 +31,17 @@ describe("battle map controls", () => {
     change(host, "pixels", "128");
     host.dispatchEvent(new Event("submit", { cancelable: true }));
     expect(commit).not.toHaveBeenCalled();
-    expect(host.querySelector('[role="status"]')?.textContent).toContain("8192");
+    expect(host.querySelector('[role="status"]')?.textContent).toContain("5460");
     change(host, "pixels", "16");
     host.dispatchEvent(new Event("submit", { cancelable: true }));
     expect(commit).toHaveBeenCalledWith({ columns: 200, rows: 113, cellPixels: 16 });
   });
+});
+
+it("shows capped PNG dimensions while retaining a previously saved high-resolution grid", () => {
+  const settings = { columns: 128, rows: 64, cellPixels: 64 };
+  const host = battleMapControls(settings, () => {});
+  expect(host.querySelector("[data-battle-png-size]")?.textContent).toContain("5460 × 2730");
+  expect(host.querySelector<HTMLInputElement>("[data-battle-columns]")!.value).toBe("128");
+  expect(host.querySelector<HTMLInputElement>("[data-battle-pixels]")!.value).toBe("64");
 });

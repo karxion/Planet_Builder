@@ -1,4 +1,10 @@
-import { assertBattleMapSettings, battlePreset, battleRows, isBattleMapSettings } from "@/data/battle-map";
+import {
+  assertBattleMapSettings,
+  battlePreset,
+  battleRows,
+  isBattleMapSettings,
+  scenePngSize
+} from "@/data/battle-map";
 import { getUiLanguage } from "@/services/ui-language";
 import type { BattleMapPreset, BattleMapRatio, BattleMapSettings } from "@/types/battle-map";
 
@@ -15,7 +21,7 @@ export function battleMapControls(
   host.innerHTML = `<label>${text("크기 프리셋", "Map preset")}<select data-battle-preset><option value="small">${text("소형 · 25칸", "Small · 25 columns")}</option><option value="medium">${text("중형 · 48칸", "Medium · 48 columns")}</option><option value="large">${text("대형 · 72칸", "Large · 72 columns")}</option><option value="custom">${text("수동", "Custom")}</option></select></label>
   <label>${text("비율", "Aspect ratio")}<select data-battle-ratio><option>16:9</option><option>4:3</option><option>1:1</option><option value="custom">${text("자유 비율", "Free ratio")}</option></select></label>
   <label>${text("가로 칸", "Columns")}<input data-battle-columns type="number" min="8" max="256" required></label><label>${text("세로 칸", "Rows")}<input data-battle-rows type="number" min="8" max="256" required></label>
-  <label>${text("한 칸 해상도 (px)", "Pixels per square")}<input data-battle-pixels type="number" min="16" max="128" required></label><button type="submit">${text("크기 적용", "Apply size")}</button><p role="status" data-battle-size-status></p>`;
+  <label>${text("한 칸 해상도 (px)", "Pixels per square")}<input data-battle-pixels type="number" min="16" max="128" required></label><button type="submit">${text("크기 적용", "Apply size")}</button><p data-battle-png-size></p><p role="status" data-battle-size-status></p>`;
   const preset = host.querySelector<HTMLSelectElement>("[data-battle-preset]")!;
   const ratio = host.querySelector<HTMLSelectElement>("[data-battle-ratio]")!;
   const cols = host.querySelector<HTMLInputElement>("[data-battle-columns]")!;
@@ -53,13 +59,26 @@ export function battleMapControls(
     preset.value = "custom";
     syncRows();
   };
+  const pngHint = host.querySelector<HTMLElement>("[data-battle-png-size]")!;
+  const showPngSize = () => {
+    const next = { columns: Number(cols.value), rows: Number(rows.value), cellPixels: Number(pixels.value) };
+    if (!isBattleMapSettings(next)) {
+      pngHint.textContent = "";
+      return;
+    }
+    const size = scenePngSize(next.columns * next.cellPixels, next.rows * next.cellPixels);
+    pngHint.textContent = `PNG: ${size.width} × ${size.height}px · ${text("한 변 최대 5460px, 초과 시 비율 유지 축소", "Max 5460px per axis; oversized PNGs are reduced proportionally")}`;
+  };
+  host.addEventListener("input", showPngSize);
+  host.addEventListener("change", showPngSize);
+  showPngSize();
   host.onsubmit = event => {
     event.preventDefault();
     const next = { columns: Number(cols.value), rows: Number(rows.value), cellPixels: Number(pixels.value) };
     if (!isBattleMapSettings(next)) {
       status.textContent = text(
-        "가로·세로 8~256칸, 한 칸 16~128px. 출력은 한 변 8192px·총 32Mpx 이하입니다. 큰 지도는 칸 해상도를 낮춰 주세요.",
-        "Use 8–256 squares per axis and 16–128 pixels per square. Export limit: 8192px per axis, 32Mpx total. Reduce pixels per square for larger maps."
+        "가로·세로 8~256칸, 한 칸 16~128px 범위에서 큰 지도는 칸 해상도를 낮춰 주세요. PNG는 한 변 최대 5460px로 출력합니다.",
+        "Use 8–256 squares per axis and 16–128 pixels per square. Reduce pixels per square for larger maps. PNG output is capped at 5460px per axis."
       );
       return;
     }

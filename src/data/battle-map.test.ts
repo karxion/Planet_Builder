@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { battleBox, battlePreset, battleRows, battleTravel, isBattleMapSettings } from "./battle-map";
+import {
+  battleBox,
+  battlePreset,
+  battleRows,
+  battleTravel,
+  isBattleMapSettings,
+  MAX_PNG_PIXELS,
+  scenePngSize
+} from "./battle-map";
 
 describe("battle map scale", () => {
   it.each([
@@ -34,4 +42,28 @@ describe("battle map scale", () => {
     expect(box.x % 10).toBe(0);
     expect(box.y % 10).toBe(0);
   });
+});
+
+describe("PNG-only output budget", () => {
+  it.each([
+    [8192, 4096, 5460, 2730],
+    [4096, 8192, 2730, 5460],
+    [4608, 2592, 4608, 2592]
+  ])("fits %ix%i while preserving orientation", (width, height, expectedWidth, expectedHeight) => {
+    expect(scenePngSize(width, height)).toEqual({ width: expectedWidth, height: expectedHeight });
+  });
+  it("bounds a square by total pixel budget and keeps existing project settings valid", () => {
+    const before = { columns: 128, rows: 64, cellPixels: 64 };
+    expect(isBattleMapSettings(before)).toBe(true);
+    const size = scenePngSize(8192, 8192);
+    expect(size.width).toBe(size.height);
+    expect(size.width * size.height).toBeLessThanOrEqual(MAX_PNG_PIXELS);
+    expect(before).toEqual({ columns: 128, rows: 64, cellPixels: 64 });
+  });
+  it.each([
+    [0, 100],
+    [NaN, 100],
+    [Infinity, 100],
+    [3.5, 20]
+  ])("rejects invalid dimensions %s/%s", (width, height) => expect(() => scenePngSize(width, height)).toThrow());
 });

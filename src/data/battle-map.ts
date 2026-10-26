@@ -4,6 +4,15 @@ export const BATTLE_PRESETS: Record<BattleMapPreset, number> = { small: 25, medi
 export const BATTLE_GRID_UNIT = 10;
 export const MAX_BATTLE_AXIS = 256;
 export const MAX_BATTLE_PIXELS = 32 * 1024 * 1024;
+// Keep existing project/SVG settings readable; apply the smaller budget to PNG only.
+export const MAX_PNG_AXIS = 5460;
+export const MAX_PNG_PIXELS = Math.floor((MAX_BATTLE_PIXELS * 4) / 9);
+export function scenePngSize(width: number, height: number): { width: number; height: number } {
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width < 1 || height < 1)
+    throw new Error("Invalid PNG dimensions");
+  const scale = Math.min(1, MAX_PNG_AXIS / width, MAX_PNG_AXIS / height, Math.sqrt(MAX_PNG_PIXELS / (width * height)));
+  return { width: Math.max(1, Math.floor(width * scale)), height: Math.max(1, Math.floor(height * scale)) };
+}
 export function battleRows(columns: number, ratio: Exclude<BattleMapRatio, "custom"> = "16:9"): number {
   const [x, y] = ratio.split(":").map(Number);
   return Math.max(1, Math.round((columns * y) / x));
@@ -28,7 +37,7 @@ export function isBattleMapSettings(value: unknown): value is BattleMapSettings 
 export function assertBattleMapSettings(value: BattleMapSettings): void {
   if (!isBattleMapSettings(value))
     throw new Error(
-      "전투지도는 가로·세로 8~256칸, 한 칸 16~128px입니다. 출력은 한 변 8192px·총 32Mpx 이하로 설정하세요. 큰 지도는 칸 해상도를 낮춰 주세요."
+      "전투지도는 가로·세로 8~256칸, 한 칸 16~128px입니다. 작업 설정은 한 변 8192px·총 32Mpx 이하로 설정하세요. PNG 출력은 한 변 최대 5460px입니다. 큰 지도는 칸 해상도를 낮춰 주세요."
     );
 }
 export function battleTravel(settings: BattleMapSettings): { feet: number; walk: number; dash: number } {
