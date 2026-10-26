@@ -13,7 +13,6 @@
 /.sites-publish
 /.sites-publish-*
 /.bkit
-/.openai/release.json
 .env
 .env.*
 !.env.example

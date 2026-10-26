@@ -22,6 +22,7 @@ describe("Single-source Site release", () => {
         write(directory, ".openai/hosting.json", '{"project_id":"same-site"}');
       }
       for (const path of RELEASE_PATHS) write(source, ["src", "public"].includes(path) ? `${path}/example.txt` : path, path);
+      write(source, ".gitignore", ".env\nnode_modules\n");
       git(source, "add", ".");
       git(source, "-c", "user.name=test", "-c", "user.email=test@example.test", "-c", "core.hooksPath=/dev/null", "commit", "-qm", "pinned");
       const commit = git(source, "rev-parse", "HEAD");

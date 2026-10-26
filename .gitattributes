@@ -11,3 +11,4 @@
 /vitest.config.ts text eol=lf
 /LICENSE text eol=lf
 /scripts/release-source.ts text eol=lf
+/.gitignore text eol=lf
