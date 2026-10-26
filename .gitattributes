@@ -1,3 +1,12 @@
 # Keep official vendor bytes stable for SRI and SHA-256 checks on every OS.
 /public/libs/jquery-3.7.1.min.js text eol=lf
 /public/libs/jquery-ui-1.13.3.min.js text eol=lf
+
+# Release provenance hashes must survive Windows/Linux checkouts unchanged.
+/src/** text=auto eol=lf
+/public/** text=auto eol=lf
+/package*.json text eol=lf
+/tsconfig.json text eol=lf
+/vite.config.ts text eol=lf
+/LICENSE text eol=lf
+/scripts/release-source.ts text eol=lf

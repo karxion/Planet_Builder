@@ -4,6 +4,7 @@ import "./fonts";
 import "./external-character-policy";
 import "./content-sanitizer";
 import "./io/csv";
+import "./build-info";
 import "./marker-notes";
 import "./planet/init";
 
