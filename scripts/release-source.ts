@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isUtf8 } from "node:buffer";
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,6 +9,10 @@ import { fileURLToPath } from "node:url";
 export const RELEASE_PATHS = ["src", "public", "package.json", "package-lock.json", "tsconfig.json", "vite.config.ts", "vitest.config.ts", ".gitattributes", "LICENSE", "scripts/release-source.ts"];
 export function sourceHash(root: string): string {
   const hash = createHash("sha256");
+  const content = (path: string) => {
+    const bytes = readFileSync(path);
+    return isUtf8(bytes) && !bytes.includes(0) ? Buffer.from(bytes.toString("utf8").replaceAll("\r\n", "\n")) : bytes;
+  };
   const visit = (path: string) => {
     const absolute = join(root, path);
     for (const entry of readdirSync(absolute, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0)) {
@@ -15,14 +20,14 @@ export function sourceHash(root: string): string {
       const relative = `${path}/${entry.name}`;
       if (entry.isSymbolicLink()) throw new Error(`Release symlink is not allowed: ${relative}`);
       if (entry.isDirectory()) visit(relative);
-      else hash.update(relative).update("\0").update(readFileSync(join(root, relative))).update("\0");
+      else hash.update(relative).update("\0").update(content(join(root, relative))).update("\0");
     }
   };
   for (const path of RELEASE_PATHS) {
     if (!existsSync(join(root, path))) throw new Error(`Missing release input: ${path}`);
     if (lstatSync(join(root, path)).isSymbolicLink()) throw new Error(`Release symlink is not allowed: ${path}`);
     if (["src", "public"].includes(path)) visit(path);
-    else hash.update(path).update("\0").update(readFileSync(join(root, path))).update("\0");
+    else hash.update(path).update("\0").update(content(join(root, path))).update("\0");
   }
   return hash.digest("hex");
 }

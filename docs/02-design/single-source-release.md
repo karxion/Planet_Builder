@@ -17,7 +17,7 @@ GitHub `karxion/Planet_Builder`의 main에 포함된 고정 커밋이 유일한 
 - 대상이 독립된 Git 루트가 아니거나 미커밋 변경이 있거나 Site ID가 다르면 중단한다.
 - 교체 대상은 `RELEASE_PATHS`의 앱 소스·설정·라이선스뿐이다. Git·호스팅 manifest·로컬 환경 변수는 보존한다. 생성 결과 dist는 빌드에서 갱신한다.
 - 재귀 교체/정리 대상의 절대경로와 symlink를 검사한다. 새 소스의 symlink는 허용하지 않는다.
-- source hash는 실행 소스와 lockfile을 포함하며, Windows/Linux에서 같도록 해당 경로의 LF를 고정한다.
+- source hash는 실행 소스와 lockfile을 포함한다. 텍스트의 CRLF/LF만 정규화해 비교하고 바이너리는 원본 바이트를 사용한다. vendor 배포물은 별도의 SHA-256·SRI 테스트로 원본 바이트까지 검사한다.
 - 이전 Site 버전은 기존 아카이브로 롤백한다. GitHub에서는 각 기능 커밋을 별도로 되돌릴 수 있다.
 - GitHub Actions는 main에서 같은 단위 테스트와 빌드를 수행한다. 실제 게시에는 Sites의 현재 인증·빌드 업로드가 필요하며, 자동 게시 파이프라인까지 새로 연결한 것은 아니다.
 

@@ -36,6 +36,10 @@ describe("Single-source Site release", () => {
       const provenance = JSON.parse(readFileSync(join(target, ".openai/release.json"), "utf8"));
       expect(provenance.commit).toBe(commit);
       expect(provenance.sourceHash).toBe(sourceHash(target));
+      write(target, "src/example.txt", "one\r\ntwo");
+      const windowsHash = sourceHash(target);
+      write(target, "src/example.txt", "one\ntwo");
+      expect(sourceHash(target)).toBe(windowsHash);
       write(target, "src/example.txt", "changed");
       expect(sourceHash(target)).not.toBe(provenance.sourceHash);
       expect(() => prepareRelease(source, target, commit)).toThrow("uncommitted");
