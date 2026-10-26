@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const RELEASE_PATHS = ["src", "public", "package.json", "package-lock.json", "tsconfig.json", "vite.config.ts", ".gitattributes", "LICENSE", "scripts/release-source.ts"];
+export const RELEASE_PATHS = ["src", "public", "package.json", "package-lock.json", "tsconfig.json", "vite.config.ts", "vitest.config.ts", ".gitattributes", "LICENSE", "scripts/release-source.ts"];
 export function sourceHash(root: string): string {
   const hash = createHash("sha256");
   const visit = (path: string) => {
