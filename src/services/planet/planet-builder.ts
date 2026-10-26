@@ -1,3 +1,4 @@
+import { renderDrivePanel } from "@/controllers/google-drive-panel";
 import { Controllers } from "@/controllers";
 import { Campaign } from "@/controllers/campaign-world";
 import { initBorderDiplomacy } from "@/controllers/border-diplomacy";
@@ -651,11 +652,36 @@ async function openCloud(): Promise<void> {
 }
 
 async function renderCloudContent(): Promise<void> {
-  const content = ensureEl("fpb-cloud-content");
-  if (!ProjectRepository.isConfigured()) {
-    content.innerHTML = `<div class="fpb-empty"><span class="icon-cloud"></span><strong>클라우드 연결 대기 중</strong><p>배포 환경의 bkend.ai 설정이 완료되면 개인 프로젝트 저장소가 활성화됩니다.</p></div>`;
-    return;
-  }
+  const root = ensureEl("fpb-cloud-content");
+  root.innerHTML = '<section id="fpb-drive-panel"></section><section id="fpb-bkend-panel"></section>';
+  renderDrivePanel(ensureEl("fpb-drive-panel"), {
+    save: async upload => {
+      if (!confirmExport()) return;
+      const generation = session.capture();
+      const project = await buildProject();
+      const blob = await ProjectCodec.encodePlanetProject(project);
+      if (!session.isCurrent(generation)) throw new Error("행성이 변경되었습니다. 다시 저장해 주세요.");
+      await upload(project.planet.name, blob);
+      if (session.isCurrent(generation)) setStatus("Google Drive에 사본 저장됨", "cloud");
+    },
+    open: async download => {
+      if (!confirmReplace()) return;
+      const generation = session.capture();
+      const revision = changeRevision;
+      const draftRevision = EditorDrafts.revision;
+      const decoded = await ProjectCodec.decodePlanetProject(await download());
+      if (!session.isCurrent(generation) || revision !== changeRevision || draftRevision !== EditorDrafts.revision)
+        throw new Error("불러오는 동안 작업이 변경되었습니다. 다시 열어 주세요.");
+      const pending = loadProject(decoded);
+      const openedGeneration = session.capture();
+      await pending;
+      if (!session.isCurrent(openedGeneration)) return;
+      ensureEl<HTMLDialogElement>("fpb-cloud-dialog").close();
+      setStatus("Google Drive 프로젝트", "local");
+    }
+  });
+  const content = ensureEl("fpb-bkend-panel");
+  if (!ProjectRepository.isConfigured()) return;
   if (!ProjectRepository.isAuthenticated()) {
     content.innerHTML = /* html */ `<form id="fpb-auth-form" class="fpb-auth-form"><label>이메일<input name="email" type="email" autocomplete="email" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" minlength="8" required></label><div class="fpb-dialog-actions"><button class="primary" name="action" value="signin" type="submit">로그인</button><button name="action" value="signup" type="submit">회원가입</button></div></form>`;
     ensureEl<HTMLFormElement>("fpb-auth-form").addEventListener("submit", event => void authenticate(event));
