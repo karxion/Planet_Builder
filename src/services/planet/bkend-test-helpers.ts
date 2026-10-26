@@ -62,3 +62,8 @@ export function bkendPlanetProject(): PlanetProject {
     savedAt: "2026-01-01T00:00:00Z"
   };
 }
+
+export function bkendRevision(project: CloudProject = bkendCloudProject()) {
+  return { ...project, id: `record:${project.revision}`, projectId: project.id,
+    revisionKey: JSON.stringify([project.id, project.revision]), projectCreatedAt: project.createdAt, deleted: false };
+}

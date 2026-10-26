@@ -9,6 +9,9 @@ type RequestOptions = { state?: AuthState; retry?: boolean; authenticate?: boole
 const API_BASE = import.meta.env.VITE_BKEND_API_URL?.replace(/\/$/, "") ?? "";
 const PROJECT_ID = import.meta.env.VITE_BKEND_PROJECT_ID ?? "";
 const ENVIRONMENT = import.meta.env.VITE_BKEND_ENV ?? "dev";
+const PUBLISHABLE_KEY = import.meta.env.VITE_BKEND_PUBLISHABLE_KEY ?? "";
+const REVISION_TABLE = "/data/project_revisions";
+const concurrencyReady = () => import.meta.env.VITE_BKEND_CONCURRENCY === "immutable-v1";
 const SESSION_KEY = "fpb-bkend-session";
 let authState: AuthState = { session: null };
 
@@ -102,6 +105,7 @@ async function request<T>(path: string, init: RequestInit = {}, options: Request
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   headers.set("x-project-id", PROJECT_ID);
   headers.set("x-environment", ENVIRONMENT);
+  if (PUBLISHABLE_KEY) headers.set("X-API-Key", PUBLISHABLE_KEY);
   if (session) headers.set("Authorization", `Bearer ${session.accessToken}`);
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
@@ -134,7 +138,7 @@ async function request<T>(path: string, init: RequestInit = {}, options: Request
 }
 
 function isConfigured(): boolean {
-  return Boolean(API_BASE && PROJECT_ID);
+  return Boolean(API_BASE && (PROJECT_ID || PUBLISHABLE_KEY));
 }
 
 async function signUp(email: string, password: string): Promise<void> {
@@ -195,19 +199,79 @@ async function signOut(): Promise<void> {
 }
 
 async function list(): Promise<CloudProject[]> {
-  const result = await request<{ items?: CloudProject[] } | CloudProject[]>(
-    "/data/projects?sort=updatedAt:desc&limit=100"
-  );
-  return Array.isArray(result) ? result : (result.items ?? []);
+  const state = getAuthState();
+  const heads = new Map<string, CloudRevision>();
+  for (let page = 1; page <= 100; page++) {
+    const result = await request<RevisionPage>(`${REVISION_TABLE}?sortBy=createdAt&sortDirection=desc&limit=100&page=${page}`, {}, { state });
+    const rows = Array.isArray(result) ? result : result.items;
+    if (!Array.isArray(rows)) throw new Error("클라우드 리비전 목록이 올바르지 않습니다");
+    for (const row of rows) {
+      assertRevision(row);
+      if (!heads.has(row.projectId) || heads.get(row.projectId)!.revision < row.revision) heads.set(row.projectId, row);
+    }
+    if (!(Array.isArray(result) ? rows.length === 100 : result.pagination?.hasNext ?? rows.length === 100))
+      return [...heads.values()].filter(row => !row.deleted).map(asProject).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+  throw new Error("클라우드 리비전 목록 제한을 초과했습니다. 관리자에게 문의해 주세요");
+}
+
+interface CloudRevision extends CloudProject {
+  projectId: string;
+  revisionKey: string;
+  projectCreatedAt: string;
+  deleted: boolean;
+}
+type RevisionPage = CloudRevision[] | { items: CloudRevision[]; pagination?: { hasNext?: boolean } };
+function assertRevision(value: unknown): asserts value is CloudRevision {
+  if (!isRecord(value) || typeof value.projectId !== "string" || !value.projectId ||
+      !Number.isSafeInteger(value.revision) || Number(value.revision) < 1 ||
+      value.revisionKey !== revisionKey(String(value.projectId), Number(value.revision)) ||
+      typeof value.deleted !== "boolean" ||
+      !["id", "name", "fileId", "projectCreatedAt", "createdAt", "updatedAt"].every(key => typeof value[key] === "string") ||
+      value.schemaVersion !== 1 || typeof value.sourceFmgVersion !== "string" ||
+      typeof value.sizeBytes !== "number" || value.sizeBytes < 0)
+    throw new Error("클라우드 리비전 응답이 올바르지 않습니다");
+}
+const revisionKey = (id: string, revision: number) => JSON.stringify([id, revision]);
+function asProject(row: CloudRevision): CloudProject {
+  return { id: row.projectId, name: row.name, fileId: row.fileId, schemaVersion: row.schemaVersion,
+    sourceFmgVersion: row.sourceFmgVersion, revision: row.revision, sizeBytes: row.sizeBytes,
+    createdAt: row.projectCreatedAt, updatedAt: row.createdAt };
+}
+function requireConcurrency(): void {
+  if (!concurrencyReady()) throw new Error("클라우드 충돌 방지 설정이 필요합니다. 로컬 FPB 파일로 저장해 주세요");
+}
+async function currentRevision(project: CloudProject, state: AuthState): Promise<CloudRevision> {
+  const query = new URLSearchParams({ andFilters: JSON.stringify({ projectId: project.id }), sortBy: "revision", sortDirection: "desc", limit: "1" });
+  const result = await request<RevisionPage>(`${REVISION_TABLE}?${query}`, {}, { state });
+  const rows = Array.isArray(result) ? result : result.items;
+  const current = rows?.[0];
+  if (!current) throw new ProjectConflictError();
+  assertRevision(current);
+  if (current.projectId !== project.id || current.deleted || current.revision !== project.revision || current.fileId !== project.fileId)
+    throw new ProjectConflictError();
+  return current;
+}
+async function appendRevision(record: Omit<CloudRevision, "id" | "createdAt" | "updatedAt">, state: AuthState): Promise<CloudProject> {
+  let saved: unknown;
+  try {
+    saved = await request(REVISION_TABLE, { method: "POST", body: JSON.stringify(record) }, { state });
+  } catch (error) {
+    if (error instanceof BkendRequestError && error.status === 409) throw new ProjectConflictError();
+    throw error;
+  }
+  assertRevision(saved);
+  if (saved.revisionKey !== record.revisionKey || saved.fileId !== record.fileId) throw new Error("클라우드 저장 응답이 일치하지 않습니다");
+  return asProject(saved);
 }
 
 async function save(project: PlanetProject, blob: Blob, existing?: CloudProject): Promise<CloudProject> {
   if (blob.size > 20 * 1024 * 1024) throw new Error("클라우드 저장은 압축 후 20MB까지 지원합니다");
+  requireConcurrency();
   const state = getAuthState();
 
   if (existing) {
-    const remote = await request<CloudProject>(`/data/projects/${encodeURIComponent(existing.id)}`, {}, { state });
-    if (remote.revision !== existing.revision) throw new ProjectConflictError();
+    await currentRevision(existing, state);
   }
 
   const filename = `${sanitizeFilename(project.planet.name)}.fpb`;
@@ -250,32 +314,32 @@ async function save(project: PlanetProject, blob: Blob, existing?: CloudProject)
       { state }
     );
 
+    const projectId = existing?.id ?? crypto.randomUUID();
+    const revision = (existing?.revision ?? 0) + 1;
     const record = {
+      projectId,
+      revisionKey: revisionKey(projectId, revision),
+      projectCreatedAt: existing?.createdAt ?? new Date().toISOString(),
+      deleted: false,
       name: project.planet.name,
       fileId,
       schemaVersion: project.schemaVersion,
       sourceFmgVersion: project.source.fmgVersion,
-      revision: (existing?.revision ?? 0) + 1,
+      revision,
       sizeBytes: blob.size
     };
     assertCurrent(state);
     metadataStarted = true;
-    saved = await request<CloudProject>(
-      existing ? `/data/projects/${encodeURIComponent(existing.id)}` : "/data/projects",
-      { method: existing ? "PATCH" : "POST", body: JSON.stringify(record) },
-      { state }
-    );
+    saved = await appendRevision(record, state);
   } catch (error) {
     // Network errors, timeouts and 5xx after a metadata write may hide a committed record.
     const rejected =
       error instanceof BkendRequestError && error.status >= 400 && error.status < 500 && error.status !== 408;
-    if (fileId && (!metadataStarted || rejected)) await deleteFile(fileId, state);
+    if (fileId && (!metadataStarted || rejected || error instanceof ProjectConflictError)) await deleteFile(fileId, state);
     throw error;
   }
 
-  if (existing?.fileId && existing.fileId !== fileId) {
-    void deleteFile(existing.fileId, state);
-  }
+  // Retain previous files: an older revision or in-flight reader may still reference them.
   return saved;
 }
 
@@ -291,16 +355,21 @@ async function load(project: CloudProject): Promise<Blob> {
 }
 
 async function rename(project: CloudProject, name: string): Promise<CloudProject> {
-  return request(`/data/projects/${encodeURIComponent(project.id)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ name })
-  });
+  return appendMetadata(project, { name: name.trim() });
 }
 
 async function remove(project: CloudProject): Promise<void> {
+  await appendMetadata(project, { deleted: true });
+}
+
+async function appendMetadata(project: CloudProject, update: { name?: string; deleted?: boolean }): Promise<CloudProject> {
+  requireConcurrency();
+  if (update.name !== undefined && (!update.name || update.name.length > 200)) throw new Error("프로젝트 이름을 확인해주세요");
   const state = getAuthState();
-  await request(`/data/projects/${encodeURIComponent(project.id)}`, { method: "DELETE" }, { state });
-  await deleteFile(project.fileId, state);
+  const current = await currentRevision(project, state);
+  const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...record } = current;
+  return appendRevision({ ...record, ...update, revision: current.revision + 1,
+    revisionKey: revisionKey(project.id, current.revision + 1) }, state);
 }
 
 async function deleteFile(fileId: string, state: AuthState): Promise<void> {

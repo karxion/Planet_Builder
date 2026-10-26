@@ -7,6 +7,7 @@ import {
   bkendDeferred,
   bkendPlanetProject,
   bkendResponse,
+  bkendRevision,
   createBkendStorage
 } from "./bkend-test-helpers";
 
@@ -37,7 +38,7 @@ function callsTo(path: string) {
 }
 
 function stageSave(existing = false): void {
-  if (existing) fetchMock.mockResolvedValueOnce(bkendResponse(bkendCloudProject()));
+  if (existing) fetchMock.mockResolvedValueOnce(bkendResponse({ items: [bkendRevision()] }));
   fetchMock.mockResolvedValueOnce(bkendResponse({ data: { url: BKEND_UPLOAD, fileId: newFileId } }));
 }
 
@@ -46,6 +47,7 @@ beforeEach(async () => {
   vi.stubEnv("VITE_BKEND_API_URL", `${BKEND_API}/`);
   vi.stubEnv("VITE_BKEND_PROJECT_ID", "test-project");
   vi.stubEnv("VITE_BKEND_ENV", "test");
+  vi.stubEnv("VITE_BKEND_CONCURRENCY", "immutable-v1");
   storage = createBkendStorage();
   fetchMock = vi.fn<typeof fetch>().mockRejectedValue(new Error("Unexpected mocked fetch"));
   vi.stubGlobal("sessionStorage", storage);
@@ -288,12 +290,14 @@ describe("bkend save cleanup", () => {
   });
 
   it("preserves the revision preflight and encoded project path", async () => {
-    fetchMock.mockResolvedValueOnce(bkendResponse(bkendCloudProject({ revision: 4 })));
+    fetchMock.mockResolvedValueOnce(bkendResponse({ items: [bkendRevision(bkendCloudProject({ revision: 4 }))] }));
     await expect(repository.save(bkendPlanetProject(), blob, bkendCloudProject())).rejects.toBeInstanceOf(
       ConflictError
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock.mock.calls[0][0]).toBe(`${BKEND_API}/data/projects/${encodeURIComponent(bkendCloudProject().id)}`);
+    const query = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(query.pathname).toBe("/data/project_revisions");
+    expect(JSON.parse(query.searchParams.get("andFilters")!)).toEqual({ projectId: bkendCloudProject().id });
   });
 
   it.each([
@@ -323,7 +327,7 @@ describe("bkend save cleanup", () => {
     const deletes = fetchMock.mock.calls.filter(([, init]) => init?.method === "DELETE");
     expect(deletes).toHaveLength(1);
     expect(deletes[0][0]).toBe(`${BKEND_API}/files/${encodeURIComponent(newFileId)}`);
-    expect(callsTo(`/data/projects/${encodeURIComponent(bkendCloudProject().id)}`)).toHaveLength(1);
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes("andFilters="))).toHaveLength(1);
   });
 
   it.each([false, true])("cleans the staged file on a rejected metadata write (existing=%s)", async existing => {
@@ -373,20 +377,19 @@ describe("bkend save cleanup", () => {
 
   it("refuses to upload over or clean an existing file returned as a new allocation", async () => {
     fetchMock
-      .mockResolvedValueOnce(bkendResponse(bkendCloudProject()))
+      .mockResolvedValueOnce(bkendResponse({ items: [bkendRevision()] }))
       .mockResolvedValueOnce(bkendResponse({ fileId: bkendCloudProject().fileId, url: BKEND_UPLOAD }));
     await expect(repository.save(bkendPlanetProject(), blob, bkendCloudProject())).rejects.toThrow("기존 파일");
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it("commits metadata before deleting the old file and tolerates cleanup failure", async () => {
+  it("appends a revision without deleting the old file", async () => {
     stageSave(true);
     const saved = bkendCloudProject({ fileId: newFileId, revision: 4 });
     fetchMock
       .mockResolvedValueOnce(bkendResponse({}, 204))
       .mockResolvedValueOnce(bkendResponse({}, 204))
-      .mockResolvedValueOnce(bkendResponse({ data: saved }))
-      .mockRejectedValueOnce(new Error("Cleanup disconnected"));
+      .mockResolvedValueOnce(bkendResponse({ data: bkendRevision(saved) }));
     await expect(repository.save(bkendPlanetProject(), blob, bkendCloudProject())).resolves.toEqual(saved);
     expect(fetchMock.mock.calls[2][0]).toBe(BKEND_UPLOAD);
     expect(fetchMock.mock.calls[2][1]?.body).toBe(blob);
@@ -399,8 +402,10 @@ describe("bkend save cleanup", () => {
       sizeBytes: blob.size
     });
     expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).filename).toBe("Test_planet_.fpb");
-    expect(fetchMock.mock.calls[5][0]).toBe(`${BKEND_API}/files/${encodeURIComponent(bkendCloudProject().fileId)}`);
-    expect(fetchMock.mock.calls[5][1]?.method).toBe("DELETE");
+    expect(fetchMock.mock.calls[4][0]).toBe(`${BKEND_API}/data/project_revisions`);
+    expect(fetchMock.mock.calls[4][1]?.method).toBe("POST");
+    expect(record.revisionKey).toBe(JSON.stringify([saved.id, 4]));
+    expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
   it("does not continue a save or issue cleanup requests under a different login", async () => {
@@ -417,21 +422,18 @@ describe("bkend save cleanup", () => {
 });
 
 describe("bkend request and path consistency", () => {
-  it("encodes rename and removal IDs and deletes the file only after project deletion", async () => {
+  it("versions rename and deletion without mutating records or deleting referenced files", async () => {
     storeSession();
     const project = bkendCloudProject();
-    fetchMock
-      .mockResolvedValueOnce(bkendResponse(project))
-      .mockResolvedValueOnce(bkendResponse({}, 204))
-      .mockResolvedValueOnce(bkendResponse({}, 204));
+    const renamed = bkendCloudProject({ name: "Renamed", revision: 4 });
+    fetchMock.mockResolvedValueOnce(bkendResponse({ items: [bkendRevision(project)] }))
+      .mockResolvedValueOnce(bkendResponse(bkendRevision(renamed)))
+      .mockResolvedValueOnce(bkendResponse({ items: [bkendRevision(renamed)] }))
+      .mockResolvedValueOnce(bkendResponse({ ...bkendRevision({ ...renamed, revision: 5 }), deleted: true }));
     await repository.rename(project, "Renamed");
-    await repository.remove(project);
-    expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      `${BKEND_API}/data/projects/${encodeURIComponent(project.id)}`,
-      `${BKEND_API}/data/projects/${encodeURIComponent(project.id)}`,
-      `${BKEND_API}/files/${encodeURIComponent(project.fileId)}`
-    ]);
-    expect(fetchMock.mock.calls.map(([, init]) => init?.method)).toEqual(["PATCH", "DELETE", "DELETE"]);
+    await repository.remove(renamed);
+    expect(fetchMock.mock.calls.map(([, init]) => init?.method ?? "GET")).toEqual(["GET", "POST", "GET", "POST"]);
+    expect(JSON.parse(String(fetchMock.mock.calls[3][1]?.body)).deleted).toBe(true);
   });
 
   it("does not delete the file if project deletion fails", async () => {
@@ -477,8 +479,8 @@ describe("bkend request and path consistency", () => {
   it("preserves array and enveloped list responses", async () => {
     const project = bkendCloudProject();
     fetchMock
-      .mockResolvedValueOnce(bkendResponse([project]))
-      .mockResolvedValueOnce(bkendResponse({ data: { items: [project] } }));
+      .mockResolvedValueOnce(bkendResponse([bkendRevision(project)]))
+      .mockResolvedValueOnce(bkendResponse({ data: { items: [bkendRevision(project)] } }));
     await expect(repository.list()).resolves.toEqual([project]);
     await expect(repository.list()).resolves.toEqual([project]);
   });

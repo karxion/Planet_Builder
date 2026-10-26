@@ -2,6 +2,12 @@ import { GOVERNMENT_NAMES } from "@/generators/korean-world-names";
 
 // English is the fallback; world content is deliberately not part of this catalog.
 export const UI_TRANSLATIONS: readonly (readonly [string, string])[] = [
+  ["Cloud concurrency protection must be configured. Save a local FPB file instead", "클라우드 충돌 방지 설정이 필요합니다. 로컬 FPB 파일로 저장해 주세요"],
+  ["Invalid cloud revision list", "클라우드 리비전 목록이 올바르지 않습니다"],
+  ["Invalid cloud revision response", "클라우드 리비전 응답이 올바르지 않습니다"],
+  ["Cloud save response does not match", "클라우드 저장 응답이 일치하지 않습니다"],
+  ["Cloud revision list limit exceeded. Contact the administrator", "클라우드 리비전 목록 제한을 초과했습니다. 관리자에게 문의해 주세요"],
+  ["Check the project name", "프로젝트 이름을 확인해주세요"],
   ["Unique Bonus Traits", "유니크 추가 특성"],
   ["App-created traits · Separate from official SRD abilities · GM approval required", "앱 창작 특성 · 공식 SRD 능력과 별도 · GM 승인 필요"],
   ["Skill Check", "기술 판정"],
