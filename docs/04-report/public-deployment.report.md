@@ -1,5 +1,11 @@
 # 판타지 행성 빌더 공개 배포
 
+## 현재 상태 (2026-10-26)
+
+공개 버전 17부터 GitHub main의 고정 커밋을 유일한 앱 소스로 사용한다. 수동 개별 파일 복사는 더 이상 사용하지 않는다. 절차는 `docs/02-design/single-source-release.md`, 이번 검증과 출처 정보는 `docs/04-report/stability-release-drafts-cloud-2026-10-26.md`를 참고한다. 아래 내용은 최초 배포의 역사 기록이다.
+
+## 최초 배포 기록
+
 - 배포일: 2026-10-11
 - 공개 주소: https://fantasy-planet-builder.karxion.chatgpt.site
 - 호스팅: Sites, 정적 웹 앱, public 접근

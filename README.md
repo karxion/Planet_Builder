@@ -69,6 +69,10 @@ node node_modules/vite/bin/vite.js --host 127.0.0.1
 
 클라우드 기능은 [`.env.example`](.env.example)의 값을 실제 bkend.ai 프로젝트에 맞게 설정한 경우에만 활성화됩니다. 클라우드를 구성하지 않아도 생성, 편집, 로컬 자동 저장, 파일 입출력은 모두 사용할 수 있습니다.
 
+공개 배포는 [단일 소스 릴리스 절차](docs/02-design/single-source-release.md)에 따라 GitHub의 고정 커밋에서 생성합니다. 정보 탭과 `/build-info.json`에서 실제 실행 커밋을 확인할 수 있습니다. 아이템 미적용 초안은 로컬 복구 기록에 자동 보존하며, FPB/클라우드 파일에는 적용 전까지 포함하지 않습니다.
+
+클라우드 쓰기는 [불변 리비전 설정](docs/02-design/bkend-cloud-setup.md)의 소유자 RLS·복합 고유 인덱스를 실제로 검증한 뒤 `VITE_BKEND_CONCURRENCY=immutable-v1`을 설정해야 합니다. 프로젝트 삭제는 목록 숨김 리비전이며 과거 파일의 영구 삭제/용량 회수는 별도 운영 작업입니다.
+
 ## 검증
 
 ```bash
