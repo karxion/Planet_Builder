@@ -1,0 +1,50 @@
+{
+  "house": {
+    "width": 1774,
+    "height": 887,
+    "sha256": "cc47e55bea39eabbc10dfee6e5e6fee8f4aea98c8f38e50597bf44e07ef66868",
+    "battleInset": 64
+  },
+  "keep": {
+    "width": 1774,
+    "height": 887,
+    "sha256": "fdb1ee5f9f3bd9ae5cbc925ffbde82c9a92798c8f14eca8a7df2953203b37621",
+    "battleInset": 0
+  },
+  "wall": {
+    "width": 2172,
+    "height": 724,
+    "sha256": "2754d3486a977c481c75201861f57b5becf889795317f93e1672a79d6c2ed356",
+    "battleInset": 0
+  },
+  "gate": {
+    "width": 1774,
+    "height": 887,
+    "sha256": "c7996f02e4a3a4158250c448dee26cd4be4965e366af3d76d9110eb4a7898795",
+    "battleInset": 0
+  },
+  "well": {
+    "width": 1774,
+    "height": 887,
+    "sha256": "6cb2b9ac1818f175eecedfba4bca101617df750428eaaf6a00bca4f892d1a02a",
+    "battleInset": 0
+  },
+  "barn": {
+    "width": 1942,
+    "height": 809,
+    "sha256": "26982058271f07445e154ab44b5cc771358c49d5a845ea5645420a55135a2d03",
+    "battleInset": 64
+  },
+  "paving": {
+    "width": 1774,
+    "height": 887,
+    "sha256": "96963d8fdec9dd0bcdacdcba85295a8ac90f753f1d54dcc41d77346b212b2287",
+    "battleInset": 64
+  },
+  "tree": {
+    "width": 1774,
+    "height": 887,
+    "sha256": "4dc88ecf3bb1d36de9e1b89b9e883b427838af9875c81ee33944edbae0b4508a",
+    "battleInset": 32
+  }
+}

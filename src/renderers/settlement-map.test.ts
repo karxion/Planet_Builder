@@ -17,7 +17,7 @@ describe("settlement SVG", () => {
     const map = generateSettlementMap(input);
     const doc = new DOMParser().parseFromString(renderSettlementMap(map), "image/svg+xml");
     expect(doc.querySelector("parsererror")).toBeNull();
-    expect(doc.querySelectorAll("script,image,foreignObject")).toHaveLength(0);
+    expect(doc.querySelectorAll("script,foreignObject")).toHaveLength(0);
     expect(doc.querySelectorAll("[data-building]")).toHaveLength(map.buildings.length);
     expect(doc.documentElement.getAttribute("viewBox")).toBe("0 0 1200 800");
     expect(doc.documentElement.getAttribute("aria-label")).toBe(input.name);
@@ -31,7 +31,7 @@ describe("settlement SVG", () => {
     expect(battle.querySelector("[data-building] polygon:not([transform])")?.getAttribute("points")).toBe(
       overview.querySelector("[data-building] polygon:not([transform])")?.getAttribute("points")
     );
-    expect(battle.documentElement.getAttribute("viewBox")?.endsWith("320 220")).toBe(true);
+    expect(battle.documentElement.getAttribute("viewBox")?.endsWith("250 140")).toBe(true);
     expect(renderSettlementMap(map, true, false, district)).not.toContain('fill="url(#city-grid)"');
   });
   it("only exports public city information in the AI handoff prompt", () => {
@@ -40,4 +40,13 @@ describe("settlement SVG", () => {
     expect(prompt).toContain("왕국");
     expect(prompt).toContain("Do not include NPC secrets or GM notes");
   });
+});
+
+it("exports exact custom battle cells and pixel dimensions without stretching buildings", () => {
+ const map=generateSettlementMap(input);
+ const doc=new DOMParser().parseFromString(renderSettlementMap(map,true,true,"market",{columns:96,rows:54,cellPixels:48}),"image/svg+xml");
+ expect(doc.documentElement.getAttribute("width")).toBe("4608");expect(doc.documentElement.getAttribute("height")).toBe("2592");
+ expect(doc.documentElement.getAttribute("viewBox")?.endsWith("960 540")).toBe(true);
+ expect(doc.querySelector('pattern#city-grid')?.getAttribute("width")).toBe("10");
+ expect(doc.querySelector('[data-scene-asset="house"], [data-scene-asset="keep"], [data-scene-asset="barn"]')).not.toBeNull();
 });

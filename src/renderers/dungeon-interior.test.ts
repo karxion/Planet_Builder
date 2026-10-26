@@ -39,3 +39,13 @@ describe("Dungeon map projection", () => {
     expect(document.querySelector("img")).toBeNull();
   });
 });
+
+it("renders a sized room encounter without resizing the dungeon or exposing player secrets", () => {
+ const dungeon=generateDungeonInterior("battle-size","wizard-tower","mage","hell");
+ const before=structuredClone(dungeon);
+ const doc=new DOMParser().parseFromString(renderDungeonMap(dungeon,"ko",false,dungeon.entranceRoomId,{columns:48,rows:27,cellPixels:64}),"image/svg+xml");
+ expect(doc.documentElement.getAttribute("width")).toBe("3072");expect(doc.documentElement.getAttribute("height")).toBe("1728");
+ expect(doc.documentElement.getAttribute("viewBox")?.endsWith("864 486")).toBe(true);
+ expect(doc.querySelector("[data-feature]")).toBeNull();
+ expect(doc.querySelector('[data-scene-asset]')).not.toBeNull();expect(dungeon).toEqual(before);
+});

@@ -173,3 +173,12 @@ describe("Dungeon interiors", () => {
     expect(isDungeonInterior(dungeon)).toBe(false);
   });
 });
+
+it("accepts and roundtrips a custom battle viewport without changing dungeon geometry", async () => {
+ const dungeon=generateDungeonInterior("battle-save","wizard-tower","mage");
+ dungeon.battleMap={columns:96,rows:54,cellPixels:48};
+ expect(isDungeonInterior(JSON.parse(JSON.stringify(dungeon)))).toBe(true);
+ const copy=structuredClone(dungeon);copy.battleMap!.cellPixels=128;
+ expect(isDungeonInterior(copy)).toBe(false);
+ expect(isDungeonInterior({...dungeon,battleMap:undefined})).toBe(true);
+});

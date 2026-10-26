@@ -1,3 +1,4 @@
+import type { BattleMapSettings } from "./battle-map";
 export type DungeonDifficulty = "normal" | "challenging" | "hell";
 export interface DungeonPoint {
   x: number;
@@ -44,4 +45,5 @@ export interface DungeonInterior {
   bossRoomId: number;
   rooms: DungeonRoom[];
   features: DungeonFeature[];
+  battleMap?: BattleMapSettings;
 }

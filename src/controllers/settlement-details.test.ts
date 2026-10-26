@@ -70,12 +70,12 @@ describe("city details and map tools", () => {
     const dialog = document.querySelector<HTMLDialogElement>("#fpb-city-map-dialog")!;
     const buttons = [...dialog.querySelectorAll<HTMLButtonElement>("button")];
     buttons.find(button => button.textContent === "전투 지도")!.click();
-    expect(dialog.querySelector("svg")?.getAttribute("viewBox")).toBe("470 300 320 220");
+    expect(dialog.querySelector("svg")?.getAttribute("viewBox")).toBe("510 340 250 140");
     const select = dialog.querySelector("select")!;
     expect(select.disabled).toBe(false);
     select.value = "gate";
     select.dispatchEvent(new Event("change"));
-    expect(dialog.querySelector("svg")?.getAttribute("viewBox")).toBe("430 65 320 220");
+    expect(dialog.querySelector("svg")?.getAttribute("viewBox")).toBe("470 110 250 140");
     const seed = dialog.querySelector<HTMLInputElement>('input:not([type="checkbox"])')!;
     seed.value = "saved-city";
     buttons.find(button => button.textContent === "생성")!.click();
@@ -88,7 +88,7 @@ describe("city details and map tools", () => {
   });
   it("uses a safe explicit external AI handoff and does not expose NPC secrets", () => {
     openSettlementMap(burg);
-    const link = document.querySelector<HTMLAnchorElement>("#fpb-city-map-dialog a")!;
+    const link = document.querySelector<HTMLAnchorElement>('#fpb-city-map-dialog a[href="https://chatgpt.com/"]')!;
     expect(link.href).toBe("https://chatgpt.com/");
     expect(link.rel).toContain("noopener");
     const text = document.querySelector<HTMLTextAreaElement>("#fpb-city-map-dialog textarea")!.value;
@@ -111,4 +111,15 @@ describe("city details and map tools", () => {
     burg.settlement = { version: 1, seed: "x".repeat(200), history: "bad" };
     expect(settlementRecord(burg).seed).toBe("world:city:1");
   });
+});
+
+it("persists manual tactical dimensions across reopen and rejects invalid pixel budgets", () => {
+ openSettlementMap(burg);
+ const dialog=document.querySelector<HTMLDialogElement>('#fpb-city-map-dialog')!;
+ [...dialog.querySelectorAll('button')].find(b=>b.textContent==='전투 지도')!.click();
+ const preset=dialog.querySelector<HTMLSelectElement>('[data-battle-preset]')!;preset.value='large';preset.dispatchEvent(new Event('change'));
+ dialog.querySelector<HTMLFormElement>('.fpb-battle-size')!.dispatchEvent(new Event('submit',{cancelable:true}));
+ expect(burg.settlement?.battleMap).toEqual({columns:72,rows:41,cellPixels:64});
+ openSettlementMap(burg);
+ expect(document.querySelector<HTMLInputElement>('[data-battle-columns]')!.value).toBe('72');
 });

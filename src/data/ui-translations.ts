@@ -2,6 +2,12 @@ import { GOVERNMENT_NAMES } from "@/generators/korean-world-names";
 
 // English is the fallback; world content is deliberately not part of this catalog.
 export const UI_TRANSLATIONS: readonly (readonly [string, string])[] = [
+  ["Overview scene assets", "조감도 전용 에셋"],
+  ["Battle map scene assets", "전투지도 전용 에셋"],
+  ["Walk", "일반 이동"],
+  ["Dash", "전력 질주"],
+  ["turns", "턴"],
+  ["first-square center to last-square center", "첫 칸 중심부터 마지막 칸 중심까지"],
   ["Surface map", "지상 지도"],
   ["Underwater map", "수중 지도"],
   ["Underground map", "지저 지도"],

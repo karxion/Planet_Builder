@@ -1,3 +1,4 @@
+import { isBattleMapSettings } from "./battle-map";
 import type { DungeonInterior } from "@/types/dungeon-interior";
 import { dungeonDistances, dungeonRoomCenter, hiddenDungeonTiles } from "@/utils/dungeon-grid";
 import { ADVENTURE_MONSTER_BY_ID, ADVENTURE_THEME_BY_ID } from "./adventure-sites";
@@ -12,6 +13,7 @@ export function isDungeonInterior(value: unknown): value is DungeonInterior {
   if (
     !record(value) ||
     value.version !== 1 ||
+    (value.battleMap !== undefined && !isBattleMapSettings(value.battleMap)) ||
     typeof value.seed !== "string" ||
     value.seed.length > 512 ||
     !integer(value.generation, 0, Number.MAX_SAFE_INTEGER) ||

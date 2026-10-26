@@ -1,7 +1,9 @@
+import type { BattleMapSettings } from "./battle-map";
 export interface SettlementRecord {
   version: 1;
   seed: string;
   history: string;
+  battleMap?: BattleMapSettings;
 }
 
 export interface SettlementMapInput {

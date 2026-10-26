@@ -1,3 +1,6 @@
+import { inlineSceneImages, scenePng, sceneAssetUrl, SCENE_ASSET_IDS } from "@/renderers/scene-assets";
+import { battleMapControls } from "./battle-map-settings";
+import { battlePreset, battleTravel, isBattleMapSettings } from "@/data/battle-map";
 import { Campaign } from "@/controllers/campaign-world";
 import type { Burg } from "@/generators/burgs-generator";
 import { generateSettlementHistory, generateSettlementMap } from "@/generators/settlement-map";
@@ -21,8 +24,11 @@ export function settlementRecord(burg: Burg): SettlementRecord {
     saved.seed.length <= 160 &&
     typeof saved.history === "string" &&
     saved.history.length <= 4000
-  )
-    return saved;
+  ) {
+    const record = { ...saved };
+    if (record.battleMap !== undefined && !isBattleMapSettings(record.battleMap)) delete record.battleMap;
+    return record;
+  }
   const mapSeed = `${String(seed)}:city:${burg.i}`;
   return {
     version: 1,
@@ -105,6 +111,7 @@ export function openSettlementMap(burg: Burg): void {
   const record = settlementRecord(burg);
   let map = createMap(burg, record.seed);
   let battle = false;
+  let battleSettings = record.battleMap || battlePreset("small");
   const dialog = element("dialog");
   dialog.id = "fpb-city-map-dialog";
   const header = element("header");
@@ -149,8 +156,10 @@ export function openSettlementMap(burg: Burg): void {
   };
   const svgSave = element("button", "SVG");
   svgSave.className = "icon-download";
+  svgSave.ariaLabel = "SVG";
   const pngSave = element("button", "PNG");
   pngSave.className = "icon-download";
+  pngSave.ariaLabel = "PNG";
   const viewport = element("div");
   viewport.className = "fpb-city-viewport";
   const status = element("p");
@@ -178,14 +187,40 @@ export function openSettlementMap(burg: Burg): void {
   chat.target = "_blank";
   chat.rel = "noopener noreferrer";
   ai.append(prompt, copy, chat);
+  const assetLinks = element("p");
+  assetLinks.className = "fpb-scene-asset-links";
+  const moduleNames = {
+    house: "건물",
+    keep: "성채 건물",
+    wall: "성벽 구간",
+    gate: "성문",
+    well: "우물",
+    barn: "축사",
+    paving: "포장 타일",
+    tree: "나무"
+  };
+  for (const id of SCENE_ASSET_IDS) {
+    const link = element("a", `${t(moduleNames[id])} PNG`);
+    link.href = sceneAssetUrl(id);
+    link.download = `${id}-scene-module.png`;
+    assetLinks.append(link);
+  }
   const draw = () => {
-    viewport.innerHTML = renderSettlementMap(map, battle, grid.checked, district.value);
+    viewport.innerHTML = renderSettlementMap(map, battle, grid.checked, district.value, battleSettings);
     overview.setAttribute("aria-pressed", String(!battle));
     tactical.setAttribute("aria-pressed", String(battle));
     district.disabled = grid.disabled = !battle;
-    prompt.value = settlementImagePrompt(burg.name || "", pack.states[burg.state || 0]?.fullName || "", map);
+    sizing.hidden = !battle;
+    prompt.value = settlementImagePrompt(
+      burg.name || "",
+      pack.states[burg.state || 0]?.fullName || "",
+      map,
+      battle,
+      battleSettings
+    );
+    const travel = battleTravel(battleSettings);
     status.textContent = battle
-      ? `${district.selectedOptions[0].text} · 32 × 22 · 5ft`
+      ? `${district.selectedOptions[0].text} · ${battleSettings.columns} × ${battleSettings.rows} · 5ft · ${t("일반 이동")} ${travel.walk}${t("턴")} / ${t("전력 질주")} ${travel.dash}${t("턴")} (30ft, ${t("첫 칸 중심부터 마지막 칸 중심까지")})`
       : `${map.buildings.length} ${t("건물")} · ${burg.capital ? `1 ${t("성채")} · ` : ""}2 ${t("여관")} · 3 ${t("길드")}`;
   };
   overview.onclick = () => {
@@ -207,49 +242,45 @@ export function openSettlementMap(burg: Burg): void {
     burg.settlement = {
       version: 1,
       seed: value,
-      history: generateSettlementHistory(value, burg.name || "", Boolean(burg.capital), Boolean(burg.port))
+      history: generateSettlementHistory(value, burg.name || "", Boolean(burg.capital), Boolean(burg.port)),
+      battleMap: { ...battleSettings }
     };
     changed();
     mountSettlementDetails(burg);
     draw();
   };
-  svgSave.onclick = () =>
-    download(
-      new Blob([viewport.innerHTML], { type: "image/svg+xml" }),
-      `city-${burg.i}-${battle ? district.value : "overview"}.svg`
-    );
-  pngSave.onclick = () => {
-    pngSave.disabled = true;
-    const image = new Image();
-    const url = URL.createObjectURL(new Blob([viewport.innerHTML], { type: "image/svg+xml" }));
-    const done = () => {
-      URL.revokeObjectURL(url);
-      pngSave.disabled = false;
-    };
-    image.onerror = () => {
-      done();
+  svgSave.onclick = async () => {
+    svgSave.disabled = true;
+    try {
+      const markup = await inlineSceneImages(viewport.innerHTML);
+      download(
+        new Blob([markup], { type: "image/svg+xml" }),
+        `city-${burg.i}-${battle ? district.value : "overview"}.svg`
+      );
+    } catch {
       status.textContent = t("이미지 내보내기 실패");
-    };
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.naturalWidth;
-      canvas.height = image.naturalHeight;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        done();
-        return;
-      }
-      context.drawImage(image, 0, 0);
-      canvas.toBlob(blob => {
-        if (blob) download(blob, `city-${burg.i}.png`);
-        else status.textContent = t("이미지 내보내기 실패");
-        done();
-      });
-    };
-    image.src = url;
+    } finally {
+      svgSave.disabled = false;
+    }
   };
+  pngSave.onclick = async () => {
+    pngSave.disabled = true;
+    try {
+      download(await scenePng(viewport.innerHTML), `city-${burg.i}.png`);
+    } catch {
+      status.textContent = t("이미지 내보내기 실패");
+    } finally {
+      pngSave.disabled = false;
+    }
+  };
+  const sizing = battleMapControls(battleSettings, next => {
+    battleSettings = next;
+    burg.settlement = { ...settlementRecord(burg), battleMap: { ...next } };
+    changed();
+    draw();
+  });
   toolbar.append(overview, tactical, district, gridLabel, seedLabel, randomize, regenerate, svgSave, pngSave);
-  dialog.append(header, toolbar, viewport, status, ai);
+  dialog.append(header, toolbar, sizing, viewport, status, assetLinks, ai);
   document.body.append(dialog);
   draw();
   dialog.showModal();

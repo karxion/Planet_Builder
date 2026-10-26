@@ -1,3 +1,6 @@
+import { battleBox } from "@/data/battle-map";
+import type { BattleMapSettings } from "@/types/battle-map";
+import { sceneAsset, sceneAssetDefs } from "./scene-assets";
 import { ADVENTURE_MONSTER_BY_ID, adventureMonsterUrl } from "@/data/adventure-sites";
 import {
   BOSS_SIGNATURES,
@@ -33,9 +36,17 @@ export function renderDungeonMap(
   dungeon: DungeonInterior,
   language: DungeonLanguage,
   gm: boolean,
-  selectedRoom: number
+  selectedRoom: number,
+  battle?: BattleMapSettings & { focusRoomId?: number }
 ): string {
   const unit = 18;
+  const focus =
+    dungeon.rooms.find(room => room.id === (battle?.focusRoomId ?? selectedRoom) && (gm || !room.secret)) ||
+    dungeon.rooms.find(room => room.id === dungeon.entranceRoomId)!;
+  const center = dungeonRoomCenter(focus);
+  const box = battle
+    ? battleBox(battle, { x: (center.x + 0.5) * unit, y: (center.y + 0.5) * unit }, unit)
+    : { x: 0, y: 0, width: dungeon.width * unit, height: dungeon.height * unit };
   const hidden = gm ? new Set<number>() : hiddenDungeonTiles(dungeon.rooms, dungeon.width);
   const floor = (x: number, y: number) =>
     x >= 0 &&
@@ -72,13 +83,13 @@ export function renderDungeonMap(
       })
     )
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" class="fpb-dungeon-map" viewBox="0 0 ${dungeon.width * unit} ${dungeon.height * unit}" role="img" aria-label="${text(language, "던전 내부 지도", "Dungeon floor plan")}">
-    <defs><pattern id="fpb-dungeon-stone" width="${unit}" height="${unit}" patternUnits="userSpaceOnUse"><rect width="18" height="18" fill="#c8cfd0"/><path d="M18,0H0V18" fill="none" stroke="#a9b5b8" stroke-width="0.7"/></pattern></defs>
-    <rect width="100%" height="100%" fill="#182125"/><path d="${tiles}" fill="url(#fpb-dungeon-stone)"/><path d="${walls}" fill="none" stroke="#6b777e" stroke-width="5" stroke-linecap="square"/>
+  return `<svg xmlns="http://www.w3.org/2000/svg" class="fpb-dungeon-map" ${battle ? `width="${battle.columns * battle.cellPixels}" height="${battle.rows * battle.cellPixels}" data-columns="${battle.columns}" data-rows="${battle.rows}" data-cell-pixels="${battle.cellPixels}"` : `width="${dungeon.width * (dungeon.battleMap?.cellPixels || 64)}" height="${dungeon.height * (dungeon.battleMap?.cellPixels || 64)}"`} viewBox="${box.x} ${box.y} ${box.width} ${box.height}" role="img" aria-label="${text(language, "던전 내부 지도", "Dungeon floor plan")}">
+    <defs>${sceneAssetDefs("battle", "dungeon-scene", ["paving"])}<pattern id="fpb-dungeon-grid" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M18 0H0V18" fill="none" stroke="#8da0a4" stroke-opacity="0.35" stroke-width="0.7"/></pattern><pattern id="fpb-dungeon-stone" width="${unit}" height="${unit}" patternUnits="userSpaceOnUse"><rect width="18" height="18" fill="#c8cfd0"/>${sceneAsset("paving", 9, 9, 22, "dungeon-scene")}<path d="M18,0H0V18" fill="none" stroke="#a9b5b8" stroke-width="0.7"/></pattern></defs>
+    <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="#182125"/><path d="${tiles}" fill="url(#fpb-dungeon-stone)"/><path d="${walls}" fill="none" stroke="#6b777e" stroke-width="5" stroke-linecap="square"/>
     ${rooms.map(room => `<rect data-room="${room.id}" role="button" tabindex="0" aria-label="${esc(roomName(dungeon, room, language, gm))}" x="${room.x * unit + 2}" y="${room.y * unit + 2}" width="${room.width * unit - 4}" height="${room.height * unit - 4}" rx="2" fill="${room.id === selectedRoom ? "#438fa633" : room.secret ? "#418c8c22" : "transparent"}" stroke="${room.id === selectedRoom ? "#16586e" : room.secret ? "#32777b" : "none"}" stroke-width="2" ${room.secret ? 'stroke-dasharray="5 3"' : ""}/>`).join("")}
     <g pointer-events="none">${doorShapes}<path d="M${entrance.x * unit + 3},${entrance.y * unit + 9}h12m-5,-5 5,5 -5,5" fill="none" stroke="#216344" stroke-width="3"/>
     ${rooms.map(room => `<text x="${room.x * unit + 8}" y="${room.y * unit + 17}" font-family="sans-serif" font-size="12" font-weight="bold" fill="#18252b" stroke="#fff" stroke-width="2" paint-order="stroke">${room.id + 1}${room.secret ? " S" : ""}</text>`).join("")}
-    ${gm ? dungeon.features.map(feature => `<g data-feature="${feature.kind}" transform="translate(${feature.x * unit + 9} ${feature.y * unit + 9})">${glyph(feature)}</g>`).join("") : ""}</g></svg>`;
+    ${gm ? dungeon.features.map(feature => `<g data-feature="${feature.kind}" transform="translate(${feature.x * unit + 9} ${feature.y * unit + 9})">${glyph(feature)}</g>`).join("") : ""}</g>${battle ? `<rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" fill="url(#fpb-dungeon-grid)" pointer-events="none"/>` : ""}</svg>`;
 }
 
 function renderFeature(dungeon: DungeonInterior, feature: DungeonFeature, language: DungeonLanguage): string {

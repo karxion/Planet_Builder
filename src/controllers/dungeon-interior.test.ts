@@ -124,7 +124,7 @@ describe("Dungeon interior interactions", () => {
     });
     document.querySelector<HTMLButtonElement>("[data-regenerate]")!.click();
     expect(marker().interior).toBe(original);
-    expect(document.querySelector('[role="status"]')!.textContent).toContain("보존");
+    expect(document.querySelector('.fpb-interior-status')!.textContent).toContain("보존");
     document.querySelector<HTMLButtonElement>("[data-regenerate]")!.click();
     expect(marker().interior!.generation).toBe(1);
     expect(marker().interior!.tiles).not.toBe(original!.tiles);
@@ -171,17 +171,16 @@ describe("Dungeon interior interactions", () => {
     const revokeObjectURL = vi.fn();
     vi.stubGlobal("URL", Object.assign(class extends URL {}, { createObjectURL, revokeObjectURL }));
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn(async()=>({ok:true,blob:async()=>new window.Blob([new Uint8Array([137,80,78,71])],{type:"image/png"})})));
     try {
       document.querySelector<HTMLButtonElement>("[data-export]")!.click();
-      expect(createObjectURL).toHaveBeenCalledOnce();
+      await vi.waitFor(()=>expect(createObjectURL).toHaveBeenCalledOnce());
       const svg = await output!.text();
       expect(svg).not.toContain("data-feature");
       expect(svg).not.toContain("보스");
       for (const room of marker().interior!.rooms.filter(room => room.secret))
         expect(svg).not.toContain(`data-room="${room.id}"`);
-      vi.runAllTimers();
-      expect(revokeObjectURL).toHaveBeenCalledWith("blob:test-export");
+      await vi.waitFor(()=>expect(revokeObjectURL).toHaveBeenCalledWith("blob:test-export"),{timeout:2000});
     } finally {
       vi.useRealTimers();
     }
