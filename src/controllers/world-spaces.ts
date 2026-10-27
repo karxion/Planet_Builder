@@ -1,8 +1,11 @@
+import { paintUnderground, siteInActiveLevel, undergroundLevel } from "@/data/underground";
 import { drawWorldSpaces } from "@/renderers/world-spaces";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
+import type { UndergroundCell } from "@/types/underground";
 import { SITE_KINDS, SPACE_IDS, type SpaceSiteKind, TERRAIN_KINDS, type WorldSpace } from "@/types/world-spaces";
+import { mountUndergroundTools } from "./underground-tools";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -11,10 +14,12 @@ const key = (type: string, id: string) => `space-${type}:${id}`;
 let panel: HTMLElement;
 let selected = "";
 let factionId = "";
-let placement: SpaceSiteKind | "move" | undefined;
+let placement: SpaceSiteKind | "move" | "paint" | undefined;
+let brush: { terrain: UndergroundCell; radius: number } = { terrain: 1, radius: 3 };
 let tab = "sites";
 let switchView: (space: WorldSpace) => Promise<void>;
 let currentData = "";
+let activeSpace: WorldSpace = "surface";
 const spaceLabels = (): Record<WorldSpace, string> => ({
   surface: text("지상", "Surface"),
   underwater: text("수중", "Underwater"),
@@ -38,6 +43,12 @@ const terrains = () => ({
 export function refreshWorldSpaces(): void {
   if (!panel) return;
   const data = WorldSpaces.snapshot();
+  if (activeSpace !== data.activeSpace) {
+    activeSpace = data.activeSpace;
+    placement = undefined;
+    selected = "";
+    if (activeSpace === "underground" && !data.underground) tab = "terrain";
+  }
   for (const space of SPACE_IDS) {
     const button = document.getElementById(space === "surface" ? "fpb-map-view" : `fpb-space-${space}`);
     button?.classList.toggle("active", data.activeSpace === space);
@@ -95,11 +106,12 @@ function renderPanel(): void {
   if (!panel) return;
   panel.dataset.placing = String(Boolean(placement));
   const data = WorldSpaces.snapshot();
-  const site = data.sites.find(s => s.id === selected && s.space === data.activeSpace);
+  const site = data.sites.find(s => s.id === selected && siteInActiveLevel(s, data));
   const faction = data.factions.find(f => f.id === factionId);
   panel.innerHTML = `<header><h3>${spaceLabels()[data.activeSpace]} · ${text("세계 공간", "World spaces")}</h3><button type="button" data-close aria-label="${text("닫기", "Close")}">×</button></header>
-    <p>${text("도시·세력·통로를 직접 배치하는 지도입니다. 옅은 육지는 지상 위치 참고용입니다. 지상 재생성 시 수동 기록은 유지됩니다.", "Manually place cities, territories and passages. Faint land indicates surface geography. Surface regeneration retains manual records.")}</p>
+    <p>${data.activeSpace === "underground" ? text("지형 탭에서 동굴망을 생성하고 깊이 층을 전환합니다. 장소·세력·연결을 편집하거나 지형 붓으로 공동과 암반을 바꿀 수 있습니다.", "Generate cave networks and select depth layers in Terrain. Edit places, factions and connections, or paint caverns and rock.") : text("도시·세력·통로를 직접 배치하는 지도입니다. 옅은 육지는 지상 위치 참고용입니다. 지상 재생성 시 수동 기록은 유지됩니다.", "Manually place cities, territories and passages. Faint land indicates surface geography. Surface regeneration retains manual records.")}</p>
     <nav>${[
+      ...(data.activeSpace === "underground" ? [["terrain", text("지형·층", "Terrain / depth")]] : []),
       ["sites", text("장소", "Places")],
       ["factions", text("세력", "Factions")],
       ["links", text("연결", "Connections")]
@@ -109,7 +121,7 @@ function renderPanel(): void {
       )
       .join(
         ""
-      )}</nav><p data-space-status role="status" aria-live="polite">${placement ? text("지도에서 위치를 클릭하세요. Esc로 취소합니다.", "Click a map location. Esc cancels placement.") : ""}</p><div data-content></div>`;
+      )}</nav><p data-space-status role="status" aria-live="polite">${placement === "paint" ? text("지도에서 클릭할 때마다 지형을 칠합니다. Esc로 종료합니다.", "Click the map to paint terrain. Esc ends painting.") : placement ? text("지도에서 위치를 클릭하세요. Esc로 취소합니다.", "Click a map location. Esc cancels placement.") : ""}</p><div data-content></div>`;
   panel.querySelector<HTMLButtonElement>("[data-close]")!.onclick = () => {
     panel.hidden = true;
     placement = undefined;
@@ -122,9 +134,31 @@ function renderPanel(): void {
     };
   });
   const content = panel.querySelector<HTMLElement>("[data-content]")!;
+  if (tab === "terrain" && data.activeSpace === "underground") {
+    mountUndergroundTools(content, {
+      changed: () => {
+        selected = "";
+        placement = undefined;
+        notify();
+        renderPanel();
+      },
+      paint: (terrain, radius) => {
+        brush = { terrain, radius };
+        placement = "paint";
+        renderPanel();
+      },
+      error: message
+    });
+    return;
+  }
+  if (tab === "terrain") {
+    tab = "sites";
+    renderPanel();
+    return;
+  }
   if (tab === "sites") {
     content.innerHTML = `<div class="fpb-space-add">${SITE_KINDS.map(kind => `<button type="button" data-place="${kind}">＋ ${kinds()[kind]}</button>`).join("")}</div><label>${text("장소 선택", "Select place")}<select data-sites><option value="">${text("장소를 선택하세요", "Select a place")}</option>${data.sites
-      .filter(s => s.space === data.activeSpace)
+      .filter(s => siteInActiveLevel(s, data))
       .map(s => option(s.id, `${kinds()[s.kind]} · ${s.name} (${s.depth} m)`, selected))
       .join("")}</select></label>
       ${
@@ -169,6 +203,8 @@ function renderPanel(): void {
               notes: String(values.get("notes"))
             });
             const faction = String(values.get("factionId"));
+            if (item.origin === "underground") item.edited = true;
+            if (item.space === "underground" && d.underground) d.underground.activeLevel = undergroundLevel(item.depth);
             if (faction) item.factionId = faction;
             else delete item.factionId;
           });
@@ -266,6 +302,10 @@ function renderPanel(): void {
 async function travel(id: string): Promise<void> {
   const site = WorldSpaces.snapshot().sites.find(s => s.id === id);
   if (!site) return;
+  if (site.space === "underground" && WorldSpaces.snapshot().underground)
+    WorldSpaces.update(d => {
+      d.underground!.activeLevel = undergroundLevel(site.depth);
+    });
   await switchView(site.space);
   selected = site.id;
   panel.hidden = false;
@@ -356,12 +396,21 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
       y = local.y / graphHeight;
     if (x < 0 || x > 1 || y < 0 || y > 1) return;
     run(() => {
+      if (placement === "paint") {
+        WorldSpaces.update(d => {
+          if (d.activeSpace !== "underground" || !d.underground)
+            throw new Error(text("지저 지도를 먼저 생성하세요.", "Generate an underground map first."));
+          paintUnderground(d.underground, x, y, brush.radius, brush.terrain);
+        });
+        return;
+      }
       if (placement === "move")
         WorldSpaces.update(d => {
           const site = d.sites.find(s => s.id === selected);
           if (site) {
             site.x = x;
             site.y = y;
+            if (site.origin === "underground") site.edited = true;
           }
         });
       else selected = WorldSpaces.addSite(WorldSpaces.snapshot().activeSpace, placement!, x, y).id;

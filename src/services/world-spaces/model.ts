@@ -1,3 +1,4 @@
+import { isUndergroundMap, UNDERGROUND_DEPTHS } from "@/data/underground";
 import { SITE_KINDS, SPACE_IDS, type SpaceSite, TERRAIN_KINDS, type WorldSpacesData } from "@/types/world-spaces";
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -25,6 +26,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
     value.links.length > 10000
   )
     return false;
+  if (value.underground !== undefined && !isUndergroundMap(value.underground)) return false;
   if (
     !Array.from(value.factions).every(
       f =>
@@ -59,6 +61,8 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         number(s.population, 0, 1e10) &&
         Number.isSafeInteger(s.population) &&
         text(s.notes) &&
+        (s.origin === undefined || s.origin === "underground") &&
+        (s.edited === undefined || typeof s.edited === "boolean") &&
         (s.factionId === undefined || factions.has(s.factionId))
     )
   )
@@ -74,7 +78,8 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         l.name.trim() &&
         sites.has(l.from) &&
         sites.has(l.to) &&
-        l.from !== l.to
+        l.from !== l.to &&
+        (l.origin === undefined || l.origin === "underground")
     ) && unique(value.links)
   );
 }
@@ -126,7 +131,14 @@ export class WorldSpaceStore {
             : kind === "gateway"
               ? "새 연결 지점"
               : "새 지형",
-      depth: space === "surface" ? 0 : space === "underwater" ? 100 : 1000,
+      depth:
+        space === "surface"
+          ? 0
+          : space === "underwater"
+            ? 100
+            : this.data.underground
+              ? UNDERGROUND_DEPTHS[this.data.underground.activeLevel]
+              : 1000,
       radius: 0.035,
       terrain: space === "underground" ? "cavern" : "plain",
       residents: "",

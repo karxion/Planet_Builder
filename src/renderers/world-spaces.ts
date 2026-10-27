@@ -1,4 +1,6 @@
+import { siteInActiveLevel, undergroundLabel, undergroundLevel } from "@/data/underground";
 import type { SpaceSite, WorldSpace, WorldSpacesData } from "@/types/world-spaces";
+import { drawUndergroundTerrain } from "./underground-map";
 
 const NS = "http://www.w3.org/2000/svg";
 const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
@@ -32,10 +34,14 @@ export function drawWorldSpaces(input: {
       root.append(element("path", { d: input.landPath, fill: "#a8adac", opacity: 0.12, "pointer-events": "none" }));
   }
   const byId = new Map(data.sites.map(site => [site.id, site]));
-  const sites = data.sites.filter(s => s.space === data.activeSpace);
+  const underground = data.activeSpace === "underground" ? data.underground : undefined;
+  if (underground) root.append(drawUndergroundTerrain(underground, width, height));
+  const sites = data.sites.filter(s => siteInActiveLevel(s, data));
   const point = (s: SpaceSite) => [s.x * width, s.y * height];
+  const labelBounds: { x: number; y: number; width: number; height: number }[] = [];
   const color = (s: SpaceSite) => data.factions.find(f => f.id === s.factionId)?.color || "#d9ca8b";
   for (const site of sites.filter(s => s.kind === "terrain" || s.kind === "territory")) {
+    if (underground && site.origin === "underground" && site.kind === "terrain" && !site.edited) continue;
     const [cx, cy] = point(site);
     const fills = {
       plain: "#2b6472",
@@ -57,14 +63,16 @@ export function drawWorldSpaces(input: {
         "stroke-width": 1.5,
         "stroke-dasharray": site.kind === "territory" ? "5 3" : "none",
         "vector-effect": "non-scaling-stroke",
-        "data-space-site": site.id
+        "data-space-site": site.id,
+        ...(underground && site.kind === "territory" ? { "clip-path": "url(#fpb-underground-floor)" } : {})
       })
     );
   }
   for (const link of data.links) {
     const from = byId.get(link.from)!;
     const to = byId.get(link.to)!;
-    if (from.space === data.activeSpace && to.space === data.activeSpace) {
+    if (siteInActiveLevel(from, data) && siteInActiveLevel(to, data)) {
+      if (underground && link.origin === "underground") continue;
       const [x1, y1] = point(from);
       const [x2, y2] = point(to);
       const line = element("line", {
@@ -80,7 +88,7 @@ export function drawWorldSpaces(input: {
       line.append(element("title", {}, link.name));
       root.append(line);
     } else {
-      const origin = from.space === data.activeSpace ? from : to.space === data.activeSpace ? to : undefined;
+      const origin = siteInActiveLevel(from, data) ? from : siteInActiveLevel(to, data) ? to : undefined;
       if (!origin) continue;
       const target = origin === from ? to : from;
       const [x, y] = point(origin);
@@ -96,13 +104,21 @@ export function drawWorldSpaces(input: {
           role: "button",
           tabindex: 0
         },
-        `↪ ${labels[target.space]}`
+        `↪ ${target.space === "underground" && data.underground ? undergroundLabel(undergroundLevel(target.depth)) : labels[target.space]}`
       );
       portal.append(element("title", {}, `${link.name} → ${target.name} (${target.depth} m)`));
+      labelBounds.push({
+        x: x + 8,
+        y: y + 5,
+        width: [...(portal.firstChild?.textContent || "")].length * 10,
+        height: 14
+      });
       root.append(portal);
     }
   }
-  for (const site of sites) {
+  const priority = (site: SpaceSite) => (site.kind === "gateway" ? 0 : site.kind === "city" ? 1 : 2);
+  for (const site of underground ? [...sites].sort((a, b) => priority(a) - priority(b)) : sites) {
+    if (underground && site.origin === "underground" && site.kind === "territory") continue;
     const [x, y] = point(site);
     const group = element("g", {
       "data-space-site": site.id,
@@ -135,21 +151,32 @@ export function drawWorldSpaces(input: {
               }
         )
       );
-    group.append(
-      element(
-        "text",
-        {
-          x: x + 7,
-          y: y - 6,
-          fill: "#f8edca",
-          stroke: "#18201e",
-          "stroke-width": 3,
-          "paint-order": "stroke",
-          "font-size": 11
-        },
-        site.name
-      )
+    const bounds = { x: x + 7, y: y - 17, width: [...site.name].length * 10, height: 14 };
+    const overlaps = labelBounds.some(
+      other =>
+        bounds.x < other.x + other.width + 3 &&
+        bounds.x + bounds.width + 3 > other.x &&
+        bounds.y < other.y + other.height + 3 &&
+        bounds.y + bounds.height + 3 > other.y
     );
+    if (!(underground && site.origin === "underground" && site.kind === "terrain" && overlaps)) {
+      labelBounds.push(bounds);
+      group.append(
+        element(
+          "text",
+          {
+            x: x + 7,
+            y: y - 6,
+            fill: "#f8edca",
+            stroke: "#18201e",
+            "stroke-width": 3,
+            "paint-order": "stroke",
+            "font-size": 11
+          },
+          site.name
+        )
+      );
+    } else group.append(element("circle", { cx: x, cy: y, r: 5, fill: "transparent" }));
     group.append(element("title", {}, `${site.name} · ${site.depth} m${site.residents ? ` · ${site.residents}` : ""}`));
     root.append(group);
   }
