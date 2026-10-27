@@ -173,10 +173,10 @@ describe("Item library editor", () => {
     const originalPower = stored.power;
     change("category", "weapon");
     change("rarity", "legendary");
-    expect(document.getElementById("fpb-item-unique-bonus")!.textContent).toContain("3d6");
+    expect(document.querySelectorAll("#fpb-item-unique-bonus li")).toHaveLength(4);
     expect(stored.rarity).not.toBe("legendary");
     submit();
-    expect(stored.uniqueBonus).toMatchObject({ checkBonus: 3, effect: "forceDamage", magnitude: 3 });
+    expect(stored.uniqueBonus).toMatchObject({ version: 2, effects: expect.any(Array) });
     expect(stored.referenceId).toBeUndefined();
     expect(stored.power).toBe(originalPower);
     const unique = document.querySelector<HTMLInputElement>('[name="unique"]')!;
@@ -206,7 +206,9 @@ describe("Item library editor", () => {
     search.value = committed;
     search.dispatchEvent(new Event("input"));
     document.getElementById("fpb-items-export")!.click();
-    await vi.waitFor(() => expect(document.querySelector<HTMLDialogElement>("#fpb-data-export-dialog")?.open).toBe(true));
+    await vi.waitFor(() =>
+      expect(document.querySelector<HTMLDialogElement>("#fpb-data-export-dialog")?.open).toBe(true)
+    );
     const scope = document.querySelector<HTMLSelectElement>('[data-export="scope"]')!;
     expect(scope.options[0].textContent).toBe("검색 결과 (1)");
     expect(document.querySelector<HTMLElement>('[data-export="drafts"]')!.hidden).toBe(false);
@@ -217,7 +219,8 @@ describe("Item library editor", () => {
   });
   it("keeps select text and the unique checkbox visible despite legacy form styles", () => {
     const style = document.createElement("style");
-    style.textContent = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../public/item-library.css"), "utf8") +
+    style.textContent =
+      readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../public/item-library.css"), "utf8") +
       'select { height: 1.6em; padding: 0; } input[type="checkbox"]:not(.native) { display: none; }';
     document.head.append(style);
     const select = document.querySelector<HTMLSelectElement>('#fpb-item-form [name="rarity"]')!;

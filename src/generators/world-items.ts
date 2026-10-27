@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { synchronizeUniqueItemBonus } from "./unique-item-bonuses";
+import { itemOrigin, synchronizeUniqueItemBonus } from "./unique-item-bonuses";
 import {
   ALL_REFERENCE_OPTIONS,
   MAGIC_ITEM_BY_ID,
@@ -7,7 +7,7 @@ import {
   TREASURE_FORMS
 } from "@/data/magic-item-references";
 import type { CampaignWorld } from "@/types/campaign-world";
-import type { WorldMagicItem, ItemDungeonChoice, ItemLibrary, ItemOwner } from "@/types/world-item";
+import type { WorldMagicItem, ItemDungeonChoice, ItemLibrary, ItemOwner, UniqueItemOrigin } from "@/types/world-item";
 
 export interface TreasureItemSeed {
   id: string;
@@ -20,6 +20,7 @@ export interface TreasureItemSeed {
   history: string;
   notes: string;
   design?: { referenceId: string; variant?: string };
+  origin?: UniqueItemOrigin;
 }
 
 export const ITEM_RARITY_LABELS = {
@@ -30,6 +31,28 @@ export const ITEM_RARITY_LABELS = {
   legendary: "레젠더리",
   artifact: "아티팩트"
 };
+
+export function treasureWorldItem(world: CampaignWorld, treasure: TreasureItemSeed): WorldMagicItem {
+  const unit = world.units.find(unit => unit.id === (treasure.settlementId || `country:${treasure.stateId}`));
+  const reference = treasure.design && MAGIC_ITEM_BY_ID.get(treasure.design.referenceId);
+  return {
+    id: `item:${treasure.id}`,
+    name: treasure.name,
+    category: reference?.category || "wondrous",
+    rarity: treasure.rarity,
+    unique: treasure.unique,
+    appearance: "",
+    power: treasure.power,
+    history: treasure.history,
+    notes: treasure.notes,
+    owner: unit ? { kind: "unit", id: unit.id, label: unit.name } : { kind: "none" },
+    sourceTreasureId: treasure.id,
+    ...(treasure.origin ? { origin: { ...treasure.origin } } : {}),
+    ...(reference ? { referenceId: reference.id } : {}),
+    ...(treasure.design?.variant ? { variant: treasure.design.variant } : {}),
+    edited: false
+  };
+}
 
 export function createWorldItem(
   seed: string,
@@ -65,7 +88,8 @@ export function synchronizeItemLibrary(
   world: CampaignWorld,
   dungeons: ItemDungeonChoice[],
   treasures?: TreasureItemSeed[],
-  capitals: string[] = []
+  capitals: string[] = [],
+  resolveOrigin: (item: WorldMagicItem) => UniqueItemOrigin = item => itemOrigin(world, item)
 ): boolean {
   let changed = !world.itemLibrary;
   const library: ItemLibrary = (world.itemLibrary ||= { version: 1, items: [], deletedIds: [] });
@@ -79,26 +103,7 @@ export function synchronizeItemLibrary(
   if (treasures) {
     for (const treasure of treasures) {
       const id = `item:${treasure.id}`;
-      add(id, () => {
-        const unit = world.units.find(unit => unit.id === (treasure.settlementId || `country:${treasure.stateId}`));
-        const reference = treasure.design && MAGIC_ITEM_BY_ID.get(treasure.design.referenceId);
-        return {
-          id,
-          name: treasure.name,
-          category: reference?.category || "wondrous",
-          rarity: treasure.rarity,
-          unique: treasure.unique,
-          appearance: "",
-          power: treasure.power,
-          history: treasure.history,
-          notes: treasure.notes,
-          owner: unit ? { kind: "unit", id: unit.id, label: unit.name } : { kind: "none" },
-          sourceTreasureId: treasure.id,
-          ...(reference ? { referenceId: reference.id } : {}),
-          ...(treasure.design?.variant ? { variant: treasure.design.variant } : {}),
-          edited: false
-        };
-      });
+      add(id, () => treasureWorldItem(world, treasure));
     }
   } else {
     for (const unit of world.units.filter(
@@ -124,7 +129,13 @@ export function synchronizeItemLibrary(
       reward: { markerId: dungeon.markerId, cell: dungeon.cell, name: dungeon.name }
     }));
   }
-  for (const item of library.items) if (synchronizeUniqueItemBonus(world.seed, item)) changed = true;
+  for (const item of library.items) {
+    if (!item.origin) {
+      item.origin = resolveOrigin(item);
+      changed = true;
+    }
+    if (synchronizeUniqueItemBonus(world.seed, item)) changed = true;
+  }
   return changed;
 }
 

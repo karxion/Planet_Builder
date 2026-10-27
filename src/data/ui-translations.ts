@@ -1,7 +1,9 @@
 import { GOVERNMENT_NAMES } from "@/generators/korean-world-names";
+import { UNIQUE_EFFECT_TRANSLATIONS } from "./unique-item-effects";
 
 // English is the fallback; world content is deliberately not part of this catalog.
 export const UI_TRANSLATIONS: readonly (readonly [string, string])[] = [
+  ...UNIQUE_EFFECT_TRANSLATIONS,
   ["Overview scene assets", "조감도 전용 에셋"],
   ["Battle map scene assets", "전투지도 전용 에셋"],
   ["Walk", "일반 이동"],

@@ -22,6 +22,48 @@ const input: AdministrativeSnapshot = {
 };
 
 describe("Realm heritage", () => {
+  it("records actual country/city terrain once and shares it with item-library traits", async () => {
+    const terrain: AdministrativeSnapshot = {
+      ...input,
+      states: input.states.map(state => ({ ...state, geography: "mountain" })),
+      villages: input.villages.map(village => ({ ...village, geography: "coast" }))
+    };
+    const world = createCampaign(terrain, "heritage");
+    const treasures = world.heritage!.treasures;
+    expect(
+      treasures.filter(item => item.ownerType === "country").every(item => item.origin?.geography === "mountain")
+    ).toBe(true);
+    expect(treasures.filter(item => item.ownerType === "city").every(item => item.origin?.geography === "coast")).toBe(
+      true
+    );
+    const { synchronizeItemLibrary, treasureWorldItem } = await import("./world-items");
+    const { createUniqueItemBonus } = await import("./unique-item-bonuses");
+    synchronizeItemLibrary(world, [], treasures);
+    for (const treasure of treasures) {
+      const item = world.itemLibrary!.items.find(item => item.sourceTreasureId === treasure.id)!;
+      expect(item.origin).toEqual(treasure.origin);
+      expect(item.uniqueBonus).toEqual(createUniqueItemBonus(world.seed, treasureWorldItem(world, treasure)));
+    }
+    synchronizeHeritage(world, input);
+    expect(treasures[0].origin?.geography).toBe("mountain");
+  });
+
+  it("fills missing legacy provenance without replacing edited treasure records", () => {
+    const world = createCampaign(input, "heritage");
+    const item = world.heritage!.treasures[0];
+    delete item.origin;
+    item.edited = true;
+    item.power = "직접 쓴 효과";
+    item.history = "직접 쓴 유래";
+    const before = structuredClone(item);
+    expect(synchronizeHeritage(world, input)).toBe(true);
+    expect(item).toMatchObject(before);
+    expect(world.heritage!.treasures[0].origin?.geography).toBe("unknown");
+    expect(isRealmHeritage(world.heritage)).toBe(true);
+    item.origin = { archetype: "invalid", geography: "ocean" } as never;
+    expect(isRealmHeritage(world.heritage)).toBe(false);
+  });
+
   it("generates at least one very rare or legendary national treasure for every real country", () => {
     const world = createCampaign(input, "heritage");
     expect(isCampaignWorld(world)).toBe(true);

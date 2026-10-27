@@ -1,6 +1,7 @@
 import { ALIGNMENTS, DEITY_RANKS, ITEM_RARITIES } from "@/data/realm-heritage";
 import { isTreasureDesign } from "@/generators/magic-item-generator";
 import type { RealmHeritage } from "@/types/realm-heritage";
+import { isUniqueItemOrigin } from "./unique-item-effects";
 
 const record = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -60,6 +61,7 @@ export function isRealmHeritage(value: unknown): value is RealmHeritage {
     if (!(item.name as string).trim() || (item.name as string).length > 200) return false;
     if (item.design !== undefined && !isTreasureDesign(item.design, item.rarity as "rare" | "veryRare" | "legendary"))
       return false;
+    if (item.origin !== undefined && !isUniqueItemOrigin(item.origin)) return false;
     ids.add(item.id);
   }
   for (const religion of value.religions) {

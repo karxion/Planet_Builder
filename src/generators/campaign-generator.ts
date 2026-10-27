@@ -12,7 +12,15 @@ import {
 import { synchronizeHeritage } from "./realm-heritage";
 
 export interface AdministrativeSnapshot {
-  states: { id: number; name: string; x: number; y: number; government?: string; area?: number }[];
+  states: {
+    id: number;
+    name: string;
+    x: number;
+    y: number;
+    government?: string;
+    area?: number;
+    geography?: import("@/types/world-item").ItemGeography;
+  }[];
   fiefs: { id: number; stateId: number; name: string; x: number; y: number; neighbors: number[] }[];
   villages: {
     id: number;
@@ -25,6 +33,7 @@ export interface AdministrativeSnapshot {
     port: boolean;
     population?: number;
     continentId?: number;
+    geography?: import("@/types/world-item").ItemGeography;
   }[];
 }
 

@@ -38,6 +38,7 @@ import { mountNpcPortrait } from "./npc-portrait";
 import { createHeritagePanel, type HeritageView } from "./realm-heritage";
 import { createRulesReferences } from "./rules-references";
 import { mountWorldDetail, mountWorldWorkspace, showWorldRecord } from "./world-workspace";
+import { geographyFromTerrain } from "@/generators/unique-item-bonuses";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
@@ -61,6 +62,14 @@ const tierText = (level: number, compact = false): string => {
 };
 
 function snapshot(): AdministrativeSnapshot {
+  const geography = (cell: number) =>
+    !Number.isFinite(pack.cells.h?.[cell])
+      ? ("unknown" as const)
+      : geographyFromTerrain(
+          pack.cells.h[cell],
+          pack.cells.biome?.[cell] || 0,
+          Boolean(pack.cells.c?.[cell]?.some(neighbor => pack.cells.h[neighbor] < 20))
+        );
   const villages = pack.burgs
     .filter(b => b.i && !b.removed)
     .map(b => ({
@@ -72,6 +81,7 @@ function snapshot(): AdministrativeSnapshot {
       y: b.y,
       capital: Boolean(b.capital),
       port: Boolean(b.port),
+      geography: geography(b.cell),
       population: b.population,
       continentId: pack.features[pack.cells.f[b.cell]]?.group === "continent" ? pack.cells.f[b.cell] : undefined
     }));
@@ -102,6 +112,7 @@ function snapshot(): AdministrativeSnapshot {
           x,
           y,
           government: `${s.form || ""} ${s.formName || ""} ${s.fullName || ""}`,
+          geography: geography(s.center),
           area: areas.get(s.i) ?? s.area ?? 0
         };
       }),

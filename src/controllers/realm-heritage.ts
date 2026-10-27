@@ -10,6 +10,16 @@ import type { ItemReferenceEdition } from "@/types/magic-item-reference";
 import type { RealmReligion, RealmTreasure } from "@/types/realm-heritage";
 import { appendItemReferenceFields } from "./item-reference-fields";
 import { mountWorldDetail, showWorldRecord } from "./world-workspace";
+import { treasureWorldItem } from "@/generators/world-items";
+import { createUniqueItemBonus } from "@/generators/unique-item-bonuses";
+import {
+  uniqueItemBonusLines,
+  UNIQUE_ITEM_POLICY,
+  UNIQUE_ITEM_EQUIPMENT,
+  UNIQUE_ITEM_CONSUMABLE,
+  UNIQUE_ITEM_LIMITS
+} from "@/data/unique-item-bonuses";
+import { mapItemOrigin } from "./item-origin";
 
 export type HeritageView = "treasures" | "religions";
 interface HeritagePanelContext {
@@ -255,6 +265,24 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     const world = context.world()!;
     const place = world.units.find(unit => unit.id === location);
     const country = world.units.find(unit => unit.level === "country" && unit.stateId === value.stateId);
+    const uniqueFields: [string, string][] = [];
+    if ("rarity" in value && value.unique) {
+      const item = treasureWorldItem(world, value);
+      item.origin =
+        world.itemLibrary?.items.find(existing => existing.id === item.id)?.origin || mapItemOrigin(world, item);
+      const bonus = createUniqueItemBonus(world.seed, item)!;
+      uniqueFields.push(
+        ...uniqueItemBonusLines(bonus, t, item.rarity).map((line, index): [string, string] => [String(index + 1), line])
+      );
+      uniqueFields.push([
+        t("규칙 안내"),
+        [
+          t(UNIQUE_ITEM_POLICY),
+          t(item.category === "potion" || item.category === "scroll" ? UNIQUE_ITEM_CONSUMABLE : UNIQUE_ITEM_EQUIPMENT),
+          t(UNIQUE_ITEM_LIMITS)
+        ].join(" ")
+      ]);
+    }
     mountWorldDetail(root, {
       key,
       name: value.name,
@@ -281,6 +309,11 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
                   ["유래", value.history],
                   ["GM 메모", value.notes]
                 ]
+              },
+              {
+                title: "유니크 추가 특성",
+                fields: uniqueFields,
+                fullWidth: true
               },
               {
                 title: "규칙·출전",
@@ -423,7 +456,19 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
               format: "fpb-realm-heritage",
               seed: world.seed,
               nations: world.heritage?.nations,
-              records: visible,
+              records: visible.map(record => {
+                if (!("rarity" in record) || !record.unique) return record;
+                const item = treasureWorldItem(world, record);
+                item.origin ||= mapItemOrigin(world, item);
+                const bonus = createUniqueItemBonus(world.seed, item)!;
+                return {
+                  ...record,
+                  origin: item.origin,
+                  uniqueBonus: bonus,
+                  uniqueBonusPolicy: "fpb-homebrew-not-official-srd",
+                  uniqueBonusRules: uniqueItemBonusLines(bonus, t, item.rarity)
+                };
+              }),
               kind: view,
               itemReferenceEdition: world.heritage?.itemReferenceEdition || "mixed",
               itemSources: MAGIC_ITEM_SOURCES,

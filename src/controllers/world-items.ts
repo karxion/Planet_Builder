@@ -7,7 +7,13 @@ import {
 } from "@/data/magic-item-references";
 import { isDungeonLocation } from "@/data/dungeon-locations";
 import { isWorldMagicItem } from "@/data/world-item-validation";
-import { UNIQUE_ITEM_POLICY, UNIQUE_ITEM_LIMITS, UNIQUE_ITEM_EQUIPMENT, UNIQUE_ITEM_CONSUMABLE, uniqueItemBonusLines } from "@/data/unique-item-bonuses";
+import {
+  UNIQUE_ITEM_POLICY,
+  UNIQUE_ITEM_LIMITS,
+  UNIQUE_ITEM_EQUIPMENT,
+  UNIQUE_ITEM_CONSUMABLE,
+  uniqueItemBonusLines
+} from "@/data/unique-item-bonuses";
 import { createUniqueItemBonus } from "@/generators/unique-item-bonuses";
 import {
   createWorldItem,
@@ -23,6 +29,7 @@ import type { CampaignWorld } from "@/types/campaign-world";
 import type { ItemDungeonChoice, WorldMagicItem } from "@/types/world-item";
 import { Campaign } from "./campaign-world";
 import { mountImageHandoff } from "./image-handoff";
+import { mapItemOrigin } from "./item-origin";
 
 let dialog: HTMLDialogElement;
 let world: CampaignWorld;
@@ -95,8 +102,14 @@ function createDialog(): void {
     const chosen = current.itemLibrary!.items.filter(item => item.id === selected);
     const { openWorldDataExport } = await import("./world-data-export");
     if (Campaign.get() !== current) return;
-    openWorldDataExport({ kind: "items", world: current, all: current.itemLibrary!.items,
-      filtered, selected: chosen, hasDrafts: itemDraftCount() > 0 });
+    openWorldDataExport({
+      kind: "items",
+      world: current,
+      all: current.itemLibrary!.items,
+      filtered,
+      selected: chosen,
+      hasDrafts: itemDraftCount() > 0
+    });
   };
   window.addEventListener("ui:language-changed", () => {
     if (dialog.open) {
@@ -158,7 +171,8 @@ export function openItemLibrary(): void {
   const capitals = (typeof pack === "undefined" ? [] : pack.burgs || [])
     .filter(burg => burg.i && !burg.removed && burg.capital)
     .map(burg => `village:${burg.i}`);
-  if (synchronizeItemLibrary(world, dungeons, legacy.heritage?.treasures, capitals)) changed();
+  if (synchronizeItemLibrary(world, dungeons, legacy.heritage?.treasures, capitals, item => mapItemOrigin(world, item)))
+    changed();
   if (!dialog?.isConnected) createDialog();
   translateChrome();
   renderList();
@@ -183,8 +197,7 @@ function filteredItems(): WorldMagicItem[] {
 function renderList(): void {
   const items = filteredItems();
   page = Math.max(0, Math.min(page, Math.ceil(items.length / 40) - 1));
-  if (!items.slice(page * 40, page * 40 + 40).some(item => item.id === selected))
-    selected = items[page * 40]?.id || "";
+  if (!items.slice(page * 40, page * 40 + 40).some(item => item.id === selected)) selected = items[page * 40]?.id || "";
   const list = get("fpb-items-list");
   list.replaceChildren();
   for (const item of items.slice(page * 40, page * 40 + 40)) {
@@ -248,12 +261,10 @@ function readItem(form: HTMLFormElement, item: WorldMagicItem): WorldMagicItem {
 
 function readItemValues(data: Record<string, string>, item: WorldMagicItem): WorldMagicItem {
   const draft = { ...item, edited: true };
-  for (const key of ["name", "appearance", "power", "history", "notes"] as const)
-    draft[key] = data[key] || "";
+  for (const key of ["name", "appearance", "power", "history", "notes"] as const) draft[key] = data[key] || "";
   draft.category = data.category as WorldMagicItem["category"];
   draft.rarity = data.rarity as WorldMagicItem["rarity"];
   draft.unique = data.unique === "true";
-  draft.uniqueBonus = createUniqueItemBonus(world.seed, draft);
   const kind = data.ownerKind;
   const id = data.ownerId || "";
   if (kind === "none") draft.owner = { kind: "none" };
@@ -278,6 +289,8 @@ function readItemValues(data: Record<string, string>, item: WorldMagicItem): Wor
     delete draft.referenceId;
     delete draft.variant;
   }
+  draft.origin ||= mapItemOrigin(world, draft);
+  draft.uniqueBonus = createUniqueItemBonus(world.seed, draft);
   return draft;
 }
 
@@ -329,8 +342,15 @@ function renderDetail(): void {
     bonus.className = "fpb-item-unique-bonus";
     bonus.append(node("h4", "유니크 추가 특성"), node("small", UNIQUE_ITEM_POLICY));
     const list = node("ul");
-    for (const line of uniqueItemBonusLines(item.uniqueBonus, t)) list.append(node("li", line));
-    bonus.append(list, node("p", item.category === "potion" || item.category === "scroll" ? UNIQUE_ITEM_CONSUMABLE : UNIQUE_ITEM_EQUIPMENT), node("p", UNIQUE_ITEM_LIMITS));
+    for (const line of uniqueItemBonusLines(item.uniqueBonus, t, item.rarity)) list.append(node("li", line));
+    bonus.append(
+      list,
+      node(
+        "p",
+        item.category === "potion" || item.category === "scroll" ? UNIQUE_ITEM_CONSUMABLE : UNIQUE_ITEM_EQUIPMENT
+      ),
+      node("p", UNIQUE_ITEM_LIMITS)
+    );
     form.append(bonus);
   }
   field(form, "소유주 유형", "ownerKind", item.owner.kind, [
@@ -386,7 +406,10 @@ function renderDetail(): void {
   }
   const rewards: [string, string][] = [
     ["", t("보상 출처 없음")],
-    ...dungeons.map(dungeon => [dungeonKey(dungeon), `${dungeon.name} · #${dungeon.markerId} · ${dungeon.x}, ${dungeon.y}`] as [string, string])
+    ...dungeons.map(
+      dungeon =>
+        [dungeonKey(dungeon), `${dungeon.name} · #${dungeon.markerId} · ${dungeon.x}, ${dungeon.y}`] as [string, string]
+    )
   ];
   const key = item.reward ? dungeonKey(item.reward) : "";
   if (item.reward && !dungeons.some(dungeon => dungeonKey(dungeon) === key))
@@ -481,7 +504,8 @@ function renderDetail(): void {
       const value = new FormData(form).get("reference");
       const option = ALL_REFERENCE_OPTIONS.find(option => optionKey(option) === value);
       if (option) {
-        form.querySelector<HTMLTextAreaElement>('[name="power"]')!.value = `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""} · SRD ${option.reference.edition} 원본 규칙 참조`;
+        form.querySelector<HTMLTextAreaElement>('[name="power"]')!.value =
+          `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""} · SRD ${option.reference.edition} 원본 규칙 참조`;
       }
     }
     form.dispatchEvent(new Event("input", { bubbles: true }));

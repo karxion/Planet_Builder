@@ -1,5 +1,6 @@
 import { isNpcPortrait } from "@/data/npc-portrait";
 import { UNIQUE_ITEM_SKILLS, UNIQUE_ITEM_BUDGETS } from "@/data/unique-item-bonuses";
+import { isUniqueItemOrigin, UNIQUE_EFFECT_BY_ID, UNIQUE_EFFECT_COUNTS } from "./unique-item-effects";
 import type { MagicItemRarity } from "@/types/magic-item-reference";
 import type { ItemLibrary, ItemOwner, WorldMagicItem } from "@/types/world-item";
 
@@ -31,14 +32,55 @@ export function isWorldMagicItem(value: unknown): value is WorldMagicItem {
   )
     return false;
   if (typeof value.unique !== "boolean" || typeof value.edited !== "boolean") return false;
+  if (value.origin !== undefined && !isUniqueItemOrigin(value.origin)) return false;
   if (value.uniqueBonus !== undefined) {
     const bonus = value.uniqueBonus;
     const budget = UNIQUE_ITEM_BUDGETS[value.rarity as MagicItemRarity];
-    const effect = value.category === "weapon" ? "forceDamage" : value.category === "potion" ? "healing" : "temporaryHp";
-    if (!value.unique || !record(bonus) || bonus.version !== 1 ||
+    const effect =
+      value.category === "weapon" ? "forceDamage" : value.category === "potion" ? "healing" : "temporaryHp";
+    if (!value.unique || !record(bonus)) return false;
+    if (bonus.version === 2) {
+      if (
+        !Array.isArray(bonus.effects) ||
+        bonus.effects.length !== UNIQUE_EFFECT_COUNTS[value.rarity as MagicItemRarity]
+      )
+        return false;
+      const axes = new Set<string>();
+      const ids = new Set<string>();
+      for (const entry of bonus.effects) {
+        if (!record(entry) || typeof entry.id !== "string") return false;
+        const definition = UNIQUE_EFFECT_BY_ID.get(entry.id);
+        if (!definition || definition.axis !== entry.axis || axes.has(definition.axis) || ids.has(entry.id))
+          return false;
+        if (definition.axis === "category" && definition.theme !== value.category) return false;
+        if (
+          definition.axis === "nation" &&
+          definition.theme !== (record(value.origin) ? value.origin.archetype : "balanced")
+        )
+          return false;
+        if (
+          definition.axis === "geography" &&
+          definition.theme !== (record(value.origin) ? value.origin.geography : "unknown")
+        )
+          return false;
+        const rarityTheme = ["common", "uncommon"].includes(String(value.rarity))
+          ? "rare"
+          : value.rarity === "artifact"
+            ? "legendary"
+            : value.rarity;
+        if (definition.axis === "rarity" && definition.theme !== rarityTheme) return false;
+        axes.add(definition.axis);
+        ids.add(entry.id);
+      }
+      if (!axes.has("category")) return false;
+    } else if (
+      bonus.version !== 1 ||
       !Object.hasOwn(UNIQUE_ITEM_SKILLS, String(bonus.skill)) ||
-      bonus.checkBonus !== budget.check || bonus.effect !== effect ||
-      bonus.magnitude !== (effect === "temporaryHp" ? budget.hp : budget.dice)) return false;
+      bonus.checkBonus !== budget.check ||
+      bonus.effect !== effect ||
+      bonus.magnitude !== (effect === "temporaryHp" ? budget.hp : budget.dice)
+    )
+      return false;
   }
   if (![value.appearance, value.power, value.history, value.notes].every(part => text(part))) return false;
   if (value.image !== undefined && !isNpcPortrait(value.image)) return false;

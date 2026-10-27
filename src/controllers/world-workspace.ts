@@ -31,7 +31,7 @@ interface DetailOptions {
   name: string;
   location: string;
   badge: string;
-  sections: { title: string; fields: [string, string][] }[];
+  sections: { title: string; fields: [string, string][]; fullWidth?: boolean }[];
   focus: () => void;
   canFocus?: boolean;
   refresh: () => void;
@@ -64,7 +64,7 @@ export function mountWorldDetail(root: HTMLElement, options: DetailOptions): voi
   for (const section of options.sections) {
     const container = node("section", "", "fpb-world-read-section");
     container.append(node("h4", t(section.title)));
-    const fields = node("dl", "", "fpb-world-read-fields");
+    const fields = node("dl", "", `fpb-world-read-fields${section.fullWidth ? " fpb-world-read-full" : ""}`);
     for (const [label, value] of section.fields) {
       const pair = node("div");
       pair.append(node("dt", t(label)));

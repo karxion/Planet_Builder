@@ -45,10 +45,14 @@ function createTreasure(
     power: "",
     symbolism: motif.symbolism,
     rpEffect: `이 보물을 공식적으로 위탁받은 자는 '${motif.symbolism}'의 계승자로 인정받으며 공개 행사와 외교에서 그 전통을 지킬 책임을 진다`,
-    history:
-      ownerType === "country"
-        ? "국가가 선대의 맹세를 기리며 보존해 온 보물이다"
-        : "도시의 위기를 이겨낸 날을 기념하며 대대로 전해 온 상징품이다",
+    history: {
+      military: ["국경 전쟁에서 병사들을 지킨 대장장이의 유작이다", "수호의 맹세를 새겨 전열에 수여한 보물이다"],
+      arcane: ["고대 마력 봉인 의식을 위해 제작한 실험작이다", "먼 차원의 탐험에서 돌아온 마법사가 남긴 보물이다"],
+      theocratic: ["신전의 제의에서 축복을 받아 탄생한 보물이다", "재난의 희생자를 구호한 성직자를 기려 제작했다"],
+      nature: ["숲을 지키겠다는 맹세를 담아 만든 보물이다", "위험한 순례 여정에서 길잡이가 남긴 상징품이다"],
+      mercantile: ["먼바다 항해의 성공을 기념해 제작한 보물이다", "교역로의 구호 활동을 도운 상단의 기념품이다"],
+      balanced: ["국가가 선대의 맹세를 기리며 보존해 온 보물이다", "장인의 가문이 선대의 기술을 계승해 만든 상징품이다"]
+    }[archetype][Math.floor(random() * 2)],
     notes: "",
     edited: false
   };
@@ -97,6 +101,22 @@ export function synchronizeHeritage(world: CampaignWorld, input: AdministrativeS
     showHeadquarters: true
   };
   const heritage: RealmHeritage = world.heritage;
+  // Add provenance once, including to legacy edited records, without replacing their text or identity.
+  const attachOrigin = (item: RealmTreasure) => {
+    if (item.origin) return;
+    const state = input.states.find(state => state.id === item.stateId);
+    const village = item.settlementId
+      ? input.villages.find(village => `village:${village.id}` === item.settlementId)
+      : undefined;
+    item.origin = {
+      archetype:
+        world.npcProfiles?.find(profile => profile.stateId === item.stateId)?.archetype ||
+        inferCountryArchetype(state?.government || ""),
+      geography: village?.geography || state?.geography || "unknown"
+    };
+    changed = true;
+  };
+  for (const item of heritage.treasures) attachOrigin(item);
   const references = heritage.itemReferenceEdition || "mixed";
   for (const item of heritage.treasures) {
     if (item.design || item.edited) continue;
@@ -125,6 +145,7 @@ export function synchronizeHeritage(world: CampaignWorld, input: AdministrativeS
       const id = `treasure:country:${state.id}:${slot}`;
       if (treasureIds.has(id)) continue;
       const treasure = createTreasure(world.seed, state.id, slot, state.name, references, archetype);
+      attachOrigin(treasure);
       heritage.treasures.push(treasure);
       treasureIds.add(id);
       changed = true;
@@ -147,6 +168,7 @@ export function synchronizeHeritage(world: CampaignWorld, input: AdministrativeS
         archetype,
         `village:${village.id}`
       );
+      attachOrigin(treasure);
       heritage.treasures.push(treasure);
       treasureIds.add(id);
       changed = true;

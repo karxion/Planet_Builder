@@ -24,6 +24,7 @@ export interface RealmTreasure {
   notes: string;
   edited: boolean;
   design?: TreasureDesign;
+  origin?: import("./world-item").UniqueItemOrigin;
 }
 
 export interface RealmReligion {

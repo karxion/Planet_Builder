@@ -10,13 +10,34 @@ export type UniqueItemSkill =
   | "survival"
   | "medicine";
 
-export interface UniqueItemBonus {
+export interface LegacyUniqueItemBonus {
   version: 1;
   skill: UniqueItemSkill;
   checkBonus: number;
   effect: "forceDamage" | "temporaryHp" | "healing";
   magnitude: number;
 }
+
+export type UniqueEffectAxis = "category" | "nation" | "rarity" | "history" | "geography";
+export type ItemGeography =
+  | "unknown"
+  | "coast"
+  | "forest"
+  | "mountain"
+  | "desert"
+  | "tundra"
+  | "swamp"
+  | "plains"
+  | "underground";
+export interface UniqueItemOrigin {
+  archetype: import("./campaign-world").CountryArchetype;
+  geography: ItemGeography;
+}
+export interface ContextualUniqueItemBonus {
+  version: 2;
+  effects: { id: string; axis: UniqueEffectAxis }[];
+}
+export type UniqueItemBonus = LegacyUniqueItemBonus | ContextualUniqueItemBonus;
 
 export type ItemOwner =
   | { kind: "none" }
@@ -36,6 +57,7 @@ export interface WorldMagicItem {
   rarity: MagicItemRarity;
   unique: boolean;
   uniqueBonus?: UniqueItemBonus;
+  origin?: UniqueItemOrigin;
   appearance: string;
   power: string;
   history: string;
