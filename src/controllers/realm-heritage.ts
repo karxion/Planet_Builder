@@ -9,6 +9,7 @@ import type { CampaignWorld } from "@/types/campaign-world";
 import type { ItemReferenceEdition } from "@/types/magic-item-reference";
 import type { RealmReligion, RealmTreasure } from "@/types/realm-heritage";
 import { appendItemReferenceFields } from "./item-reference-fields";
+import { mountWorldDetail, showWorldRecord } from "./world-workspace";
 
 export type HeritageView = "treasures" | "religions";
 interface HeritagePanelContext {
@@ -29,7 +30,8 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
   host.innerHTML = `<div class="fpb-npc-toolbar"><input type="search" id="fpb-heritage-search" aria-label="보물·종교 검색" placeholder="보물·종교 검색"><span id="fpb-heritage-count" role="status"></span><button type="button" id="fpb-heritage-export" class="icon-download" aria-label="세계관 JSON 내보내기" title="세계관 JSON 내보내기"></button></div>
     <div class="fpb-heritage-options"><form id="fpb-history-form"><label>건국 경과 (년)<input id="fpb-history-age" name="age" type="number" min="0" max="10000" step="1" required disabled></label><button type="submit" class="icon-ok" title="역사 저장" aria-label="역사 저장" disabled></button></form><label class="fpb-headquarters-toggle"><input id="fpb-show-headquarters" type="checkbox">총본산 지도 표시</label></div>
     <div class="fpb-npc-columns"><section class="fpb-npc-results"><div id="fpb-heritage-list"></div><nav class="fpb-npc-pagination"><button id="fpb-heritage-prev" type="button" class="icon-left-open" title="이전 페이지" aria-label="이전 페이지"></button><span id="fpb-heritage-page"></span><button id="fpb-heritage-next" type="button" class="icon-right-open" title="다음 페이지" aria-label="다음 페이지"></button></nav></section><section id="fpb-heritage-detail"></section></div>`;
-  const get = <T extends HTMLElement = HTMLElement>(id: string) => host.querySelector<T>(`#${id}`)!;
+  const get = <T extends HTMLElement = HTMLElement>(id: string) =>
+    (host.querySelector<T>(`#${id}`) || document.getElementById(id)) as T;
   let view: HeritageView = "treasures";
   let scope = "";
   let selected = "";
@@ -70,7 +72,7 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     const unit = world.units.find(unit => unit.id === scope);
     const query = search.value.trim().toLocaleLowerCase();
     const all = view === "treasures" ? world.heritage.treasures : world.heritage.religions;
-    return all.filter(record => {
+    const filtered = all.filter(record => {
       let matches = !unit || record.stateId === unit.stateId;
       if (unit && unit.level !== "country") {
         const location = "headquartersId" in record ? record.headquartersId : record.settlementId;
@@ -85,6 +87,9 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
           .includes(query)
       );
     });
+    return get<HTMLSelectElement>("fpb-heritage-sort")?.value === "name"
+      ? filtered.sort((a, b) => a.name.localeCompare(b.name))
+      : filtered;
   }
 
   function field(
@@ -243,10 +248,70 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
       EditorDrafts.clear(key);
       context.changed();
       render(view, scope);
-      get("fpb-heritage-detail").querySelector('[role="status"]')!.textContent = t("프로젝트에 적용됨");
+      get("fpb-heritage-detail").querySelector(".fpb-world-detail-status")!.textContent = t("프로젝트에 적용됨");
     };
     root.append(form);
     EditorDrafts.bind(form, key, () => render(view, scope, selected), !draft);
+    const world = context.world()!;
+    const place = world.units.find(unit => unit.id === location);
+    const country = world.units.find(unit => unit.level === "country" && unit.stateId === value.stateId);
+    mountWorldDetail(root, {
+      key,
+      name: value.name,
+      location: [country?.name, place?.id !== country?.id ? place?.name : ""].filter(Boolean).join(" / "),
+      badge:
+        "rarity" in value
+          ? t(ITEM_RARITIES[value.rarity])
+          : `${t(DEITY_RANKS[value.deityRank])} · ${t(ALIGNMENTS[value.alignment])}`,
+      sections:
+        "rarity" in value
+          ? [
+              {
+                title: "보물 정보",
+                fields: [
+                  ["소재지", place?.name || ""],
+                  ["상징성", value.symbolism]
+                ]
+              },
+              {
+                title: "전승과 특징",
+                fields: [
+                  ["RP 영향", value.rpEffect],
+                  ["효능 개요", value.power],
+                  ["유래", value.history],
+                  ["GM 메모", value.notes]
+                ]
+              },
+              {
+                title: "규칙·출전",
+                fields: [
+                  ["참고 판본", value.design?.edition || t("세계관 창작 기록")],
+                  ["규칙 안내", t("창작 아이템 · 희귀도는 성능 범위이며 RP 효과는 GM이 판정합니다.")]
+                ]
+              }
+            ]
+          : [
+              {
+                title: "신앙과 상징",
+                fields: [
+                  ["신앙 대상", value.deityName],
+                  ["성향", t(ALIGNMENTS[value.alignment])],
+                  ["종교 상징", value.symbol]
+                ]
+              },
+              { title: "총본산", fields: [["소재지", place?.name || t("위치 없음 · 재지정 필요")]] },
+              {
+                title: "교단 기록",
+                fields: [
+                  ["교리", value.doctrine],
+                  ["GM 메모", value.notes]
+                ]
+              }
+            ],
+      focus: () => context.focus(location),
+      canFocus: Boolean(place),
+      refresh: () => render(view, scope, selected)
+    });
   }
 
   function render(nextView: HeritageView, nextScope: string, selectId?: string) {
@@ -257,6 +322,10 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     view = nextView;
     scope = nextScope;
     visible = records();
+    for (const kind of ["treasures", "religions"] as const) {
+      const counter = document.getElementById(`fpb-tab-count-${kind}`);
+      if (counter) counter.textContent = ` ${context.world()?.heritage?.[kind].length || 0}`;
+    }
     if (selectId) {
       const index = visible.findIndex(record => record.id === selectId);
       if (index >= 0) {
@@ -294,6 +363,7 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
       button.onclick = () => {
         selected = record.id;
         render(view, scope, selected);
+        showWorldRecord(get("fpb-heritage-detail"));
       };
       list.append(button);
     }
@@ -318,8 +388,8 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     EditorDrafts.bind(historyForm, historyKey, () => render(view, scope, selected));
     show.checked = context.world()?.heritage?.showHeadquarters ?? true;
     edition.value = context.world()?.heritage?.itemReferenceEdition || "mixed";
-    editionLabel.hidden = view !== "treasures";
-    show.closest("label")!.hidden = view !== "religions";
+    editionLabel.hidden = false;
+    show.closest("label")!.hidden = false;
     headquartersHint.hidden = view !== "religions";
     detail(shown.find(record => record.id === selected));
   }
@@ -373,5 +443,12 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
-  return { render };
+  return {
+    render,
+    controls: {
+      history: get<HTMLFormElement>("fpb-history-form"),
+      edition: editionLabel,
+      headquarters: show.closest<HTMLElement>("label")!
+    }
+  };
 }

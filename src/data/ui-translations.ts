@@ -1420,5 +1420,35 @@ export const UI_TRANSLATIONS: readonly (readonly [string, string])[] = [
   [
     "You cannot remove a market center burg. Please remove the market first",
     "시장 중심 마을은 삭제할 수 없습니다. 먼저 시장을 제거하세요."
+  ],
+  ["Browse scope", "탐색 범위"],
+  ["Reset", "초기화"],
+  ["World settings", "세계 설정"],
+  ["Country settings", "국가 설정"],
+  ["Management actions", "관리 작업"],
+  ["Apply settings", "설정 적용"],
+  ["All worlds", "전체 세계"],
+  ["No record", "기록 없음"],
+  ["Character information", "인물 정보"],
+  ["Character notes", "인물 기록"],
+  ["Combat profile", "전투 프로필"],
+  ["Rules guidance", "규칙 안내"],
+  ["Treasure information", "보물 정보"],
+  ["Lore and traits", "전승과 특징"],
+  ["Rules and sources", "규칙·출전"],
+  ["Original setting record", "세계관 창작 기록"],
+  ["Belief and symbol", "신앙과 상징"],
+  ["Object of worship", "신앙 대상"],
+  ["Located in", "소재지"],
+  ["Faith records", "교단 기록"],
+  ["Unapplied changes", "저장하지 않은 변경 사항"],
+  ["No changes", "변경 사항 없음"],
+  ["‹ List", "‹ 목록"],
+  ["List sorting", "목록 정렬"],
+  ["Default order", "기본순"],
+  ["Name order", "이름순"],
+  [
+    "Changing editions preserves manually edited treasures and pending drafts.",
+    "판본을 바꿔도 직접 편집한 보물과 작성 중인 초안은 유지됩니다."
   ]
 ];

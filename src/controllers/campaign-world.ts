@@ -37,6 +37,7 @@ import { createHeadquartersDetails } from "./headquarters-details";
 import { mountNpcPortrait } from "./npc-portrait";
 import { createHeritagePanel, type HeritageView } from "./realm-heritage";
 import { createRulesReferences } from "./rules-references";
+import { mountWorldDetail, mountWorldWorkspace, showWorldRecord } from "./world-workspace";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
@@ -354,6 +355,8 @@ function init(): void {
       changed();
     }
   });
+  mountWorldWorkspace(dialog, heritagePanel.controls);
+  window.addEventListener("world:rebalance", () => Campaign.rebalance());
   window.addEventListener("map:icons-laid-out", () =>
     drawReligionHeadquarters(campaign, { width: graphWidth, height: graphHeight })
   );
@@ -364,6 +367,7 @@ function init(): void {
     open();
     el<HTMLInputElement>("fpb-heritage-search").value = "";
     switchWorldView("religions", id);
+    showWorldRecord(el("fpb-heritage-detail"));
   });
   el("fpb-world-close").onclick = () => dialog.close();
   for (const level of levels)
@@ -458,13 +462,15 @@ function switchWorldView(view: "npcs" | HeritageView, selectedId?: string): void
   el("fpb-npc-panel").hidden = view !== "npcs";
   el("fpb-heritage-panel").hidden = view === "npcs";
   el(view === "npcs" ? "fpb-npc-panel" : "fpb-heritage-panel").setAttribute("aria-labelledby", `fpb-tab-${view}`);
-  el("fpb-npc-regenerate").hidden = view !== "npcs";
+  delete el("fpb-world-dialog").dataset.mobileDetail;
   for (const name of ["npcs", "treasures", "religions"]) {
     const tab = el<HTMLButtonElement>(`fpb-tab-${name}`);
     tab.setAttribute("aria-selected", String(name === view));
     tab.tabIndex = name === view ? 0 : -1;
   }
-  if (view !== "npcs") heritagePanel.render(view, selectedScope(), selectedId);
+  heritagePanel.render(view === "npcs" ? "treasures" : view, selectedScope(), selectedId);
+  const scope = campaign?.units.find(unit => unit.id === selectedScope())?.name || t("전체 세계");
+  el("fpb-world-mobile-scope").textContent = `${t("탐색 범위")} · ${scope}`;
 }
 
 function selectedScope(): string {
@@ -478,6 +484,12 @@ function selectedScope(): string {
 
 function renderFilters(): void {
   if (!campaign) return;
+  for (const [kind, count] of [
+    ["npcs", campaign.npcs.length],
+    ["treasures", campaign.heritage?.treasures.length || 0],
+    ["religions", campaign.heritage?.religions.length || 0]
+  ] as const)
+    el(`fpb-tab-count-${kind}`).textContent = ` ${count}`;
   let parent = "";
   for (const level of levels) {
     const select = el<HTMLSelectElement>(`fpb-filter-${level}`);
@@ -513,17 +525,22 @@ function filteredNpcs(): WorldNpc[] {
       .map(u => u.id)
   );
   const query = el<HTMLInputElement>("fpb-npc-search").value.trim().toLocaleLowerCase();
-  return campaign.npcs.filter(
+  const filtered = campaign.npcs.filter(
     npc =>
       (!scope || villages.has(npc.villageId)) &&
       `${npc.name} ${npc.role} ${npc.progression ? t(NPC_CLASSES[npc.progression.classId]) : ""}`
         .toLocaleLowerCase()
         .includes(query)
   );
+  return el<HTMLSelectElement>("fpb-npc-sort")?.value === "name"
+    ? filtered.sort((a, b) => a.name.localeCompare(b.name))
+    : filtered;
 }
 
 function renderNpcs(): void {
   const npcs = filteredNpcs();
+  const total = el("fpb-tab-count-npcs");
+  if (total) total.textContent = ` ${campaign?.npcs.length || 0}`;
   page = Math.max(0, Math.min(page, Math.ceil(npcs.length / 30) - 1));
   const shown = npcs.slice(page * 30, (page + 1) * 30);
   el("fpb-npc-count").textContent = t("{count}명", { count: npcs.length });
@@ -544,6 +561,7 @@ function renderNpcs(): void {
       button.onclick = () => {
         selectedNpc = button.dataset.npc!;
         renderNpcs();
+        showWorldRecord(el("fpb-npc-detail"));
       };
     });
   renderDetail();
@@ -668,6 +686,51 @@ function renderDetail(preview?: WorldNpc): void {
     renderNpcs();
   };
   EditorDrafts.bind(form, key, () => renderDetail(), !preview);
+  mountWorldDetail(el("fpb-npc-detail"), {
+    key,
+    name: npc.name,
+    location: campaign?.units.find(unit => unit.id === npc.villageId)?.name || t("소속 마을 없음"),
+    badge: progression
+      ? `${t(NPC_CLASSES[progression.classId])} · ${progression.classId === "none" ? `CR ${progression.commonerCr || "0"}` : `Lv.${progression.level} · ${validProgression ? tierText(progression.level, true) : t("입력값 확인 필요")}`}`
+      : `CR ${stats.cr}`,
+    sections: [
+      {
+        title: "인물 정보",
+        fields: [
+          ["이름", npc.name],
+          ["역할", npc.role],
+          ["지위", progression ? t(NPC_RANKS[progression.rank]) : ""],
+          ["활동 범위", progression ? t(NPC_SCOPES[progression.scope]) : ""]
+        ]
+      },
+      {
+        title: "인물 기록",
+        fields: [
+          ["외형", npc.appearance],
+          ["성격", npc.personality],
+          ["목표", npc.goal],
+          ["비밀", npc.secret],
+          ["GM 메모", npc.notes]
+        ]
+      },
+      {
+        title: "규칙 안내",
+        fields: [
+          [
+            "전투 프로필",
+            t(
+              epic
+                ? "에픽 · 서사 레벨만 기록 · 21레벨 이상 간이 전투 수치 미제공"
+                : "간이 수치 · 클래스 특성·주문·특기는 미포함 · 공식 CR 아님"
+            )
+          ]
+        ]
+      }
+    ],
+    portrait: npc.portrait,
+    focus: () => focusUnit(npc.villageId),
+    refresh: () => renderDetail()
+  });
 }
 
 function collectNpcDraft(preview?: WorldNpc, values?: Record<string, string>): WorldNpc | undefined {
@@ -760,6 +823,7 @@ export const Campaign = {
     selectedNpc = id;
     page = 0;
     renderNpcs();
+    showWorldRecord(el("fpb-npc-detail"));
   },
   get: () => {
     refresh();

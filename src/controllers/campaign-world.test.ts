@@ -45,6 +45,75 @@ describe("NPC progression controls", () => {
     control.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
+  it("starts with a readable summary and applies or cancels explicit edits without losing other drafts", () => {
+    const original = Campaign.get()!.npcs[0].name;
+    const detail = document.getElementById("fpb-npc-detail")!;
+    expect(document.querySelector<HTMLFormElement>("#fpb-npc-form")!.hidden).toBe(true);
+    expect(detail.querySelector(".fpb-world-read-view")!.textContent).toContain(original);
+    detail.querySelector<HTMLButtonElement>(".fpb-world-edit")!.click();
+    expect(document.querySelector<HTMLFormElement>("#fpb-npc-form")!.hidden).toBe(false);
+    change("name", "UI draft");
+    expect(Campaign.get()!.npcs[0].name).toBe(original);
+    const actions = [...detail.querySelectorAll<HTMLButtonElement>(".fpb-world-detail-actions button")];
+    actions.find(button => button.textContent === "취소")!.click();
+    expect(document.querySelector<HTMLFormElement>("#fpb-npc-form")!.hidden).toBe(true);
+    expect(Campaign.get()!.npcs[0].name).toBe(original);
+    detail.querySelector<HTMLButtonElement>(".fpb-world-edit")!.click();
+    change("name", "Applied name");
+    detail.querySelector<HTMLButtonElement>(".fpb-world-detail-actions .primary")!.click();
+    expect(Campaign.get()!.npcs[0].name).toBe("Applied name");
+    expect(document.querySelector<HTMLFormElement>("#fpb-npc-form")!.hidden).toBe(true);
+  });
+
+  it("stages country settings in the NPC view and cancels without mutating the world", () => {
+    const country = document.getElementById("fpb-filter-country") as HTMLSelectElement;
+    country.value = "country:1";
+    country.dispatchEvent(new Event("change"));
+    const settings = document.getElementById("fpb-world-settings") as HTMLDialogElement;
+    settings.showModal = () => {
+      settings.open = true;
+    };
+    settings.close = () => {
+      settings.open = false;
+    };
+    document.querySelector<HTMLButtonElement>(".fpb-world-settings-open")!.click();
+    const before = structuredClone(Campaign.get());
+    const age = document.getElementById("fpb-settings-age") as HTMLInputElement;
+    const archetype = document.getElementById("fpb-settings-archetype") as HTMLSelectElement;
+    expect(age.disabled).toBe(false);
+    age.value = "248";
+    archetype.value = "nature";
+    expect(Campaign.get()).toEqual(before);
+    [...settings.querySelectorAll<HTMLButtonElement>("footer button")]
+      .find(button => button.textContent === "취소")!
+      .click();
+    expect(Campaign.get()).toEqual(before);
+    document.querySelector<HTMLButtonElement>(".fpb-world-settings-open")!.click();
+    expect(archetype.value).not.toBe("nature");
+    age.value = "248";
+    archetype.value = "nature";
+    document.getElementById("fpb-world-settings-form")!.dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(Campaign.get()!.heritage!.nations[0].ageYears).toBe(248);
+    expect(Campaign.get()!.npcProfiles?.[0].archetype).toBe("nature");
+    expect(settings.open).toBe(false);
+  });
+
+  it("separates mobile list and detail navigation and keeps filters available", () => {
+    const dialog = document.getElementById("fpb-world-dialog")!;
+    document.querySelector<HTMLButtonElement>("[data-npc]")!.click();
+    expect(dialog.dataset.mobileDetail).toBe("true");
+    document.querySelector<HTMLButtonElement>(".fpb-world-mobile-back")!.click();
+    expect(dialog.dataset.mobileDetail).toBeUndefined();
+    const scope = document.getElementById("fpb-world-mobile-scope")!;
+    scope.click();
+    expect(scope.getAttribute("aria-expanded")).toBe("true");
+    scope.click();
+    expect(scope.getAttribute("aria-expanded")).toBe("false");
+    document.getElementById("fpb-tab-religions")!.click();
+    document.querySelector<HTMLButtonElement>("[data-record]")!.click();
+    expect(dialog.dataset.mobileDetail).toBe("true");
+  });
+
   it("persists an uploaded portrait when applying an existing text draft and restoring the world", async () => {
     const { prepareNpcPortrait } = await import("@/services/npc-portrait-image");
     const portrait = "data:image/jpeg;base64,/9j/2Q==";
