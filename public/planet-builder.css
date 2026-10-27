@@ -822,6 +822,23 @@ body.fpb-ready :is(#toggleCompass, #togglePrecipitation, #togglePopulation, #tog
 #fpb-heritage-list { overflow: auto; flex: 1; min-height: 0; }
 #fpb-heritage-detail { overflow: auto; padding: 18px 22px; min-width: 0; }
 #fpb-heritage-detail h3 { font-size: 20px; color: var(--fpb-gold); overflow-wrap: anywhere; }
+#fpb-headquarters [role="button"]:focus { outline: none; }
+#fpb-headquarters [role="button"]:focus-visible .fpb-hq-ring,
+#fpb-headquarters [aria-pressed="true"] .fpb-hq-ring { stroke: #66e7ed; stroke-width: 3; }
+#fpb-headquarters-panel { position: fixed; z-index: 1100; right: 16px; bottom: 20px; width: min(340px, calc(100vw - 24px)); max-height: min(65vh, 520px); overflow: auto; box-sizing: border-box; padding: 16px; background: var(--fpb-panel, #20291f); color: var(--fpb-text, #eee7cd); border: 1px solid var(--fpb-line, #85764e); border-radius: 8px; box-shadow: 0 8px 28px #0006; font: 14px/1.6 Arial, "Malgun Gothic", sans-serif; overflow-wrap: anywhere; }
+#fpb-headquarters-panel[hidden] { display: none; }
+#fpb-headquarters-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#fpb-headquarters-panel h2 { margin: 0; font-size: 18px; color: var(--fpb-gold, #e9cf87); }
+#fpb-headquarters-panel p { margin: 8px 0; }
+#fpb-headquarters-panel ul { margin: 12px 0 0; padding: 0; list-style: none; }
+#fpb-headquarters-panel li { display: grid; gap: 6px; padding: 12px 0; border-top: 1px solid var(--fpb-line, #85764e); }
+#fpb-headquarters-panel li span { font-size: 12px; }
+#fpb-headquarters-panel button { min-height: 44px; padding: 6px 12px; color: inherit; background: #ffffff0d; border: 1px solid var(--fpb-line, #85764e); border-radius: 4px; cursor: pointer; font: inherit; }
+#fpb-headquarters-panel header button { min-width: 44px; font-size: 20px; }
+#fpb-headquarters-panel li button { justify-self: start; }
+#fpb-headquarters-panel :focus-visible { outline: 2px solid #66e7ed; outline-offset: 2px; }
+.fpb-headquarters-hint { flex-basis: 100%; margin: 0; color: var(--fpb-muted); font-size: 12px; }
+body[data-world-space] #fpb-headquarters-panel { display: none; }
 #fpb-heritage-detail p { font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
 .fpb-heritage-options { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 10px 16px; border-bottom: 1px solid var(--fpb-line); }
 #fpb-history-form { display: flex; align-items: end; gap: 8px; }

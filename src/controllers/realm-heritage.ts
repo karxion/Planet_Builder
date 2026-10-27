@@ -38,6 +38,12 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
   const search = get<HTMLInputElement>("fpb-heritage-search");
   const age = get<HTMLInputElement>("fpb-history-age");
   const show = get<HTMLInputElement>("fpb-show-headquarters");
+  const headquartersHint = node(
+    "p",
+    "지도를 확대하면 총본산 배지가 나타납니다. 선택하면 소재지와 교단 목록을 볼 수 있습니다."
+  );
+  headquartersHint.className = "fpb-headquarters-hint";
+  host.querySelector(".fpb-heritage-options")!.append(headquartersHint);
   const editionLabel = node("label", "자동 생성 판본");
   const edition = node("select");
   edition.id = "fpb-item-edition";
@@ -314,6 +320,7 @@ export function createHeritagePanel(host: HTMLElement, context: HeritagePanelCon
     edition.value = context.world()?.heritage?.itemReferenceEdition || "mixed";
     editionLabel.hidden = view !== "treasures";
     show.closest("label")!.hidden = view !== "religions";
+    headquartersHint.hidden = view !== "religions";
     detail(shown.find(record => record.id === selected));
   }
 

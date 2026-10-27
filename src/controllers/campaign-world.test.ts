@@ -235,6 +235,24 @@ describe("NPC progression controls", () => {
     expect(document.querySelector<HTMLFormElement>("#fpb-heritage-form")!.dataset.record).toBe(religion.id);
   });
 
+  it("opens a grouped headquarters panel and routes its selected faith to the editor despite a previous search", () => {
+    const religion = Campaign.get()!.heritage!.religions.at(-1)!;
+    document.getElementById("fpb-tab-religions")!.click();
+    const search = document.getElementById("fpb-heritage-search") as HTMLInputElement;
+    search.value = "no matching faith";
+    search.dispatchEvent(new Event("input"));
+    window.dispatchEvent(new CustomEvent("realm:headquarters-selected", { detail: religion.headquartersId }));
+    const panel = document.getElementById("fpb-headquarters-panel")!;
+    expect(panel.hidden).toBe(false);
+    const button = [...panel.querySelectorAll<HTMLButtonElement>("[data-religion]")].find(
+      button => button.dataset.religion === religion.id
+    )!;
+    button.click();
+    expect(panel.hidden).toBe(true);
+    expect(document.querySelector<HTMLFormElement>("#fpb-heritage-form")!.dataset.record).toBe(religion.id);
+    expect(search.value).toBe("");
+  });
+
   it("updates generated reference editions and refreshes details while preserving saved manual creations", () => {
     vi.stubGlobal(
       "confirm",

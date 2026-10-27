@@ -365,6 +365,12 @@ export const UI_TRANSLATIONS: readonly (readonly [string, string])[] = [
   ["Deity Rank", "신격 등급"],
   ["Doctrine", "교리"],
   ["Headquarters", "총본산"],
+  ["Host Settlement", "소재 도시"],
+  ["Faith Details", "교단 상세"],
+  [
+    "Zoom in to see headquarters badges. Select a badge to see its location and faiths.",
+    "지도를 확대하면 총본산 배지가 나타납니다. 선택하면 소재지와 교단 목록을 볼 수 있습니다."
+  ],
   ["Lesser Deity", "소신격"],
   ["Intermediate Deity", "중신격"],
   ["Greater Deity", "대신격"],

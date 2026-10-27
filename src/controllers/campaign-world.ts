@@ -1,11 +1,5 @@
 import { isNpcProgression } from "@/data/campaign-validation";
-import {
-  COMMONER_CR_PROFILES,
-  COUNTRY_ARCHETYPES,
-  NPC_CLASSES,
-  NPC_RANKS,
-  NPC_SCOPES
-} from "@/data/npc-progression";
+import { COMMONER_CR_PROFILES, COUNTRY_ARCHETYPES, NPC_CLASSES, NPC_RANKS, NPC_SCOPES } from "@/data/npc-progression";
 import { abilityModifier, NPC_STAT_BLOCKS, SRD_URL } from "@/data/npc-stat-blocks";
 import { removeLegacyDivisions } from "@/generators/administration-policy";
 import {
@@ -39,9 +33,10 @@ import type {
   NpcTemplateId,
   WorldNpc
 } from "@/types/campaign-world";
+import { createHeadquartersDetails } from "./headquarters-details";
+import { mountNpcPortrait } from "./npc-portrait";
 import { createHeritagePanel, type HeritageView } from "./realm-heritage";
 import { createRulesReferences } from "./rules-references";
-import { mountNpcPortrait } from "./npc-portrait";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
@@ -49,6 +44,7 @@ let mapLevel: AdministrationLevel = "country";
 let page = 0;
 let worldView: "npcs" | HeritageView = "npcs";
 let heritagePanel: ReturnType<typeof createHeritagePanel>;
+let headquartersPanel: ReturnType<typeof createHeadquartersDetails> | undefined;
 const levels: AdministrationLevel[] = ["country", "region", "fief", "village"];
 const labels = { country: "국가", region: "지역", fief: "영지", village: "마을" };
 const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -151,6 +147,7 @@ function refresh(): void {
 }
 
 function reset(): void {
+  headquartersPanel?.close(false);
   EditorDrafts.clear();
   campaign = undefined;
   selectedNpc = "";
@@ -257,6 +254,11 @@ function removeObsoleteUi(): void {
 }
 
 function init(): void {
+  headquartersPanel = createHeadquartersDetails(() => campaign);
+  window.addEventListener("realm:headquarters-selected", event => {
+    const id = (event as CustomEvent<unknown>).detail;
+    if (typeof id === "string") headquartersPanel?.open(id);
+  });
   const button = document.createElement("button");
   button.id = "fpb-world-button";
   button.type = "button";
@@ -321,6 +323,7 @@ function init(): void {
     world: () => campaign,
     focus: focusUnit,
     changed: () => {
+      headquartersPanel?.close(false);
       drawReligionHeadquarters(campaign, { width: graphWidth, height: graphHeight });
       changed();
     },
@@ -359,6 +362,7 @@ function init(): void {
     if (typeof id !== "string" || !campaign?.heritage?.religions.some(religion => religion.id === id)) return;
     for (const level of levels) el<HTMLSelectElement>(`fpb-filter-${level}`).value = "";
     open();
+    el<HTMLInputElement>("fpb-heritage-search").value = "";
     switchWorldView("religions", id);
   });
   el("fpb-world-close").onclick = () => dialog.close();
@@ -443,6 +447,7 @@ function init(): void {
 }
 
 function open(): void {
+  headquartersPanel?.close(false);
   refresh();
   renderFilters();
   el<HTMLDialogElement>("fpb-world-dialog").showModal();
@@ -714,11 +719,18 @@ async function exportNpcs(): Promise<void> {
   const selected = world.npcs.filter(npc => npc.id === selectedNpc);
   const { openWorldDataExport } = await import("./world-data-export");
   if (campaign !== world) return;
-  openWorldDataExport({ kind: "npcs", world, all: world.npcs, filtered, selected,
-    hasDrafts: EditorDrafts.snapshot().some(draft => draft.key.startsWith("npc:")) });
+  openWorldDataExport({
+    kind: "npcs",
+    world,
+    all: world.npcs,
+    filtered,
+    selected,
+    hasDrafts: EditorDrafts.snapshot().some(draft => draft.key.startsWith("npc:"))
+  });
 }
 
 function restore(world?: CampaignWorld): void {
+  headquartersPanel?.close(false);
   campaign = world ? structuredClone(world) : undefined;
   mapLevel = campaign?.mapLevel || "country";
   if (el("fpb-admin-level")) el<HTMLSelectElement>("fpb-admin-level").value = mapLevel;

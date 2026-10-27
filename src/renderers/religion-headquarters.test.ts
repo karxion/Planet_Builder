@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createCampaign } from "@/generators/campaign-generator";
-import { boundsOverlap } from "@/utils/mapIconGroups";
 import { drawReligionHeadquarters } from "./religion-headquarters";
-
-vi.mock("./rpg-asset-renderer", () => ({ installRpgAssetDefinitions: vi.fn() }));
 
 function world() {
   document.body.innerHTML = '<svg id="map" width="1000" height="600"><defs></defs><g id="viewbox"></g></svg>';
+  const view = document.getElementById("viewbox")!;
+  Object.assign(view, { getCTM: () => ({ a: 2, b: 0 }) });
   return createCampaign(
     {
       states: [{ id: 1, name: "빛 왕국", x: 100, y: 100, area: 100 }],
@@ -18,46 +17,77 @@ function world() {
   );
 }
 
+afterEach(() => drawReligionHeadquarters());
+
 describe("Religion headquarters map overlay", () => {
-  it("draws one linked, keyboard-accessible individual marker for every religion and is idempotent", () => {
+  it("groups colocated faiths at their exact recorded location without leader lines or displaced labels", () => {
     const campaign = world();
     const before = structuredClone(campaign);
     drawReligionHeadquarters(campaign);
-    const count = campaign.heritage!.religions.length;
-    expect(document.querySelectorAll("#fpb-headquarters [data-religion]")).toHaveLength(count);
-    expect(document.querySelectorAll('#fpb-headquarters use[href="#rpg-monument"]')).toHaveLength(count);
-    expect(document.querySelector('#fpb-headquarters [role="button"]')?.getAttribute("tabindex")).toBe("0");
-    expect(document.querySelector("#fpb-headquarters line")?.getAttribute("x1")).toBe("100");
-    expect(document.querySelector("#fpb-headquarters text")?.getAttribute("paint-order")).toBe("stroke");
-    const boxes = [...document.querySelectorAll("#fpb-headquarters [data-religion] > rect")].map(element => ({
-      x: Number(element.getAttribute("x")),
-      y: Number(element.getAttribute("y")),
-      width: Number(element.getAttribute("width")),
-      height: Number(element.getAttribute("height"))
-    }));
-    for (let i = 0; i < boxes.length; i++) {
-      expect(boundsOverlap(boxes[i], { x: 90, y: 90, width: 20, height: 20 })).toBe(false);
-      for (let j = 0; j < i; j++) expect(boundsOverlap(boxes[i], boxes[j])).toBe(false);
-    }
+    const markers = document.querySelectorAll("#fpb-headquarters [data-headquarters]");
+    expect(markers).toHaveLength(1);
+    expect(markers[0].getAttribute("transform")).toBe("translate(100 100)");
+    expect(markers[0].getAttribute("tabindex")).toBe("0");
+    expect(document.querySelector("#fpb-headquarters text")?.textContent).toBe(
+      String(campaign.heritage!.religions.length)
+    );
+    expect(
+      document.querySelector("#fpb-headquarters line, #fpb-headquarters use, #fpb-headquarters [textLength]")
+    ).toBeNull();
     drawReligionHeadquarters(campaign);
     expect(document.querySelectorAll("#fpb-headquarters")).toHaveLength(1);
     expect(campaign).toEqual(before);
   });
 
-  it("opens the correct religion on click and keyboard activation", () => {
+  it("keeps adjacent/coastal locations fixed even when the map is crowded", () => {
+    const campaign = world();
+    campaign.units.push({ ...campaign.units.find(unit => unit.level === "village")!, id: "village:2", x: 1, y: 1 });
+    campaign.heritage!.religions[0].headquartersId = "village:2";
+    drawReligionHeadquarters(campaign);
+    expect(document.querySelector('[data-headquarters="village:2"]')?.getAttribute("transform")).toBe("translate(1 1)");
+    expect(document.querySelector('[data-headquarters="village:1"]')?.getAttribute("transform")).toBe(
+      "translate(100 100)"
+    );
+  });
+
+  it("opens the complete location group on click, Enter and Space", () => {
     const campaign = world();
     drawReligionHeadquarters(campaign);
     const listener = vi.fn();
-    window.addEventListener("realm:religion-selected", listener);
-    const marker = document.querySelector("#fpb-headquarters [data-religion]")!;
+    window.addEventListener("realm:headquarters-selected", listener);
+    const marker = document.querySelector("#fpb-headquarters [data-headquarters]")!;
     marker.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    marker.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    expect(listener).toHaveBeenCalledTimes(2);
-    expect((listener.mock.calls[0][0] as CustomEvent).detail).toBe(marker.getAttribute("data-religion"));
-    window.removeEventListener("realm:religion-selected", listener);
+    for (const key of ["Enter", " "]) marker.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    expect(listener).toHaveBeenCalledTimes(3);
+    expect((listener.mock.calls[0][0] as CustomEvent).detail).toBe("village:1");
+    expect(marker.getAttribute("aria-pressed")).toBe("true");
+    window.removeEventListener("realm:headquarters-selected", listener);
   });
 
-  it("hides the overlay when disabled or the headquarters is missing and treats names as text", () => {
+  it("hides at world scale and maintains a fixed screen size when zoom changes without redrawing", async () => {
+    const campaign = world();
+    const view = document.getElementById("viewbox")!;
+    let scale = 1;
+    Object.assign(view, { getCTM: () => ({ a: scale, b: 0 }) });
+    drawReligionHeadquarters(campaign);
+    const layer = document.getElementById("fpb-headquarters")!;
+    expect(layer.style.display).toBe("none");
+    expect(layer.querySelector("[data-headquarters]")?.getAttribute("tabindex")).toBe("-1");
+    scale = 4;
+    view.setAttribute("transform", "scale(4)");
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(layer.style.display).toBe("");
+    expect(layer.getAttribute("aria-hidden")).toBe("false");
+    expect(layer.querySelector("[data-badge]")?.getAttribute("transform")).toBe("scale(0.25)");
+    expect(layer.querySelector("[data-headquarters]")?.getAttribute("tabindex")).toBe("0");
+    // Removing the layer disconnects its transform/resize observers.
+    drawReligionHeadquarters();
+    scale = 1;
+    window.dispatchEvent(new Event("resize"));
+    expect(layer.style.display).toBe("");
+  });
+
+  it("hides disabled/missing headquarters and treats long names as text", () => {
     const campaign = world();
     campaign.heritage!.religions[0].name = '<img src=x onerror="alert(1)">';
     drawReligionHeadquarters(campaign);
