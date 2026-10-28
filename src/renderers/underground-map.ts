@@ -9,7 +9,9 @@ export function drawUndergroundTerrain(map: UndergroundMap, width: number, heigh
   root.setAttribute("data-underground-mode", map.mode || "tunnels");
   const layer = map.levels.find(level => level.id === map.activeLevel)!;
   const cells = layer.cells,
-    hollow = map.mode === "hollow";
+    hollow = map.mode === "hollow",
+    dark = !hollow || map.illumination === "dark";
+  root.setAttribute("data-underground-illumination", dark ? "dark" : "luminous");
   const contour = contours().size([map.columns, map.rows]).thresholds([0.5]);
   const path = (predicate: (cell: number) => boolean) =>
     geoPath()(contour(cells.map(cell => Number(predicate(cell))))[0]) || "";
@@ -26,13 +28,13 @@ export function drawUndergroundTerrain(map: UndergroundMap, width: number, heigh
   defs.append(clip);
   root.append(defs);
   for (const [d, fill, stroke] of [
-    [floor, hollow ? "#65775b" : "#4a4456", hollow ? "#a6b895" : "#a296a7"],
+    [floor, hollow ? (dark ? "#414b46" : "#65775b") : "#4a4456", hollow ? "#a6b895" : "#a296a7"],
     [path(cell => cell === 2), "#245f79", "#6da3b4"],
     [path(cell => cell === 3), "#a54b34", "#e7a061"],
     ...(hollow
       ? [
-          [path(cell => cell === 4), "#a2936c", "#c4b688"],
-          [path(cell => cell === 5), "#345c4f", "#6b8e6c"]
+          [path(cell => cell === 4), dark ? "#696252" : "#a2936c", "#c4b688"],
+          [path(cell => cell === 5), dark ? "#263e39" : "#345c4f", "#6b8e6c"]
         ]
       : [])
   ]) {

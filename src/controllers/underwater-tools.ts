@@ -1,4 +1,10 @@
-import { SEA_RELATIONS, SEABED_COLORS, SEABED_DETAILS_EN, SEABED_TERRAINS } from "@/data/underwater";
+import {
+  SEA_RELATIONS,
+  SEABED_COLORS,
+  SEABED_DETAILS_EN,
+  SEABED_GEOLOGY_VERSION,
+  SEABED_TERRAINS
+} from "@/data/underwater";
 import { generateUnderwater, type SeaSurface } from "@/generators/underwater";
 import { scenePng } from "@/renderers/scene-assets";
 import { EditorDrafts } from "@/services/editor-drafts";
@@ -169,13 +175,13 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
         geology.append(
           node("p", `${text(feature.ko, feature.en)}: ${text(feature.description, SEABED_DETAILS_EN[code])}`)
         );
-    if (map.geologyVersion !== 2)
+    if (map.geologyVersion !== SEABED_GEOLOGY_VERSION)
       geology.append(
         node(
           "p",
           text(
-            "저장된 기존 지형을 유지하고 있습니다. 새 분류는 다시 생성하면 적용됩니다.",
-            "The saved terrain is preserved. Regenerate to apply the expanded classification."
+            "저장된 기존 지형을 유지하고 있습니다. 주변부 폭·협곡·열곡의 보완 규칙은 다시 생성하면 적용됩니다.",
+            "Saved terrain is preserved. Regenerate to apply the revised margin widths, canyons and rifts."
           )
         )
       );

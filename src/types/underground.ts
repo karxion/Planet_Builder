@@ -1,8 +1,10 @@
 export const UNDERGROUND_LEVELS = ["upper", "middle", "deep"] as const;
 export type UndergroundLevelId = (typeof UNDERGROUND_LEVELS)[number];
-/** 0 = solid rock, 1 = dry cavern/tunnel, 2 = water, 3 = lava. */
+/** 0 = rock, 1 = dry ground, 2 = water, 3 = lava; hollow-only 4 = uplands, 5 = forest. */
 export type UndergroundCell = 0 | 1 | 2 | 3 | 4 | 5;
 export type UndergroundMode = "tunnels" | "hollow";
+export type HollowIllumination = "luminous" | "dark";
+export type HollowEntranceStyle = "settlements" | "polar";
 export interface UndergroundSurface {
   columns: number;
   rows: number;
@@ -26,4 +28,7 @@ export interface UndergroundMap {
   /** Missing on legacy files, which retain the tunnel-network interpretation. */
   mode?: UndergroundMode;
   surfaceInverted?: boolean;
+  /** Fantasy lighting motif; not an astronomical or plant-growth simulation. */
+  illumination?: HollowIllumination;
+  entranceStyle?: HollowEntranceStyle;
 }

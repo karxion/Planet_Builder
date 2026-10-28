@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { generateUnderground } from "@/generators/underground";
 import { generateUnderwater } from "@/generators/underwater";
 import { emptyWorldSpaces, WorldSpaceStore } from "@/services/world-spaces/model";
+import { drawUndergroundTerrain } from "./underground-map";
 import { drawWorldSpaces } from "./world-spaces";
 
 beforeEach(() => {
@@ -42,6 +43,29 @@ it("draws reference geography, safe labels, independent territories and cross-sp
 });
 
 describe("space visibility", () => {
+  it("renders the saved hollow-world lighting without changing geography", () => {
+    const data = generateUnderground(emptyWorldSpaces(), {
+      seed: "light",
+      chambers: 12,
+      mode: "hollow",
+      surface: {
+        columns: 24,
+        rows: 24,
+        heights: Array.from({ length: 24 * 24 }, (_, i) => (i % 24 > 12 ? 45 : 10))
+      }
+    });
+    const map = data.underground!;
+    const bright = drawUndergroundTerrain(map, 1000, 500);
+    map.illumination = "dark";
+    const before = structuredClone(map),
+      dark = drawUndergroundTerrain(map, 1000, 500);
+    expect(dark.getAttribute("data-underground-illumination")).toBe("dark");
+    expect(bright.getAttribute("data-underground-illumination")).toBe("luminous");
+    expect(dark.querySelectorAll(":scope > path")[0].getAttribute("fill")).not.toBe(
+      bright.querySelectorAll(":scope > path")[0].getAttribute("fill")
+    );
+    expect(map).toEqual(before);
+  });
   it("renders seabed, water-clipped ownership, bathymetric contours and routed trade paths", () => {
     const data = generateUnderwater(emptyWorldSpaces(), "render-ocean", {
       columns: 48,

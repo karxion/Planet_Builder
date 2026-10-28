@@ -10,7 +10,7 @@ if (!output) throw new Error("Provide a new output directory");
 const directory = resolve(output);
 await mkdir(directory, { recursive: false });
 const sources = [
-  { id: "noaa-seamounts", url: "https://oceanexplorer.noaa.gov/facts/seamounts.html" },
+  { id: "noaa-seamounts", url: "https://oceanexplorer.noaa.gov/ocean-fact/seamounts/" },
   { id: "noaa-canyons", url: "https://oceanexplorer.noaa.gov/facts/submarine-canyons.html" },
   { id: "iho-standards", url: "https://iho.int/en/standards-and-specifications" },
   { id: "usgs-dynamic-earth", url: "https://pubs.usgs.gov/gip/dynamic/dynamic.html" },

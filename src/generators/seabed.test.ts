@@ -39,6 +39,7 @@ describe("seafloor morphology", () => {
     const map = generateSeabed("sea-test", surface()),
       ridges = map.features.filter(f => f.kind === 5);
     expect(ridges.length).toBeGreaterThan(0);
+    expect(new Set(ridges.map(r => r.spreading))).toEqual(new Set(["slow", "fast"]));
     for (const r of ridges) {
       expect(r.relief).toBeGreaterThanOrEqual(2000);
       expect(r.relief).toBeLessThanOrEqual(4000);
@@ -53,6 +54,42 @@ describe("seafloor morphology", () => {
           )
       )
     ).toBe(true);
+  });
+  it("places connected branching canyons on both margin types with shorter active axes", () => {
+    const groups = {
+      active: { lengths: [] as number[], branches: 0 },
+      passive: { lengths: [] as number[], branches: 0 }
+    };
+    for (const seed of ["margin-a", "margin-b", "margin-c", "margin-d", "margin-e"]) {
+      const map = generateSeabed(seed, surface());
+      for (const f of map.features.filter(f => f.kind === 8)) {
+        expect(map.terrain[index(f)]).toBe(8);
+        expect(f.margin).toBeDefined();
+        const group = groups[f.margin!];
+        group.lengths.push(f.lengthCells!);
+        group.branches += f.tributaries!;
+        if (f.tributaries) {
+          // The advertised tributaries must be part of a real connected canyon footprint.
+          const seen = new Set([index(f)]),
+            queue = [...seen];
+          for (let q = 0; q < queue.length; q++) {
+            const i = queue[q];
+            for (const n of [i - 96, i + 96, ...(i % 96 ? [i - 1] : []), ...(i % 96 < 95 ? [i + 1] : [])]) {
+              if (seen.has(n) || map.terrain[n] !== 8) continue;
+              seen.add(n);
+              queue.push(n);
+            }
+          }
+          expect(seen.size).toBeGreaterThan(f.lengthCells!);
+        }
+      }
+    }
+    for (const group of Object.values(groups)) expect(group.lengths.length).toBeGreaterThan(5);
+    const mean = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
+    expect(mean(groups.active.lengths)).toBeLessThan(mean(groups.passive.lengths));
+    expect(groups.active.branches / groups.active.lengths.length).toBeGreaterThan(
+      groups.passive.branches / groups.passive.lengths.length
+    );
   });
   it("makes isolated seamounts taller than 1000m and flat-topped guyots", () => {
     const map = generateSeabed("sea-test", surface());
@@ -84,6 +121,15 @@ describe("seafloor morphology", () => {
     expect(isWorldSpaces(data)).toBe(false);
     map.geologyVersion = 2;
     expect(isWorldSpaces(data)).toBe(true);
+    const v2 = structuredClone(data);
+    store.restore(v2);
+    expect(store.snapshot()).toEqual(v2);
+    map.geologyVersion = 3;
+    map.features = [{ kind: 8, x: 0.1, y: 0.1, margin: "active", lengthCells: 4, tributaries: 2 }];
+    store.restore(data);
+    expect(store.snapshot()).toEqual(data);
+    map.features[0].lengthCells = -1;
+    expect(isWorldSpaces(data)).toBe(false);
     map.features = [{ kind: 10, x: NaN, y: 0.5, relief: 1500 }];
     expect(isWorldSpaces(data)).toBe(false);
   });

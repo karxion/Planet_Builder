@@ -37,6 +37,10 @@ export function isUndergroundMap(value: unknown): value is UndergroundMap {
   if (!value || typeof value !== "object") return false;
   const m = value as UndergroundMap;
   if (m.mode !== undefined && !["tunnels", "hollow"].includes(m.mode)) return false;
+  if (m.illumination !== undefined && (m.mode !== "hollow" || !["luminous", "dark"].includes(m.illumination)))
+    return false;
+  if (m.entranceStyle !== undefined && (m.mode !== "hollow" || !["settlements", "polar"].includes(m.entranceStyle)))
+    return false;
   if (m.surfaceInverted !== undefined && typeof m.surfaceInverted !== "boolean") return false;
   return (
     m.version === 1 &&

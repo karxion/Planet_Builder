@@ -78,6 +78,16 @@ export function drawUnderwaterTerrain(
     mark.setAttribute("data-seabed-feature", String(feature.kind));
     const title = document.createElementNS(NS, "title");
     title.textContent = `${getUiLanguage() === "ko" ? SEABED_TERRAINS[feature.kind].ko : SEABED_TERRAINS[feature.kind].en}${feature.relief === undefined ? "" : ` · ${getUiLanguage() === "ko" ? "주변 해저 대비" : "relief"} ${feature.relief} m`}`;
+    if (feature.margin)
+      title.textContent +=
+        getUiLanguage() === "ko"
+          ? ` · ${feature.margin === "active" ? "활동형" : "수동형"} 주변부`
+          : ` · ${feature.margin} margin`;
+    if (feature.spreading)
+      title.textContent +=
+        getUiLanguage() === "ko"
+          ? ` · ${feature.spreading === "slow" ? "느린" : "빠른"} 확장 모티프`
+          : ` · ${feature.spreading}-spreading motif`;
     mark.append(title);
     root.append(mark);
   }

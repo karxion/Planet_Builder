@@ -25,7 +25,7 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
     throw new Error("수중 생성 시드와 지상 지형을 확인하세요.");
   const water = heights.map(v => v < 20);
   if (water.filter(Boolean).length < 24) throw new Error("수중 지도를 생성할 바다가 부족합니다.");
-  const rng = Alea(`${seed.trim()}:geomorphology-v2`),
+  const rng = Alea(`${seed.trim()}:geomorphology-v3`),
     phase = rng() * Math.PI * 2;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? -1 : Math.floor(y) * w + Math.floor(x));
   const neighbors = (i: number) =>
@@ -50,22 +50,28 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
         queue.push(n);
       }
   const active = (i: number) => Math.sin((i % w) * 0.055 + Math.floor(i / w) * 0.07 + phase) > 0.35;
+  // Harris et al. (2014): passive shelves are wider, active slopes narrower.
+  // Cell widths express that tendency; the study's kilometre averages are not a world scale.
+  const shelfWidth = (i: number) =>
+    (active(i) ? 1.4 : 3.8) + Math.sin((i % w) * 0.08 + phase) * (active(i) ? 0.25 : 0.5);
+  const slopeWidth = (i: number) => (active(i) ? 1.8 : 2.4);
   const terrain: SeabedTerrain[] = Array(size).fill(0);
   const depths = heights.map((_, i) => {
     if (!water[i]) return 0;
     const d = Number.isFinite(distance[i]) ? distance[i] : 20;
-    const shelf = 2 + 0.5 * Math.sin((i % w) * 0.08 + phase);
+    const shelf = shelfWidth(i),
+      slope = slopeWidth(i);
     if (d <= shelf) {
       terrain[i] = 1;
       return Math.round(35 + (d / shelf) * 160);
     }
-    if (d <= shelf + 2.5) {
+    if (d <= shelf + slope) {
       terrain[i] = 2;
-      return Math.round(200 + ((d - shelf) / 2.5) * 2400);
+      return Math.round(200 + ((d - shelf) / slope) * 2400);
     }
-    if (!active(i) && d < shelf + 6) {
+    if (!active(i) && d < shelf + slope + 3.5) {
       terrain[i] = 7;
-      return Math.round(2600 + ((d - shelf - 2.5) / 3.5) * 1400);
+      return Math.round(2600 + ((d - shelf - slope) / 3.5) * 1400);
     }
     terrain[i] = 3;
     return Math.round(4400 + 100 * Math.sin((i % w) * 0.07 + phase) + 80 * Math.cos(Math.floor(i / w) * 0.09));
@@ -90,38 +96,76 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
       length = Math.hypot(gx, gy) || 1;
     return { x: gx / length, y: gy / length };
   };
-  // Incisions follow the seaward gradient down the slope; sediment fans lie at their foot.
-  for (let c = 0; c < 6; c++) {
-    const start = pick(i => terrain[i] === 2 && distance[i] < 4 && !active(i));
-    if (start < 0) continue;
-    let current = start;
-    const visited = new Set<number>();
-    for (let step = 0; step < 9; step++) {
-      visited.add(current);
-      terrain[current] = 8;
-      depths[current] = Math.min(5800, depths[current] + 350 + step * 40);
-      const next = neighbors(current).filter(n => water[n] && !visited.has(n) && distance[n] > distance[current]);
-      if (!next.length || distance[current] >= 7) break;
-      current = next.reduce((a, b) => (distance[a] > distance[b] ? a : b));
-    }
-    describe(8, start);
-    if (!active(current)) {
-      const g = gradient(current),
-        cx = (current % w) + g.x * 1.5,
-        cy = Math.floor(current / w) + g.y * 1.5;
-      for (let y = Math.floor(cy - 3); y <= cy + 3; y++)
-        for (let x = Math.floor(cx - 3); x <= cx + 3; x++) {
-          const i = at(x, y);
-          if (i < 0 || !water[i] || ![3, 7].includes(terrain[i])) continue;
-          const dx = x - cx,
-            dy = y - cy;
-          if (dx * dx + dy * dy <= 8 && dx * g.x + dy * g.y >= -1) {
-            terrain[i] = 12;
-            depths[i] = Math.max(2400, depths[i] - 120);
-          }
+  // Harris & Whiteway (2011): canyons occur at BOTH margin types. Active systems
+  // tend to be shorter, more closely spaced and more dendritic; these are design biases.
+  for (const isActive of [true, false]) {
+    const heads: number[] = [];
+    const spacing = isActive ? 3 : 8;
+    for (let c = 0; c < (isActive ? 4 : 3); c++) {
+      const start = pick(
+        i =>
+          terrain[i] === 2 &&
+          active(i) === isActive &&
+          heads.every(j => Math.hypot((i % w) - (j % w), Math.floor(i / w) - Math.floor(j / w)) >= spacing)
+      );
+      if (start < 0) continue;
+      const axis: number[] = [];
+      let current = start;
+      for (let step = 0; step < (isActive ? 4 : 8); step++) {
+        axis.push(current);
+        const next = neighbors(current).filter(
+          n => water[n] && [2, 3, 7].includes(terrain[n]) && active(n) === isActive && distance[n] > distance[current]
+        );
+        if (!next.length || step === (isActive ? 3 : 7)) break;
+        current = next.reduce((a, b) => (distance[a] > distance[b] ? a : b));
+      }
+      if (axis.length < 2) continue;
+      heads.push(start);
+      const incise = (i: number, amount: number) => {
+        if (terrain[i] === 8) return;
+        terrain[i] = 8;
+        depths[i] = Math.min(5800, depths[i] + amount);
+      };
+      for (const [step, i] of axis.entries()) incise(i, 350 + step * 40);
+      const g = gradient(start),
+        join = axis[1];
+      let tributaries = 0;
+      for (const side of isActive ? [-1, 1] : c % 2 ? [1] : []) {
+        const branchHead = at((start % w) - g.y * side * 2, Math.floor(start / w) + g.x * side * 2);
+        if (branchHead < 0 || ![1, 2].includes(terrain[branchHead]) || active(branchHead) !== isActive) continue;
+        const branch = [branchHead];
+        const toJoin = (i: number) => Math.hypot((i % w) - (join % w), Math.floor(i / w) - Math.floor(join / w));
+        while (branch.at(-1) !== join && branch.length < 7) {
+          const i = branch.at(-1)!;
+          const next = neighbors(i).filter(n => water[n] && [1, 2, 7, 8].includes(terrain[n]) && toJoin(n) < toJoin(i));
+          if (!next.length) break;
+          branch.push(next.reduce((a, b) => (toJoin(a) < toJoin(b) ? a : b)));
         }
-      const fan = at(cx, cy);
-      if (fan >= 0 && terrain[fan] === 12) describe(12, fan);
+        if (branch.at(-1) !== join || branch.length < 3) continue;
+        for (const i of branch) incise(i, 300);
+        tributaries++;
+      }
+      describe(8, start, { margin: isActive ? "active" : "passive", lengthCells: axis.length, tributaries });
+      // A depositional lobe can occur at either type; passive-margin fans are broader here.
+      {
+        const g = gradient(current),
+          cx = (current % w) + g.x * 1.5,
+          cy = Math.floor(current / w) + g.y * 1.5,
+          radius = isActive ? 1.5 : 3;
+        for (let y = Math.floor(cy - radius); y <= cy + radius; y++)
+          for (let x = Math.floor(cx - radius); x <= cx + radius; x++) {
+            const i = at(x, y);
+            if (i < 0 || !water[i] || ![3, 7].includes(terrain[i])) continue;
+            const dx = x - cx,
+              dy = y - cy;
+            if (dx * dx + dy * dy <= radius * radius && dx * g.x + dy * g.y >= -1) {
+              terrain[i] = 12;
+              depths[i] = Math.max(2400, depths[i] - 120);
+            }
+          }
+        const fan = at(cx, cy);
+        if (fan >= 0 && terrain[fan] === 12) describe(12, fan);
+      }
     }
   }
   // Broad volcanic ridges rise 2–4km above abyssal floor. Axial rifts are depressions between shoulders.
@@ -130,7 +174,9 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
     if (start < 0) continue;
     const angle = rng() * Math.PI,
       length = Math.min(w, h) * 0.35,
-      elevation = 2200 + rng() * 1000;
+      elevation = 2200 + rng() * 1000,
+      spreading = r === 0 ? "slow" : "fast",
+      riftWidth = spreading === "slow" ? 0.9 + rng() * 0.3 : 0.15 + rng() * 0.2;
     let representative = -1,
       representativeBase = 0,
       rift = -1;
@@ -143,9 +189,9 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
       if (Math.abs(along) > length / 2 || across > 3.5) continue;
       const base = depths[i];
       depths[i] = Math.round(Math.max(400, base - elevation * Math.min(1, (3.5 - across) / 2.4)));
-      terrain[i] = across < 0.65 ? 9 : 5;
+      terrain[i] = across < riftWidth ? 9 : 5;
       if (terrain[i] === 9) {
-        depths[i] += 650;
+        depths[i] += spreading === "slow" ? 650 : 160;
         rift = i;
       } else if (representative < 0 || depths[i] < depths[representative]) {
         representative = i;
@@ -156,9 +202,10 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
       describe(5, representative, {
         relief: representativeBase - depths[representative],
         baseDepth: representativeBase,
-        summitDepth: depths[representative]
+        summitDepth: depths[representative],
+        spreading
       });
-    if (rift >= 0) describe(9, rift);
+    if (rift >= 0) describe(9, rift, { spreading });
     // Fossil fracture-zone lineaments continue through the abyssal floor beside the ridge.
     for (let t = -length; t <= length; t += 0.5) {
       const i = at((start % w) - Math.sin(angle) * t, Math.floor(start / w) + Math.cos(angle) * t);
@@ -188,7 +235,7 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
         y -= n.y * offset;
       }
       const i = at(x, y);
-      if (i < 0 || !water[i] || !active(i) || distance[i] < 4 || distance[i] > 8 || [5, 9].includes(terrain[i]))
+      if (i < 0 || !water[i] || !active(i) || distance[i] < 4 || distance[i] > 8 || [5, 8, 9, 12].includes(terrain[i]))
         continue;
       terrain[i] = 4;
       depths[i] = Math.round(6700 + 1300 * (0.5 + 0.5 * Math.sin(step * 0.15 + phase)));

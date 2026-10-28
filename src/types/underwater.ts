@@ -7,6 +7,11 @@ export interface SeabedFeature {
   relief?: number;
   baseDepth?: number;
   summitDepth?: number;
+  margin?: "active" | "passive";
+  /** Main canyon axis length in sampling cells, not kilometres. */
+  lengthCells?: number;
+  tributaries?: number;
+  spreading?: "slow" | "fast";
 }
 export type SeaRelationStatus = "allied" | "trade" | "neutral" | "rival" | "war";
 export interface SeaRelation {
@@ -22,12 +27,12 @@ export interface UnderwaterMap {
   rows: number;
   /** Metres below sea level. Zero denotes land. */
   depths: number[];
-  /** Land / shelf / slope / abyss / trench / ridge / reef. */
+  /** Primary display class: legacy 0–6, extended geomorphology 7–15. */
   terrain: SeabedTerrain[];
   /** Zero = unclaimed; otherwise 1-based index into factionIds. */
   owners: number[];
   factionIds: string[];
   view: "combined" | "terrain" | "political";
-  geologyVersion?: 2;
+  geologyVersion?: 2 | 3;
   features?: SeabedFeature[];
 }

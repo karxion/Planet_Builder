@@ -6,6 +6,25 @@ import { inverseSurface, undergroundRoute } from "./inverse-surface";
 import type { UndergroundEntrance, UndergroundOptions } from "./underground";
 import { prepareUndergroundWorld } from "./underground-world-data";
 
+/** Gates at 85° N/S only when that polar region is actually present on the surface map. */
+export function hollowPolarEntrances(bounds?: { north: number; south: number }): UndergroundEntrance[] {
+  if (
+    !bounds ||
+    !Number.isFinite(bounds.north) ||
+    !Number.isFinite(bounds.south) ||
+    bounds.north > 90 ||
+    bounds.south < -90 ||
+    bounds.north <= bounds.south
+  )
+    return [];
+  return [
+    { name: "북극권 관문", latitude: 85 },
+    { name: "남극권 관문", latitude: -85 }
+  ]
+    .filter(p => p.latitude <= bounds.north && p.latitude >= bounds.south)
+    .map(p => ({ name: p.name, x: 0.5, y: (bounds.north - p.latitude) / (bounds.north - bounds.south) }));
+}
+
 /** A single continuous inner landscape, not a stack of disconnected cave floors. */
 export function generateHollowWorld(
   existing: WorldSpacesData,
@@ -13,6 +32,13 @@ export function generateHollowWorld(
   entrances: UndergroundEntrance[]
 ): WorldSpacesData {
   if (!options.surface) throw new Error("공동 세계 생성에는 현재 지상 지형이 필요합니다.");
+  const illumination = options.illumination || "luminous",
+    entranceStyle = options.entranceStyle || "settlements";
+  if (!["luminous", "dark"].includes(illumination) || !["settlements", "polar"].includes(entranceStyle))
+    throw new Error("공동 세계의 광원과 출입구 설정을 확인하세요.");
+  const candidates = entranceStyle === "polar" ? hollowPolarEntrances(options.latitudeBounds) : entrances;
+  if (entranceStyle === "polar" && !candidates.length)
+    throw new Error("현재 지상 지도에는 북위 85도 또는 남위 85도의 극지권이 포함되어 있지 않습니다.");
   const columns = 128,
     rows = 80,
     elevations = inverseSurface(options.surface, columns, rows);
@@ -140,7 +166,7 @@ export function generateHollowWorld(
     reached.add(b);
   }
   const chosen: UndergroundEntrance[] = [];
-  for (const entry of entrances) {
+  for (const entry of candidates) {
     if (
       !Number.isFinite(entry.x) ||
       !Number.isFinite(entry.y) ||
@@ -156,7 +182,12 @@ export function generateHollowWorld(
   }
   for (const [n, entry] of chosen.entries()) {
     const i = cell(entry),
-      below = add(`entry:${n}`, "gateway", i, cells[i] === 2 ? "내해 관문" : "내부 세계 관문");
+      below = add(
+        `entry:${n}`,
+        "gateway",
+        i,
+        entranceStyle === "polar" ? `${entry.name} · 내부 출구` : cells[i] === 2 ? "내해 관문" : "내부 세계 관문"
+      );
     if (!below.edited) {
       below.x = entry.x;
       below.y = entry.y;
@@ -209,6 +240,8 @@ export function generateHollowWorld(
     chambers: options.chambers,
     mode: "hollow",
     surfaceInverted: true,
+    illumination,
+    entranceStyle,
     levels: [{ id: "upper", cells, elevations }]
   };
   data.activeSpace = "underground";

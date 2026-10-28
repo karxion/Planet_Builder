@@ -1,5 +1,5 @@
 import Alea from "alea";
-import { SEA_PEOPLES } from "@/data/underwater";
+import { SEA_PEOPLES, SEABED_GEOLOGY_VERSION } from "@/data/underwater";
 import type { UnderwaterMap } from "@/types/underwater";
 import type { SpaceSite, WorldSpacesData } from "@/types/world-spaces";
 
@@ -157,7 +157,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
     owners,
     factionIds,
     view: "combined",
-    geologyVersion: 2,
+    geologyVersion: SEABED_GEOLOGY_VERSION,
     features
   };
   data.underwater = map;

@@ -4,6 +4,7 @@ import { createPlanetProject, decodePlanetProject, encodePlanetProject } from "@
 import { emptyWorldSpaces, isWorldSpaces, WorldSpaceStore } from "@/services/world-spaces/model";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
 import type { UndergroundSurface } from "@/types/underground";
+import { hollowPolarEntrances } from "./hollow-world";
 import { inverseSurface, undergroundRoute } from "./inverse-surface";
 import { generateUnderground } from "./underground";
 
@@ -135,7 +136,44 @@ describe("underground world structures", () => {
       upstreamCommit: "test"
     });
     p.worldSpaces = hollow();
+    p.worldSpaces.underground!.illumination = "dark";
+    p.worldSpaces.underground!.entranceStyle = "polar";
     expect((await decodePlanetProject(await encodePlanetProject(p))).worldSpaces).toEqual(p.worldSpaces);
+  });
+  it("generates optional polar gateways from actual latitude bounds and retains edited entrances", () => {
+    expect(hollowPolarEntrances({ north: 50, south: -50 })).toEqual([]);
+    expect(hollowPolarEntrances({ north: 90, south: 40 })).toHaveLength(1);
+    const gates = hollowPolarEntrances({ north: 90, south: -90 });
+    expect(gates).toHaveLength(2);
+    expect(90 - gates[0].y * 180).toBe(85);
+    expect(90 - gates[1].y * 180).toBe(-85);
+    const options = {
+      seed: "polar-inner-world",
+      chambers: 12,
+      mode: "hollow" as const,
+      surface: surface(),
+      illumination: "dark" as const,
+      entranceStyle: "polar" as const,
+      latitudeBounds: { north: 90, south: -90 }
+    };
+    const data = generateUnderground(emptyWorldSpaces(), options);
+    expect(isWorldSpaces(data)).toBe(true);
+    expect(data.underground!.illumination).toBe("dark");
+    for (const p of gates) {
+      const gate = data.sites.find(s => s.space === "surface" && s.x === p.x && s.y === p.y)!;
+      expect(gate).toBeDefined();
+      const link = data.links.find(l => l.from === gate.id)!;
+      expect(data.sites.find(s => s.id === link.to)).toMatchObject({ x: p.x, y: p.y, kind: "gateway" });
+    }
+    const edited = data.sites.find(s => s.space === "surface")!;
+    edited.edited = true;
+    edited.name = "수정한 극지 관문";
+    expect(generateUnderground(data, options).sites.find(s => s.id === edited.id)).toEqual(edited);
+    expect(() =>
+      generateUnderground(emptyWorldSpaces(), { ...options, latitudeBounds: { north: 50, south: -50 } })
+    ).toThrow();
+    data.underground!.mode = "tunnels";
+    expect(isUndergroundMap(data.underground)).toBe(false);
   });
   it("keeps old tunnel files unchanged and rejects malformed mode/elevation data", () => {
     const old = generateUnderground(emptyWorldSpaces(), { seed: "old", chambers: 12 }).underground!;

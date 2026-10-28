@@ -1,0 +1,140 @@
+{
+  "reviewedAt": "2026-10-28T11:16:01.790Z",
+  "displayTimezone": "Asia/Seoul",
+  "originalsRedistributed": false,
+  "sources": [
+    {
+      "id": "canyons",
+      "title": "Global distribution of large submarine canyons: Geomorphic differences between active and passive continental margins",
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/S0025322711001253",
+      "doi": "10.1016/j.margeo.2011.05.008",
+      "authors": [
+        "Peter T. Harris",
+        "Tanya Whiteway"
+      ],
+      "year": 2011,
+      "reviewedPages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "scope": "Publisher abstract, introduction and section snippets; not the full journal article.",
+      "fileName": "Global distribution of large submarine canyons_ Geomorphic differences between active and passive continental margins - ScienceDirect.pdf",
+      "pages": 7,
+      "bytes": 282379,
+      "sha256": "0de51bd5d8797df598bd658cc25f749242274669c2be7b62b23288bc51ab1124",
+      "suppliedBy": "user upload",
+      "accessMethod": "local PDF; no network fetch"
+    },
+    {
+      "id": "seamount",
+      "title": "What is a seamount?",
+      "url": "https://oceanexplorer.noaa.gov/ocean-fact/seamounts/",
+      "authors": [
+        "NOAA Ocean Exploration"
+      ],
+      "published": "2013-05-15",
+      "updated": "2024-08-21",
+      "reviewedPages": [
+        1,
+        2,
+        3
+      ],
+      "scope": "Complete supplied fact-page capture.",
+      "fileName": "What is a seamount_ - NOAA Ocean Exploration.pdf",
+      "pages": 3,
+      "bytes": 251713,
+      "sha256": "9bcce01259083289e274044befddc1b8c14f2554226cb16f687440c5a8cb68fb",
+      "suppliedBy": "user upload",
+      "accessMethod": "local PDF; no network fetch"
+    },
+    {
+      "id": "oceans",
+      "title": "Geomorphology of the oceans",
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/S0025322714000310",
+      "doi": "10.1016/j.margeo.2014.01.011",
+      "authors": [
+        "P. T. Harris",
+        "M. Macmillan-Lawler",
+        "J. Rupp",
+        "E. K. Baker"
+      ],
+      "year": 2014,
+      "reviewedPages": [
+        1,
+        2,
+        3
+      ],
+      "scope": "Publisher abstract, introduction and section snippets; not the full journal article.",
+      "fileName": "Geomorphology of the oceans - ScienceDirect.pdf",
+      "pages": 5,
+      "bytes": 268285,
+      "sha256": "a47ae503c5497389fd107f10e69bc69a5c6d7e08f961da4a663cad75937669d0",
+      "suppliedBy": "user upload",
+      "accessMethod": "local PDF; no network fetch"
+    },
+    {
+      "id": "underdark",
+      "title": "언더다크",
+      "url": "https://namu.wiki/w/%EC%96%B8%EB%8D%94%EB%8B%A4%ED%81%AC",
+      "authors": [
+        "나무위키 기여자"
+      ],
+      "updated": "2026-09-23T20:54:16",
+      "reviewedPages": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "scope": "Community setting description: world structure, environments, region examples and inhabitants. Not a primary rulebook.",
+      "fileName": "언더다크 - 나무위키.pdf",
+      "pages": 11,
+      "bytes": 3133861,
+      "sha256": "87c8156f1538434accca98715d5c3e0c093d7c546ebb703f6eaf984252195015",
+      "suppliedBy": "user upload",
+      "accessMethod": "local PDF; no network fetch"
+    },
+    {
+      "id": "agartha",
+      "title": "전설의 지하왕국 아가르타와 지구 공동설을 알아보자",
+      "url": "https://www.fmkorea.com/8008775376",
+      "authors": [
+        "sickstar"
+      ],
+      "published": "2025-02-08T20:18:00+09:00",
+      "reviewedPages": [
+        2,
+        3,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "visualPages": [
+        8,
+        9,
+        10
+      ],
+      "scope": "Community mythology/history narrative and hollow-earth illustrations; fantasy design reference, not geological evidence.",
+      "fileName": "전설의 지하왕국 아가르타와 지구 공동설을 알아보자 - 미스터리_공포 - 에펨코리아.pdf",
+      "pages": 13,
+      "bytes": 2754180,
+      "sha256": "58416e9bc007fba7e4a12b5ea23ed5c02f2a1a697ec891b055365099eb828157",
+      "suppliedBy": "user upload",
+      "accessMethod": "local PDF; no network fetch"
+    }
+  ]
+}

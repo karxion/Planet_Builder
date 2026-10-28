@@ -1,10 +1,13 @@
 import { undergroundLabel, undergroundModeLabel } from "@/data/underground";
+import { hollowPolarEntrances } from "@/generators/hollow-world";
 import { generateUnderground, type UndergroundEntrance } from "@/generators/underground";
 import { scenePng } from "@/renderers/scene-assets";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
 import {
+  type HollowEntranceStyle,
+  type HollowIllumination,
   UNDERGROUND_LEVELS,
   type UndergroundCell,
   type UndergroundLevelId,
@@ -58,18 +61,55 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
   mode.add(new Option(text("공동 세계형 · 아가르타 모티프", "Hollow world · Agartha motif"), "hollow"));
   mode.value = map?.mode || "tunnels";
   modeLabel.append(mode);
+  const hollowSettings = node("fieldset");
+  hollowSettings.dataset.hollowSettings = "";
+  hollowSettings.append(node("legend", text("공동 세계 설정", "Hollow-world settings")));
+  const lightLabel = node("label", text("내부 광원", "Inner illumination")),
+    light = node("select");
+  light.name = "illumination";
+  light.add(new Option(text("특이광원·발광대기", "Unusual light / luminous atmosphere"), "luminous"));
+  light.add(new Option(text("어두운 내부 세계", "Dark inner world"), "dark"));
+  light.value = map?.illumination || "luminous";
+  lightLabel.append(light);
+  const entranceLabel = node("label", text("출입구 배치", "Entrance placement")),
+    entranceStyle = node("select");
+  entranceStyle.name = "entranceStyle";
+  entranceStyle.add(new Option(text("지상 도시 주변", "Near surface settlements"), "settlements"));
+  const polarOption = new Option(text("극지권 관문", "Polar gateways"), "polar");
+  const latitudeBounds =
+    typeof mapCoordinates !== "undefined" &&
+    typeof mapCoordinates.latN === "number" &&
+    typeof mapCoordinates.latS === "number"
+      ? { north: mapCoordinates.latN, south: mapCoordinates.latS }
+      : undefined;
+  polarOption.disabled = !hollowPolarEntrances(latitudeBounds).length;
+  entranceStyle.add(polarOption);
+  entranceStyle.value = map?.entranceStyle === "polar" && !polarOption.disabled ? "polar" : "settlements";
+  entranceLabel.append(entranceStyle);
+  hollowSettings.append(
+    lightLabel,
+    entranceLabel,
+    node(
+      "p",
+      text(
+        "광원은 내부 지형의 색조에 반영합니다. 극지 관문은 현재 지도에 북위 85° 또는 남위 85°가 포함될 때 선택할 수 있습니다. 생성 버튼을 누르면 적용됩니다.",
+        "Illumination changes the terrain palette. Polar gateways require 85° N or 85° S within this map. Apply by generating the map."
+      )
+    )
+  );
   const description = node("p");
   description.dataset.undergroundDescription = "";
   const describe = () => {
+    hollowSettings.hidden = hollowSettings.disabled = mode.value !== "hollow";
     description.textContent =
       mode.value === "hollow"
         ? text(
-            "지상의 육지·산지는 내부의 내해·저지대로, 바다·분지는 내부의 대륙·고지대로 뒤집습니다. 넓은 내부 공간을 육로와 내해 항로로 연결합니다.",
-            "Surface land and mountains become inner seas and lowlands; surface seas become inner continents and uplands, connected by roads and sea routes."
+            "지상의 육지·산지는 내부의 내해·저지대로, 바다·분지는 내부의 대륙·고지대로 뒤집습니다. 넓은 내부 공간을 육로와 내해 항로로 연결하며 광원·출입구 모티프를 선택할 수 있습니다.",
+            "Surface land becomes inner seas, and surface seas become inner continents and uplands. Roads and sea routes connect this landscape; choose its lighting and entrance motifs."
           )
         : text(
-            "반전된 저지대를 따라 대륙 규모의 공동·좁은 터널을 만듭니다. 얕은 지저·중층·심층을 층간 통로로 잇습니다.",
-            "Continental cave networks and narrow passages follow inverse lowlands. Upper, middle and deep layers connect through descents."
+            "암반 사이의 공동과 좁은 터널이 반전된 저지대를 따라 이어집니다. 자연광이 거의 없는 얕은 지저·중층·심층을 층간 통로로 잇고 지하호수·균류 거주지를 배치할 수 있습니다.",
+            "Caverns and narrow passages thread solid rock along inverse lowlands. Naturally dark upper, middle and deep layers connect through descents, with room for underground lakes and fungal settlements."
           );
   };
   mode.onchange = describe;
@@ -97,7 +137,7 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
     text(map ? "지저 다시 생성" : "지저 지도 생성", map ? "Regenerate underground" : "Generate underground")
   );
   generate.type = "submit";
-  generation.append(modeLabel, seedLabel, densityLabel, generate);
+  generation.append(modeLabel, hollowSettings, seedLabel, densityLabel, generate);
   generation.onsubmit = event => {
     event.preventDefault();
     if (!generation.reportValidity()) return;
@@ -122,6 +162,13 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
           seed: seedInput.value.trim(),
           chambers: Number(density.value),
           mode: mode.value as UndergroundMode,
+          ...(mode.value === "hollow"
+            ? {
+                illumination: light.value as HollowIllumination,
+                entranceStyle: entranceStyle.value as HollowEntranceStyle,
+                latitudeBounds
+              }
+            : {}),
           surface: sampleSurfaceGrid(128, 80)
         },
         surfaceEntrances()
@@ -160,6 +207,15 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
         : `${ranges[map.activeLevel]} · ${text("공동·터널 / 파랑: 호수 / 주황: 용암 / 색 영역: 세력권", "Caverns/tunnels / Blue: water / Orange: lava / Tints: territories")}`
     );
     const brush = node("form");
+    if (map.mode === "hollow")
+      legend.append(
+        node(
+          "span",
+          map.illumination === "dark"
+            ? text(" · 광원: 어두운 내부", " · Light: dark interior")
+            : text(" · 광원: 특이광원·발광대기", " · Light: luminous interior")
+        )
+      );
     brush.dataset.undergroundBrush = "";
     const terrainLabel = node("label", text("지형 붓", "Terrain brush"));
     const terrain = node("select");

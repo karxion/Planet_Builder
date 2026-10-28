@@ -1,6 +1,6 @@
 import Alea from "alea";
 import { UNDERGROUND_DEPTHS, undergroundLevel } from "@/data/underground";
-import type { UndergroundMode, UndergroundSurface } from "@/types/underground";
+import type { HollowEntranceStyle, HollowIllumination, UndergroundMode, UndergroundSurface } from "@/types/underground";
 import { UNDERGROUND_LEVELS, type UndergroundCell, type UndergroundLayer } from "@/types/underground";
 import type { SpaceSite, SpaceSiteKind, WorldSpacesData } from "@/types/world-spaces";
 import { generateHollowWorld } from "./hollow-world";
@@ -19,6 +19,9 @@ export interface UndergroundOptions {
   chambers: number;
   mode?: UndergroundMode;
   surface?: UndergroundSurface;
+  illumination?: HollowIllumination;
+  entranceStyle?: HollowEntranceStyle;
+  latitudeBounds?: { north: number; south: number };
 }
 const COLUMNS = 128,
   ROWS = 80;

@@ -892,6 +892,8 @@ body[data-world-space] #fpb-headquarters-panel { display: none; }
 .fpb-underground-tools form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, .7fr); gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--fpb-line); }
 .fpb-underground-tools form button { grid-column: 1 / -1; min-height: 38px; }
 .fpb-underground-tools label { min-width: 0; }
+.fpb-underground-tools [data-hollow-settings] { grid-column: 1 / -1; min-width: 0; display: grid; gap: 8px; margin: 0; padding: 10px; border: 1px solid var(--fpb-line); }
+.fpb-underground-tools [data-hollow-settings] p { margin: 0; }
 .fpb-underground-tools [data-underground-generate] label:first-child { grid-column: 1 / -1; }
 .fpb-space-columns, .fpb-space-add { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 #fpb-space-panel li { margin: 8px 0; overflow-wrap: anywhere; }
