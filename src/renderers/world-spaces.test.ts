@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from "vitest";
 import { generateUnderground } from "@/generators/underground";
+import { generateUnderwater } from "@/generators/underwater";
 import { emptyWorldSpaces, WorldSpaceStore } from "@/services/world-spaces/model";
 import { drawWorldSpaces } from "./world-spaces";
 
@@ -41,6 +42,25 @@ it("draws reference geography, safe labels, independent territories and cross-sp
 });
 
 describe("space visibility", () => {
+  it("renders seabed, water-clipped ownership, bathymetric contours and routed trade paths", () => {
+    const data = generateUnderwater(emptyWorldSpaces(), "render-ocean", {
+      columns: 48,
+      rows: 32,
+      heights: Array.from({ length: 48 * 32 }, (_, i) => (i % 48 > 20 && i % 48 < 27 ? 40 : 5))
+    });
+    const parent = document.querySelector<SVGGElement>("#viewbox")!;
+    const original = structuredClone(data);
+    drawWorldSpaces({ parent, data, width: 1000, height: 500, selected: "", labels });
+    expect(parent.querySelectorAll("[data-sea-owner]")).toHaveLength(6);
+    expect(parent.querySelectorAll("[data-sea-isobath]")).toHaveLength(4);
+    expect(parent.querySelector("[data-sea-route]")?.getAttribute("d")).toContain("L");
+    expect(parent.querySelector("[data-sea-owner]")?.getAttribute("clip-path")).toBe("url(#fpb-sea-water)");
+    expect(data).toEqual(original);
+    data.underwater!.view = "terrain";
+    drawWorldSpaces({ parent, data, width: 1000, height: 500, selected: "", labels });
+    expect(parent.querySelector("[data-sea-owner]")).toBeNull();
+    expect(parent.querySelectorAll("#fpb-sea-water")).toHaveLength(1);
+  });
   it("renders only the selected underground depth with terrain contours and working depth passages", () => {
     const data = generateUnderground(emptyWorldSpaces(), { seed: "render-caves", chambers: 12 });
     const parent = document.querySelector<SVGGElement>("#viewbox")!;

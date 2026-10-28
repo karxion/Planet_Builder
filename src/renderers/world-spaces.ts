@@ -1,6 +1,7 @@
 import { siteInActiveLevel, undergroundLabel, undergroundLevel } from "@/data/underground";
 import type { SpaceSite, WorldSpace, WorldSpacesData } from "@/types/world-spaces";
 import { drawUndergroundTerrain } from "./underground-map";
+import { drawUnderwaterTerrain } from "./underwater-map";
 
 const NS = "http://www.w3.org/2000/svg";
 const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
@@ -36,6 +37,8 @@ export function drawWorldSpaces(input: {
   const byId = new Map(data.sites.map(site => [site.id, site]));
   const underground = data.activeSpace === "underground" ? data.underground : undefined;
   if (underground) root.append(drawUndergroundTerrain(underground, width, height));
+  const underwater = data.activeSpace === "underwater" ? data.underwater : undefined;
+  if (underwater) root.append(drawUnderwaterTerrain(underwater, data.factions, width, height));
   const sites = data.sites.filter(s => siteInActiveLevel(s, data));
   const point = (s: SpaceSite) => [s.x * width, s.y * height];
   const labelBounds: { x: number; y: number; width: number; height: number }[] = [];
@@ -64,7 +67,8 @@ export function drawWorldSpaces(input: {
         "stroke-dasharray": site.kind === "territory" ? "5 3" : "none",
         "vector-effect": "non-scaling-stroke",
         "data-space-site": site.id,
-        ...(underground && site.kind === "territory" ? { "clip-path": "url(#fpb-underground-floor)" } : {})
+        ...(underground && site.kind === "territory" ? { "clip-path": "url(#fpb-underground-floor)" } : {}),
+        ...(underwater && site.kind === "territory" ? { "clip-path": "url(#fpb-sea-water)" } : {})
       })
     );
   }
@@ -75,7 +79,10 @@ export function drawWorldSpaces(input: {
       if (underground && link.origin === "underground") continue;
       const [x1, y1] = point(from);
       const [x2, y2] = point(to);
-      const line = element("line", {
+      const line = element(link.path ? "path" : "line", {
+        ...(link.path
+          ? { d: link.path.map((p, i) => `${i ? "L" : "M"}${p.x * width},${p.y * height}`).join(" "), fill: "none" }
+          : {}),
         x1,
         y1,
         x2,
@@ -83,7 +90,10 @@ export function drawWorldSpaces(input: {
         stroke: "#bca874",
         "stroke-width": 2,
         "stroke-dasharray": "6 4",
-        "vector-effect": "non-scaling-stroke"
+        "vector-effect": "non-scaling-stroke",
+        ...(underwater && link.origin === "underwater"
+          ? { "clip-path": "url(#fpb-sea-water)", "data-sea-route": link.id }
+          : {})
       });
       line.append(element("title", {}, link.name));
       root.append(line);

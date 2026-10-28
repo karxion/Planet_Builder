@@ -1,4 +1,5 @@
 import { isUndergroundMap, UNDERGROUND_DEPTHS } from "@/data/underground";
+import { isUnderwaterMap, SEA_RELATIONS, seabedIndex } from "@/data/underwater";
 import { SITE_KINDS, SPACE_IDS, type SpaceSite, TERRAIN_KINDS, type WorldSpacesData } from "@/types/world-spaces";
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -27,6 +28,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
   )
     return false;
   if (value.underground !== undefined && !isUndergroundMap(value.underground)) return false;
+  if (value.underwater !== undefined && !isUnderwaterMap(value.underwater)) return false;
   if (
     !Array.from(value.factions).every(
       f =>
@@ -36,12 +38,35 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         f.name.trim() &&
         typeof f.color === "string" &&
         /^#[0-9a-f]{6}$/i.test(f.color) &&
-        text(f.notes)
+        text(f.notes) &&
+        (f.people === undefined || text(f.people, 500))
     )
   )
     return false;
   if (!unique(value.factions)) return false;
   const factions = new Set(value.factions.map(f => f.id));
+  if (
+    value.underwater &&
+    !(value.underwater as import("@/types/underwater").UnderwaterMap).factionIds.every(id => factions.has(id))
+  )
+    return false;
+  if (value.relations !== undefined) {
+    if (!Array.isArray(value.relations) || value.relations.length > 10000) return false;
+    const pairs = new Set<string>();
+    for (const relation of Array.from(value.relations)) {
+      if (
+        !record(relation) ||
+        !factions.has(relation.from) ||
+        !factions.has(relation.to) ||
+        relation.from === relation.to ||
+        !SEA_RELATIONS.includes(relation.status as never)
+      )
+        return false;
+      const pair = [relation.from, relation.to].sort().join("|");
+      if (pairs.has(pair)) return false;
+      pairs.add(pair);
+    }
+  }
   if (
     !Array.from(value.sites).every(
       s =>
@@ -61,7 +86,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         number(s.population, 0, 1e10) &&
         Number.isSafeInteger(s.population) &&
         text(s.notes) &&
-        (s.origin === undefined || s.origin === "underground") &&
+        (s.origin === undefined || s.origin === "underground" || s.origin === "underwater") &&
         (s.edited === undefined || typeof s.edited === "boolean") &&
         (s.factionId === undefined || factions.has(s.factionId))
     )
@@ -69,6 +94,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
     return false;
   if (!unique(value.sites)) return false;
   const sites = new Set(value.sites.map(s => s.id));
+  const locations = new Map<string, SpaceSite>(value.sites.map(s => [s.id, s]));
   return (
     Array.from(value.links).every(
       l =>
@@ -76,10 +102,21 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         id(l.id) &&
         text(l.name, 120) &&
         l.name.trim() &&
+        id(l.from) &&
+        id(l.to) &&
         sites.has(l.from) &&
         sites.has(l.to) &&
         l.from !== l.to &&
-        (l.origin === undefined || l.origin === "underground")
+        (l.origin === undefined || l.origin === "underground" || l.origin === "underwater") &&
+        (l.path === undefined ||
+          (Array.isArray(l.path) &&
+            l.path.length >= 2 &&
+            l.path.length <= 2048 &&
+            Array.from(l.path).every(p => record(p) && number(p.x, 0, 1) && number(p.y, 0, 1)) &&
+            Math.abs(l.path[0].x - locations.get(l.from)!.x) < 1e-6 &&
+            Math.abs(l.path[0].y - locations.get(l.from)!.y) < 1e-6 &&
+            Math.abs(l.path.at(-1).x - locations.get(l.to)!.x) < 1e-6 &&
+            Math.abs(l.path.at(-1).y - locations.get(l.to)!.y) < 1e-6))
     ) && unique(value.links)
   );
 }
@@ -111,12 +148,22 @@ export class WorldSpaceStore {
   removeFaction(factionId: string): void {
     this.update(d => {
       d.factions = d.factions.filter(f => f.id !== factionId);
+      d.relations = d.relations?.filter(r => r.from !== factionId && r.to !== factionId);
+      if (d.underwater) {
+        const oldIds = d.underwater.factionIds;
+        d.underwater.factionIds = oldIds.filter(id => id !== factionId);
+        d.underwater.owners = d.underwater.owners.map(owner =>
+          owner ? d.underwater!.factionIds.indexOf(oldIds[owner - 1]) + 1 : 0
+        );
+      }
       d.sites.forEach(s => {
         if (s.factionId === factionId) delete s.factionId;
       });
     });
   }
   addSite(space: SpaceSite["space"], kind: SpaceSite["kind"], x: number, y: number): SpaceSite {
+    const seaDepth = this.data.underwater?.depths[seabedIndex(this.data.underwater, x, y)];
+    if (space === "underwater" && seaDepth === 0) throw new Error("수중 장소는 바다 위에 배치하세요.");
     const site: SpaceSite = {
       id: crypto.randomUUID(),
       space,
@@ -135,7 +182,7 @@ export class WorldSpaceStore {
         space === "surface"
           ? 0
           : space === "underwater"
-            ? 100
+            ? (seaDepth ?? 100)
             : this.data.underground
               ? UNDERGROUND_DEPTHS[this.data.underground.activeLevel]
               : 1000,

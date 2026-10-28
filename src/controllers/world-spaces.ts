@@ -1,4 +1,5 @@
 import { paintUnderground, siteInActiveLevel, undergroundLevel } from "@/data/underground";
+import { seabedIndex } from "@/data/underwater";
 import { drawWorldSpaces } from "@/renderers/world-spaces";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
@@ -6,6 +7,7 @@ import { WorldSpaces } from "@/services/world-spaces/state";
 import type { UndergroundCell } from "@/types/underground";
 import { SITE_KINDS, SPACE_IDS, type SpaceSiteKind, TERRAIN_KINDS, type WorldSpace } from "@/types/world-spaces";
 import { mountUndergroundTools } from "./underground-tools";
+import { mountSeaDiplomacy, mountUnderwaterTools } from "./underwater-tools";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -48,6 +50,10 @@ export function refreshWorldSpaces(): void {
     placement = undefined;
     selected = "";
     if (activeSpace === "underground" && !data.underground) tab = "terrain";
+    if (activeSpace === "underwater" && !data.underwater) {
+      tab = "seabed";
+      panel.hidden = false;
+    }
   }
   for (const space of SPACE_IDS) {
     const button = document.getElementById(space === "surface" ? "fpb-map-view" : `fpb-space-${space}`);
@@ -109,9 +115,10 @@ function renderPanel(): void {
   const site = data.sites.find(s => s.id === selected && siteInActiveLevel(s, data));
   const faction = data.factions.find(f => f.id === factionId);
   panel.innerHTML = `<header><h3>${spaceLabels()[data.activeSpace]} · ${text("세계 공간", "World spaces")}</h3><button type="button" data-close aria-label="${text("닫기", "Close")}">×</button></header>
-    <p>${data.activeSpace === "underground" ? text("지형 탭에서 동굴망을 생성하고 깊이 층을 전환합니다. 장소·세력·연결을 편집하거나 지형 붓으로 공동과 암반을 바꿀 수 있습니다.", "Generate cave networks and select depth layers in Terrain. Edit places, factions and connections, or paint caverns and rock.") : text("도시·세력·통로를 직접 배치하는 지도입니다. 옅은 육지는 지상 위치 참고용입니다. 지상 재생성 시 수동 기록은 유지됩니다.", "Manually place cities, territories and passages. Faint land indicates surface geography. Surface regeneration retains manual records.")}</p>
+    <p>${data.activeSpace === "underground" ? text("지형 탭에서 동굴망을 생성하고 깊이 층을 전환합니다. 장소·세력·연결을 편집하거나 지형 붓으로 공동과 암반을 바꿀 수 있습니다.", "Generate cave networks and select depth layers in Terrain. Edit places, factions and connections, or paint caverns and rock.") : data.activeSpace === "underwater" ? text("해저·세력 탭에서 해저 지형과 수중 세력을 생성하고 지도 보기를 바꿉니다. 장소와 종족 구성·외교 관계는 자유롭게 편집합니다.", "Generate bathymetry and aquatic realms in Seabed / realms. Edit places, peoples and diplomacy.") : text("도시·세력·통로를 직접 배치하는 지도입니다. 옅은 육지는 지상 위치 참고용입니다. 지상 재생성 시 수동 기록은 유지됩니다.", "Manually place cities, territories and passages. Faint land indicates surface geography. Surface regeneration retains manual records.")}</p>
     <nav>${[
       ...(data.activeSpace === "underground" ? [["terrain", text("지형·층", "Terrain / depth")]] : []),
+      ...(data.activeSpace === "underwater" ? [["seabed", text("해저·세력", "Seabed / realms")]] : []),
       ["sites", text("장소", "Places")],
       ["factions", text("세력", "Factions")],
       ["links", text("연결", "Connections")]
@@ -134,6 +141,28 @@ function renderPanel(): void {
     };
   });
   const content = panel.querySelector<HTMLElement>("[data-content]")!;
+  if (tab === "seabed" && data.activeSpace === "underwater") {
+    mountUnderwaterTools(content, {
+      changed: () => {
+        selected = "";
+        placement = undefined;
+        notify();
+        renderPanel();
+      },
+      error: message,
+      faction: id => {
+        factionId = id;
+        tab = "factions";
+        renderPanel();
+      }
+    });
+    return;
+  }
+  if (tab === "seabed") {
+    tab = "sites";
+    renderPanel();
+    return;
+  }
   if (tab === "terrain" && data.activeSpace === "underground") {
     mountUndergroundTools(content, {
       changed: () => {
@@ -203,7 +232,7 @@ function renderPanel(): void {
               notes: String(values.get("notes"))
             });
             const faction = String(values.get("factionId"));
-            if (item.origin === "underground") item.edited = true;
+            if (item.origin) item.edited = true;
             if (item.space === "underground" && d.underground) d.underground.activeLevel = undergroundLevel(item.depth);
             if (faction) item.factionId = faction;
             else delete item.factionId;
@@ -239,6 +268,14 @@ function renderPanel(): void {
     };
     if (faction) {
       const form = content.querySelector<HTMLFormElement>("form")!;
+      const people = document.createElement("label");
+      people.textContent = text("주요 종족·주민", "Peoples / residents");
+      const peopleInput = document.createElement("input");
+      peopleInput.name = "people";
+      peopleInput.maxLength = 500;
+      peopleInput.value = faction.people || "";
+      people.append(peopleInput);
+      form.prepend(people);
       EditorDrafts.bind(form, key("faction", faction.id), () => renderPanel());
       form.onsubmit = event => {
         event.preventDefault();
@@ -247,6 +284,7 @@ function renderPanel(): void {
           WorldSpaces.update(d => {
             Object.assign(d.factions.find(f => f.id === faction.id)!, {
               name: String(values.get("name")).trim(),
+              people: String(values.get("people")),
               color: String(values.get("color")),
               notes: String(values.get("notes"))
             });
@@ -261,6 +299,11 @@ function renderPanel(): void {
             EditorDrafts.clear(key("faction", faction.id));
           });
       };
+      if (data.activeSpace === "underwater")
+        mountSeaDiplomacy(content, faction.id, () => {
+          notify();
+          renderPanel();
+        });
     }
   } else {
     const siteOptions = data.sites
@@ -408,9 +451,12 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
         WorldSpaces.update(d => {
           const site = d.sites.find(s => s.id === selected);
           if (site) {
+            if (site.space === "underwater" && d.underwater && !d.underwater.depths[seabedIndex(d.underwater, x, y)])
+              throw new Error(text("수중 장소는 바다 위로 옮기세요.", "Move underwater places onto water."));
             site.x = x;
             site.y = y;
-            if (site.origin === "underground") site.edited = true;
+            if (site.origin) site.edited = true;
+            for (const link of d.links) if (link.from === site.id || link.to === site.id) delete link.path;
           }
         });
       else selected = WorldSpaces.addSite(WorldSpaces.snapshot().activeSpace, placement!, x, y).id;

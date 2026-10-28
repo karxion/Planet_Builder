@@ -880,6 +880,14 @@ body[data-world-space] #fpb-headquarters-panel { display: none; }
 #fpb-space-panel button { margin: 3px; padding: 6px 9px; color: inherit; background: #364333; border: 1px solid #8b8b5a; border-radius: 3px; }
 #fpb-space-panel button[aria-pressed="true"] { background: #5a6544; border-color: #dfca87; }
 .fpb-underground-tools h4 { margin: 10px 0; color: var(--fpb-gold); }
+.fpb-underwater-tools h4, .fpb-sea-diplomacy h4 { margin: 12px 0; color: var(--fpb-gold); }
+.fpb-underwater-tools form { padding-bottom: 12px; border-bottom: 1px solid var(--fpb-line); }
+.fpb-underwater-tools form button { min-height: 40px; width: calc(100% - 6px); }
+#fpb-space-panel .fpb-sea-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 0; list-style: none; font-size: 12px; }
+#fpb-space-panel .fpb-sea-legend li { display: flex; gap: 6px; align-items: center; margin: 2px 0; }
+.fpb-sea-legend span { display: inline-block; flex-shrink: 0; width: 14px; height: 14px; border: 1px solid #9ba5a7; }
+#fpb-space-panel .fpb-sea-factions { padding: 0; list-style: none; }
+.fpb-sea-factions button { text-align: left; width: calc(100% - 6px); min-height: 40px; overflow-wrap: anywhere; }
 .fpb-underground-tools form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(70px, .7fr); gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--fpb-line); }
 .fpb-underground-tools form button { grid-column: 1 / -1; min-height: 38px; }
 .fpb-underground-tools label { min-width: 0; }

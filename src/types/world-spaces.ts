@@ -1,4 +1,5 @@
 import type { UndergroundMap } from "./underground";
+import type { SeaRelation, UnderwaterMap } from "./underwater";
 
 export const SPACE_IDS = ["surface", "underwater", "underground"] as const;
 export type WorldSpace = (typeof SPACE_IDS)[number];
@@ -12,6 +13,7 @@ export interface SpaceFaction {
   name: string;
   color: string;
   notes: string;
+  people?: string;
 }
 
 export interface SpaceSite {
@@ -30,8 +32,8 @@ export interface SpaceSite {
   residents: string;
   population: number;
   notes: string;
-  origin?: "underground";
-  /** Edited generated places survive explicit underground regeneration. */
+  origin?: "underground" | "underwater";
+  /** Edited generated places survive explicit space regeneration. */
   edited?: boolean;
 }
 
@@ -40,7 +42,8 @@ export interface SpaceLink {
   name: string;
   from: string;
   to: string;
-  origin?: "underground";
+  origin?: "underground" | "underwater";
+  path?: { x: number; y: number }[];
 }
 
 export interface WorldSpacesData {
@@ -50,4 +53,6 @@ export interface WorldSpacesData {
   factions: SpaceFaction[];
   links: SpaceLink[];
   underground?: UndergroundMap;
+  underwater?: UnderwaterMap;
+  relations?: SeaRelation[];
 }
