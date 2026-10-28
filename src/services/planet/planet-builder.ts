@@ -15,6 +15,7 @@ import { initSettlementTools } from "@/controllers/settlement-details";
 import { renderCloudProjectRow } from "@/renderers/cloud-project-row";
 import { Services } from "@/services";
 import { EditorDrafts } from "@/services/editor-drafts";
+import { BUILD_INFO } from "@/services/build-info";
 import { getUiLanguage, initUiLanguage, t } from "@/services/ui-language";
 import { generatedText as gt } from "@/utils/generation-text";
 import type { CloudProject, PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
@@ -109,7 +110,7 @@ function createShell(): void {
   shell.innerHTML = /* html */ `
     <div class="fpb-brand">
       <span class="fpb-brand-mark icon-globe-africa" aria-hidden="true"></span>
-      <div><strong>판타지 행성 빌더</strong><small>Azgaar FMG 기반 · MIT</small></div>
+      <div><div class="fpb-brand-title"><strong>판타지 행성 빌더</strong><span class="fpb-app-version" data-i18n-skip>v${BUILD_INFO.version}</span></div><small>Azgaar FMG 기반 · MIT</small></div>
     </div>
     <div class="fpb-view-switch" role="group" aria-label="보기 모드">
       <button id="fpb-map-view" class="active" type="button"><span class="icon-map-o"></span>지상 지도</button>

@@ -1,6 +1,7 @@
 import { UI_TRANSLATIONS } from "@/data/ui-translations";
 import { setGenerationLanguage } from "./generation-language";
 import { generatedText } from "@/utils/generation-text";
+import { BUILD_INFO } from "./build-info";
 
 export type UiLanguage = "ko" | "en";
 const STORAGE_KEY = "fpb-ui-language";
@@ -132,7 +133,7 @@ export function setUiLanguage(next: UiLanguage): void {
     /* The preference still works when storage is unavailable. */
   }
   document.documentElement.lang = next;
-  document.title = `${t("판타지 행성 빌더")} v${typeof VERSION === "undefined" ? "1.0" : VERSION}`;
+  document.title = `${t("판타지 행성 빌더")} v${BUILD_INFO.version}`;
   document.querySelectorAll<HTMLSelectElement>("[data-fpb-language]").forEach(select => {
     select.value = next;
   });
