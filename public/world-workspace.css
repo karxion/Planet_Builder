@@ -26,7 +26,7 @@
 #fpb-world-dialog .fpb-world-header { height: 80px; padding: 12px 24px; border-bottom: 0; background: var(--fpb-sidebar); }
 #fpb-world-dialog .fpb-world-header h2 { font: 24px/34px "Batang", var(--fpb-display); }
 #fpb-world-dialog .fpb-world-header .fpb-icon-button { flex-basis: 40px; }
-#fpb-world-dialog .fpb-world-header .fpb-dialog-language { flex: 0 0 96px; width: 96px; height: 44px; min-height: 44px; margin: 0; padding: 6px 8px; font: 14px/1.5 var(--fpb-font); }
+#fpb-world-dialog .fpb-world-header .fpb-dialog-language { flex: 0 0 104px; width: 104px; height: auto; min-height: 44px; max-height: none; margin: 0; padding: 0 28px 0 12px; appearance: none; -webkit-appearance: none; font: 14px/1.5 var(--fpb-font); }
 #fpb-world-dialog .fpb-world-layout { height: calc(100% - 80px); display: grid; grid-template-columns: 248px minmax(0, 1fr); overflow: hidden; }
 #fpb-world-dialog .fpb-world-filters { display: flex; flex-direction: column; gap: 20px; padding: 20px; background: var(--fpb-sidebar); border-color: var(--fpb-line); min-height: 0; }
 #fpb-world-dialog .fpb-world-filters { scrollbar-width: thin; scrollbar-color: var(--fpb-line) transparent; }
