@@ -54,7 +54,9 @@ export function legacyMapToProject(
     throw new InvalidPlanetProjectError("Azgaar .map 데이터 형식을 확인할 수 없습니다");
   }
 
-  return createPlanetProject({ mapPayload, settings, ...source });
+  const savedName = mapPayload.split(/\r?\n/)[1]?.split("|")[20];
+  const planet = savedName?.trim() ? { ...settings, name: savedName, nameGenerated: false } : settings;
+  return createPlanetProject({ mapPayload, settings: planet, ...source });
 }
 
 export async function encodePlanetProject(project: PlanetProject): Promise<Blob> {

@@ -29,7 +29,7 @@
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="about.css?v=kuro-1" />
     <link rel="stylesheet" href="settlement-tools.css?v=1" />
-    <link rel="stylesheet" href="planet-builder.css?v=title-version-1" />
+    <link rel="stylesheet" href="planet-builder.css?v=realm-name-1" />
     <link rel="stylesheet" href="world-workspace.css?v=3" />
     <link rel="stylesheet" href="marker-notes.css?v=2" />
     <link rel="stylesheet" href="item-library.css?v=3" />
@@ -1622,7 +1622,7 @@
                 />
               </td>
               <td>
-                <i data-tip="Regenerate map name" onclick="Names.getMapName(true)" class="icon-arrows-cw"></i>
+                <i data-tip="Regenerate map name" onclick="Names.getMapName(true); mapName.dispatchEvent(new Event('change', {bubbles: true}))" class="icon-arrows-cw"></i>
               </td>
             </tr>
             <tr data-tip="Define current year and era name">

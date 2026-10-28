@@ -17,7 +17,7 @@ import { Services } from "@/services";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { BUILD_INFO } from "@/services/build-info";
 import { getUiLanguage, initUiLanguage, t } from "@/services/ui-language";
-import { generatedText as gt } from "@/utils/generation-text";
+import { generateRealmName, isDefaultRealmName } from "@/generators/realm-name";
 import type { CloudProject, PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
 import { ensureEl } from "@/utils";
@@ -60,6 +60,7 @@ let textureUpdateTimer = 0;
 let loadingProject = false;
 let changeRevision = 0;
 let viewMode: PlanetViewMode = "map";
+let preparedGenerationName = false;
 
 async function init(): Promise<void> {
   if (document.getElementById("fpb-shell")) return;
@@ -69,6 +70,10 @@ async function init(): Promise<void> {
   initLocalEncounters();
   initSettlementTools();
   initUiLanguage();
+  if (isFirstRun && isDefaultRealmName(settings.name)) {
+    settings.name = generateRealmName(settings.seed || crypto.randomUUID());
+    settings.nameGenerated = true;
+  }
   initRpgMapAssets();
   initMapIconGroups();
   initMapTransportStyle();
@@ -136,6 +141,8 @@ function createShell(): void {
     <div class="fpb-panel-header"><div><small>세계 설정</small><h2>행성 설정</h2></div><button id="fpb-settings-close" class="fpb-icon-button icon-cancel" type="button" title="닫기" aria-label="닫기"></button></div>
     <form id="fpb-settings-form">
       <label>행성 이름<input id="fpb-name" name="name" type="text" maxlength="80" required></label>
+      <div class="fpb-name-actions"><button id="fpb-name-randomize" type="button"><span class="icon-arrows-cw" aria-hidden="true"></span>이름 무작위 생성</button><button id="fpb-name-apply" type="button">이름 적용</button></div>
+      <label class="fpb-name-visibility" data-fpb-preference><input id="fpb-show-name" type="checkbox" checked><span>지도에 행성 이름 표시</span></label>
       <div class="fpb-grid-2">
         <label>반지름 <span>km</span><input id="fpb-radius" name="radiusKm" type="number" min="500" max="50000" step="1"></label>
         <label>하루 <span>시간</span><input id="fpb-rotation" name="rotationHours" type="number" min="4" max="200" step="0.1"></label>
@@ -169,7 +176,12 @@ function createShell(): void {
   const recoveryDialog = document.createElement("dialog");
   recoveryDialog.id = "fpb-recovery-dialog";
   recoveryDialog.innerHTML = `<header class="fpb-dialog-header"><h2>${t("로컬 복구 기록")}</h2><button id="fpb-recovery-close" class="fpb-icon-button icon-cancel" type="button" title="${t("닫기")}" aria-label="${t("닫기")}"></button></header><div id="fpb-storage-summary" role="status"></div><div id="fpb-recovery-list"></div>`;
-  document.body.append(shell, panel, cloudDialog, recoveryDialog, fileInput);
+  const heading = document.createElement("div");
+  heading.id = "fpb-planet-name";
+  heading.dataset.i18nSkip = "";
+  heading.setAttribute("role", "heading");
+  heading.setAttribute("aria-level", "1");
+  document.body.append(shell, panel, cloudDialog, recoveryDialog, fileInput, heading);
 }
 
 function bindEvents(): void {
@@ -195,6 +207,22 @@ function bindEvents(): void {
   ensureEl("fpb-load-button").addEventListener("click", () => ensureEl<HTMLInputElement>("fpb-file-input").click());
   ensureEl<HTMLInputElement>("fpb-file-input").addEventListener("change", event => void loadFile(event));
   ensureEl<HTMLFormElement>("fpb-settings-form").addEventListener("submit", event => void generatePlanet(event));
+  ensureEl("fpb-name-randomize").addEventListener("click", () =>
+    commitPlanetName(generateRealmName(crypto.randomUUID()), true, true)
+  );
+  ensureEl("fpb-name-apply").addEventListener("click", () => {
+    const name = ensureEl<HTMLInputElement>("fpb-name");
+    if (name.reportValidity() && name.value.trim()) commitPlanetName(name.value, false, true);
+  });
+  ensureEl<HTMLInputElement>("fpb-show-name").addEventListener("change", event => {
+    settings.showName = (event.currentTarget as HTMLInputElement).checked;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    renderPlanetName();
+    scheduleAutosave();
+  });
+  mapName.addEventListener("change", () => {
+    if (mapName.value.trim()) commitPlanetName(mapName.value, false);
+  });
   ensureEl("fpb-screenshot-button").addEventListener("click", () => void saveGlobeScreenshot());
   ensureEl("fpb-cloud-button").addEventListener("click", () => void openCloud());
   ensureEl("fpb-cloud-close").addEventListener("click", () => ensureEl<HTMLDialogElement>("fpb-cloud-dialog").close());
@@ -226,15 +254,27 @@ function bindEvents(): void {
     ensureEl<HTMLInputElement>(id).addEventListener("input", updateRangeOutputs);
   }
 
-  window.addEventListener("map:generated", () => {
+  window.addEventListener("map:generated", event => {
     beginDocument(true);
-    mapName.value = settings.name;
+    if (!preparedGenerationName && (settings.nameGenerated || isDefaultRealmName(settings.name))) {
+      settings.name = generateRealmName((event as CustomEvent<{ seed?: string }>).detail?.seed || crypto.randomUUID());
+      settings.nameGenerated = true;
+    }
+    preparedGenerationName = false;
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    updateForm();
     setStatus("저장되지 않은 변경", "dirty");
     scheduleAutosave();
   });
   window.addEventListener("map:loaded", () => {
     if (!loadingProject) {
       beginDocument();
+      if (mapName.value.trim()) {
+        settings.name = mapName.value;
+        settings.nameGenerated = false;
+      }
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      updateForm();
       scheduleAutosave();
     }
   });
@@ -317,6 +357,9 @@ function closeSettings(): void {
 }
 
 function updateForm(): void {
+  mapName.value = settings.name;
+  ensureEl<HTMLInputElement>("fpb-show-name").checked = settings.showName !== false;
+  renderPlanetName();
   setValue("fpb-name", settings.name);
   setValue("fpb-radius", settings.radiusKm);
   setValue("fpb-rotation", settings.rotationHours);
@@ -333,8 +376,11 @@ function updateForm(): void {
 }
 
 function collectSettings(): PlanetSettings {
+  const name = getValue("fpb-name").trim();
   return {
-    name: getValue("fpb-name") || DEFAULT_PLANET_SETTINGS.name,
+    name,
+    nameGenerated: isDefaultRealmName(name) || (settings.nameGenerated === true && name === settings.name),
+    showName: settings.showName !== false,
     seed: getValue("fpb-seed"),
     radiusKm: getNumber("fpb-radius"),
     axialTiltDeg: getNumber("fpb-tilt"),
@@ -357,8 +403,7 @@ async function generatePlanet(event: SubmitEvent): Promise<void> {
   if (loadingProject || customization) return;
   if (!confirmReplace("planet-settings")) return;
   const nextSettings = collectSettings();
-  if ([DEFAULT_PLANET_SETTINGS.name, gt(DEFAULT_PLANET_SETTINGS.name, "en")].includes(nextSettings.name))
-    nextSettings.name = gt(DEFAULT_PLANET_SETTINGS.name);
+  if (nextSettings.nameGenerated) nextSettings.name = generateRealmName(nextSettings.seed || crypto.randomUUID());
   beginDocument();
   settings = nextSettings;
   updateForm();
@@ -366,8 +411,34 @@ async function generatePlanet(event: SubmitEvent): Promise<void> {
   applyPlanetSettingsToFmg(settings);
   closeSettings();
   setStatus("행성 생성 중", "saving");
+  preparedGenerationName = true;
   // Replacement has already been confirmed; do not mutate settings before a second, cancelable prompt.
   regenerateMap(settings.seed ? { seed: settings.seed } : undefined);
+}
+
+function renderPlanetName(): void {
+  const heading = ensureEl("fpb-planet-name");
+  heading.textContent = settings.name;
+  heading.hidden = settings.showName === false || !settings.name.trim();
+}
+
+/** A name-only transaction leaves terrain and unrelated settings drafts intact. */
+function commitPlanetName(value: string, generated: boolean, replaceDraftName = false): void {
+  const name = value.trim().slice(0, 80);
+  if (!name || loadingProject) return;
+  const previousName = settings.name;
+  settings.name = name;
+  settings.nameGenerated = generated;
+  const drafts = EditorDrafts.snapshot();
+  const pending = drafts.find(draft => draft.key === "planet-settings");
+  if (pending) {
+    pending.baseline.name = name;
+    if (replaceDraftName || pending.values.name === previousName) pending.values.name = name;
+    EditorDrafts.restore(drafts);
+  }
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  updateForm();
+  scheduleAutosave();
 }
 
 function applyPlanetSettingsToFmg(next: PlanetSettings): void {
@@ -863,6 +934,7 @@ async function handleCloudAction(button: HTMLElement, projects: CloudProject[]):
           if (session.isCurrent(generation) && current && session.cloudProject?.id === project.id) {
             session.cloudProject = renamed;
             settings.name = name;
+            settings.nameGenerated = false;
             mapName.value = name;
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
             updateForm();

@@ -17,6 +17,8 @@ export function isPlanetSettings(value: unknown): value is PlanetSettings {
   return (
     value.projection === "equirectangular" &&
     typeof value.name === "string" &&
+    (value.nameGenerated === undefined || typeof value.nameGenerated === "boolean") &&
+    (value.showName === undefined || typeof value.showName === "boolean") &&
     typeof value.seed === "string" &&
     inRange(value.radiusKm, 500, 50000) &&
     inRange(value.axialTiltDeg, 0, 60) &&

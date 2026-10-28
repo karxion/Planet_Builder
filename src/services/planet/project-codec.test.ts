@@ -52,6 +52,23 @@ describe("ProjectCodec", () => {
     expect(project.mapPayload).toBe(mapPayload);
   });
 
+  it("imports a legacy map's own realm name instead of the currently open planet name", () => {
+    const fields = Array.from({ length: 21 }, () => "");
+    fields[20] = "저장된 렐름";
+    const payload = mapPayload.replace("\r\nsettings\r\n", `\r\n${fields.join("|")}\r\n`);
+    const project = legacyMapToProject(payload, { fmgVersion: "1.135.0", upstreamCommit: "test" });
+    expect(project.planet.name).toBe("저장된 렐름");
+    expect(project.planet.nameGenerated).toBe(false);
+    expect(project.mapPayload).toBe(payload);
+  });
+
+  it("round-trips a hidden generated realm name and preserves older files without display settings", async () => {
+    const project = createProject();
+    project.planet = { ...project.planet, name: "세레니아", showName: false, nameGenerated: true };
+    expect((await decodePlanetProject(await encodePlanetProject(project))).planet).toEqual(project.planet);
+    expect((await decodePlanetProject(await encodePlanetProject(createProject()))).planet.showName).toBeUndefined();
+  });
+
   it.each(["plain", "gzip", "base64"])("imports a %s legacy map without changing its payload", async encoding => {
     const payload = `${mapPayload}\r\n한글 지도`;
     const source = { fmgVersion: "1.135.0", upstreamCommit: "03a1050" };

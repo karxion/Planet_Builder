@@ -31,6 +31,8 @@ describe("PlanetProject validation", () => {
     ["schemaVersion", 2],
     ["planet", null],
     ["planet.name", 1],
+    ["planet.showName", "false"],
+    ["planet.nameGenerated", 1],
     ["planet.seed", 12],
     ["planet.climate", undefined],
     ["planet.climate", []],

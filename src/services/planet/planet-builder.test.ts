@@ -109,6 +109,74 @@ describe("Planet persistence integration", () => {
   });
 
   const changed = () => window.dispatchEvent(new Event("project:changed"));
+  it("generates and synchronizes a Korean realm name for a newly generated map", async () => {
+    window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: "realm-one" } }));
+    const first = (await builder.buildProject()).planet;
+    expect(first.name).toMatch(/^[가-힣]+$/);
+    expect(first.name).not.toBe(DEFAULT_PLANET_SETTINGS.name);
+    expect(first.nameGenerated).toBe(true);
+    expect(mapName.value).toBe(first.name);
+    expect(document.querySelector<HTMLInputElement>("#fpb-name")!.value).toBe(first.name);
+    expect(document.querySelector("#fpb-planet-name")!.textContent).toBe(first.name);
+    window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: "realm-two" } }));
+    expect((await builder.buildProject()).planet.name).not.toBe(first.name);
+  });
+
+  it("commits a name-only edit without regenerating terrain or discarding unrelated settings drafts", async () => {
+    const radius = document.querySelector<HTMLInputElement>("#fpb-radius")!;
+    radius.value = "8000";
+    radius.dispatchEvent(new Event("input", { bubbles: true }));
+    const name = document.querySelector<HTMLInputElement>("#fpb-name")!;
+    name.value = "나의 렐름";
+    name.dispatchEvent(new Event("input", { bubbles: true }));
+    document.getElementById("fpb-name-apply")!.click();
+    const project = await builder.buildProject();
+    expect(project.planet.name).toBe("나의 렐름");
+    expect(project.planet.radiusKm).toBe(DEFAULT_PLANET_SETTINGS.radiusKm);
+    expect(drafts.read("planet-settings")!.radiusKm).toBe("8000");
+    expect(mapName.value).toBe("나의 렐름");
+    expect(document.getElementById("fpb-planet-name")!.textContent).toBe("나의 렐름");
+    expect(regenerateMap).not.toHaveBeenCalled();
+    window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: "another" } }));
+    expect((await builder.buildProject()).planet.name).toBe("나의 렐름");
+  });
+
+  it("updates planet name from legacy map-name edits, including safe text rendering", async () => {
+    mapName.value = "별빛의 ";
+    mapName.dispatchEvent(new Event("input"));
+    expect(mapName.value).toBe("별빛의 ");
+    mapName.value = "<img src=x onerror=alert(1)>";
+    mapName.dispatchEvent(new Event("change"));
+    expect((await builder.buildProject()).planet.name).toBe(mapName.value);
+    expect(document.getElementById("fpb-planet-name")!.querySelector("img")).toBeNull();
+    expect(document.getElementById("fpb-planet-name")!.textContent).toBe(mapName.value);
+  });
+
+  it("toggles the map heading immediately and restores name and visibility from a saved project", async () => {
+    const show = document.querySelector<HTMLInputElement>("#fpb-show-name")!;
+    show.checked = false;
+    show.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.getElementById("fpb-planet-name")!.hidden).toBe(true);
+    expect((await builder.buildProject()).planet.showName).toBe(false);
+    const project = await builder.buildProject();
+    project.planet.name = "복원된 렐름";
+    await builder.loadProject(project);
+    expect(mapName.value).toBe("복원된 렐름");
+    expect(document.getElementById("fpb-planet-name")!.hidden).toBe(true);
+    show.checked = true;
+    show.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.getElementById("fpb-planet-name")!.hidden).toBe(false);
+    expect(document.getElementById("fpb-planet-name")!.textContent).toBe("복원된 렐름");
+  });
+
+  it("can reroll just the realm name without replacing terrain", async () => {
+    document.getElementById("fpb-name-randomize")!.click();
+    const project = await builder.buildProject();
+    expect(project.planet.nameGenerated).toBe(true);
+    expect(project.planet.name).not.toBe(DEFAULT_PLANET_SETTINGS.name);
+    expect(mapName.value).toBe(project.planet.name);
+    expect(regenerateMap).not.toHaveBeenCalled();
+  });
   const settingsDraft = (value = "Pending planet") => {
     const name = document.getElementById("fpb-name") as HTMLInputElement;
     name.value = value;

@@ -13,6 +13,9 @@ export interface PlanetClimateSettings {
 
 export interface PlanetSettings {
   name: string;
+  /** Absent in old files: preserve saved names and show the heading by default. */
+  nameGenerated?: boolean;
+  showName?: boolean;
   seed: string;
   radiusKm: number;
   axialTiltDeg: number;
