@@ -5,7 +5,7 @@ import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
 import type { SeaRelationStatus, UnderwaterMap } from "@/types/underwater";
-import { findGridCell } from "@/utils/graphUtils";
+import { sampleSurfaceGrid } from "./surface-snapshot";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, value = "") => {
@@ -19,17 +19,7 @@ interface SeaContext {
   faction: (id: string) => void;
 }
 export function sampleSeaSurface(): SeaSurface {
-  if (typeof grid === "undefined" || !grid.cells?.h?.length || typeof graphWidth === "undefined")
-    throw new Error("지상 지도가 준비되지 않았습니다.");
-  const columns = 160,
-    rows = 96;
-  const heights = Array.from({ length: columns * rows }, (_, i) => {
-    const x = (((i % columns) + 0.5) / columns) * graphWidth,
-      y = ((Math.floor(i / columns) + 0.5) / rows) * graphHeight;
-    const cell = findGridCell(x, y, grid);
-    return grid.features?.[grid.cells.f[cell]]?.type === "lake" ? 20 : Number(grid.cells.h[cell]);
-  });
-  return { columns, rows, heights };
+  return sampleSurfaceGrid(160, 96, true);
 }
 export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): void {
   const data = WorldSpaces.snapshot(),

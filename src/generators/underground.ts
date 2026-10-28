@@ -1,7 +1,11 @@
 import Alea from "alea";
 import { UNDERGROUND_DEPTHS, undergroundLevel } from "@/data/underground";
+import type { UndergroundMode, UndergroundSurface } from "@/types/underground";
 import { UNDERGROUND_LEVELS, type UndergroundCell, type UndergroundLayer } from "@/types/underground";
 import type { SpaceSite, SpaceSiteKind, WorldSpacesData } from "@/types/world-spaces";
+import { generateHollowWorld } from "./hollow-world";
+import { inverseSurface, undergroundRoute } from "./inverse-surface";
+import { prepareUndergroundWorld } from "./underground-world-data";
 
 interface Point {
   x: number;
@@ -13,6 +17,8 @@ export interface UndergroundEntrance extends Point {
 export interface UndergroundOptions {
   seed: string;
   chambers: number;
+  mode?: UndergroundMode;
+  surface?: UndergroundSurface;
 }
 const COLUMNS = 128,
   ROWS = 80;
@@ -33,26 +39,11 @@ export function generateUnderground(
     options.chambers > 36
   )
     throw new Error("지저 시드와 공동 수(12~36)를 확인해 주세요.");
-  const data = structuredClone(existing);
-  data.sites = data.sites.filter(site => site.origin !== "underground" || site.edited);
-  const remaining = new Set(data.sites.map(site => site.id));
-  data.links = data.links.filter(
-    link => link.origin !== "underground" && remaining.has(link.from) && remaining.has(link.to)
-  );
-  let generation = (existing.underground?.generation || 0) + 1;
-  while (data.sites.some(s => s.id.startsWith(`ug:${generation}:`))) generation++;
-  const prefix = `ug:${generation}:`;
-  const factionNames = ["흑요석 연합", "균사 회합", "깊은 샘 동맹"];
-  for (let i = 0; i < 3; i++) {
-    const id = `ug-faction:${i}`;
-    if (!data.factions.some(f => f.id === id))
-      data.factions.push({
-        id,
-        name: factionNames[i],
-        color: ["#c494b9", "#88bc90", "#80aec9"][i],
-        notes: "지저 공동과 거주지를 잇는 창작 세력"
-      });
-  }
+  const mode = options.mode || "tunnels";
+  if (!["tunnels", "hollow"].includes(mode)) throw new Error("지저 세계 구조를 확인하세요.");
+  if (mode === "hollow") return generateHollowWorld(existing, options, entrances);
+  const elevations = options.surface ? inverseSurface(options.surface, COLUMNS, ROWS) : undefined;
+  const { data, generation, prefix } = prepareUndergroundWorld(existing, mode);
   const add = (suffix: string, kind: SpaceSiteKind, point: Point, depth: number, name: string): SpaceSite => {
     const site: SpaceSite = {
       id: prefix + suffix,
@@ -98,6 +89,20 @@ export function generateUnderground(
         }
     };
     const tunnel = (a: Point, b: Point) => {
+      if (elevations) {
+        const cell = (p: Point) =>
+          Math.min(ROWS - 1, Math.max(0, Math.floor(p.y))) * COLUMNS +
+          Math.min(COLUMNS - 1, Math.max(0, Math.floor(p.x)));
+        const path = undergroundRoute(
+          COLUMNS,
+          ROWS,
+          cell(a),
+          cell(b),
+          i => 1 + Math.round(((elevations[i] + 5000) / 8000) * 8)
+        );
+        for (const i of path) draw({ x: (i % COLUMNS) + 0.5, y: Math.floor(i / COLUMNS) + 0.5 }, 1.2, 1.2, 1);
+        return;
+      }
       const steps = Math.ceil(distance(a, b) * 2);
       const bend = (rng() - 0.5) * 6;
       for (let step = 0; step <= steps; step++) {
@@ -116,6 +121,8 @@ export function generateUnderground(
     for (let attempt = 0; centers.length < options.chambers && attempt < 3000; attempt++) {
       const p = { x: 9 + rng() * (COLUMNS - 18), y: 7 + rng() * (ROWS - 14) };
       if (centers.some(other => distance(other, p) < 9)) continue;
+      const inverse = elevations?.[Math.floor(p.y) * COLUMNS + Math.floor(p.x)];
+      if (inverse !== undefined && rng() > 0.2 + ((3000 - inverse) / 8000) * 0.8) continue;
       // Cell centers keep place anchors on a known dry cell.
       p.x = Math.floor(p.x) + 0.5;
       p.y = Math.floor(p.y) + 0.5;
@@ -185,7 +192,7 @@ export function generateUnderground(
       connect({ x: site.x * COLUMNS, y: site.y * ROWS });
     carvers.push(connect);
     centersByLevel.push(centers);
-    levels.push({ id: levelId, cells });
+    levels.push({ id: levelId, cells, ...(elevations ? { elevations: [...elevations] } : {}) });
   }
   for (const [i, entrance] of selectedEntrances.entries()) {
     const p = { x: entrance.x * COLUMNS, y: entrance.y * ROWS };
@@ -212,6 +219,8 @@ export function generateUnderground(
     columns: COLUMNS,
     rows: ROWS,
     chambers: options.chambers,
+    mode,
+    surfaceInverted: Boolean(elevations),
     levels
   };
   data.activeSpace = "underground";

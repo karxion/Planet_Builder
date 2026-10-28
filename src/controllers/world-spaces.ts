@@ -1,4 +1,4 @@
-import { paintUnderground, siteInActiveLevel, undergroundLevel } from "@/data/underground";
+import { paintUnderground, siteInActiveLevel, undergroundIndex, undergroundLevel } from "@/data/underground";
 import { SEABED_TERRAINS, seabedIndex } from "@/data/underwater";
 import { drawWorldSpaces } from "@/renderers/world-spaces";
 import { EditorDrafts } from "@/services/editor-drafts";
@@ -115,9 +115,9 @@ function renderPanel(): void {
   const site = data.sites.find(s => s.id === selected && siteInActiveLevel(s, data));
   const faction = data.factions.find(f => f.id === factionId);
   panel.innerHTML = `<header><h3>${spaceLabels()[data.activeSpace]} · ${text("세계 공간", "World spaces")}</h3><button type="button" data-close aria-label="${text("닫기", "Close")}">×</button></header>
-    <p>${data.activeSpace === "underground" ? text("지형 탭에서 동굴망을 생성하고 깊이 층을 전환합니다. 장소·세력·연결을 편집하거나 지형 붓으로 공동과 암반을 바꿀 수 있습니다.", "Generate cave networks and select depth layers in Terrain. Edit places, factions and connections, or paint caverns and rock.") : data.activeSpace === "underwater" ? text("해저·세력 탭에서 해저 지형과 수중 세력을 생성하고 지도 보기를 바꿉니다. 장소와 종족 구성·외교 관계는 자유롭게 편집합니다.", "Generate bathymetry and aquatic realms in Seabed / realms. Edit places, peoples and diplomacy.") : text("도시·세력·통로를 직접 배치하는 지도입니다. 옅은 육지는 지상 위치 참고용입니다. 지상 재생성 시 수동 기록은 유지됩니다.", "Manually place cities, territories and passages. Faint land indicates surface geography. Surface regeneration retains manual records.")}</p>
+    <p>${data.activeSpace === "underground" ? text("지형·구조에서 거대 터널형 또는 공동 세계형을 선택합니다. 지상의 반전 지형을 바탕으로 생성하고 장소·세력·통로와 지형을 편집합니다.", "Choose continental tunnels or a hollow world in Terrain / structure. Generate inverse-surface landscapes and edit places, factions, passages and terrain.") : data.activeSpace === "underwater" ? text("해저·세력 탭에서 해저 지형과 수중 세력을 생성하고 지도 보기를 바꿉니다. 장소와 종족 구성·외교 관계는 자유롭게 편집합니다.", "Generate bathymetry and aquatic realms in Seabed / realms. Edit places, peoples and diplomacy.") : text("도시·세력·통로를 직접 배치하는 지도입니다. 옅은 육지는 지상 위치 참고용입니다. 지상 재생성 시 수동 기록은 유지됩니다.", "Manually place cities, territories and passages. Faint land indicates surface geography. Surface regeneration retains manual records.")}</p>
     <nav>${[
-      ...(data.activeSpace === "underground" ? [["terrain", text("지형·층", "Terrain / depth")]] : []),
+      ...(data.activeSpace === "underground" ? [["terrain", text("지형·구조", "Terrain / structure")]] : []),
       ...(data.activeSpace === "underwater" ? [["seabed", text("해저·세력", "Seabed / realms")]] : []),
       ["sites", text("장소", "Places")],
       ["factions", text("세력", "Factions")],
@@ -215,6 +215,15 @@ function renderPanel(): void {
     };
     if (site) {
       const form = content.querySelector<HTMLFormElement>("form")!;
+      if (site.space === "underground" && data.underground) {
+        const elevations = data.underground.levels.find(l => l.id === data.underground!.activeLevel)?.elevations;
+        if (elevations) {
+          const info = document.createElement("p");
+          info.dataset.inverseElevation = "";
+          info.textContent = `${text("반전 지형 고도", "Inverse terrain elevation")}: ${elevations[undergroundIndex(data.underground, site.x, site.y)]} m · ${text("내해 기준", "relative to the inner sea")}`;
+          form.prepend(info);
+        }
+      }
       if (site.space === "underwater" && data.underwater) {
         const i = seabedIndex(data.underwater, site.x, site.y),
           info = document.createElement("p");
@@ -241,7 +250,8 @@ function renderPanel(): void {
             });
             const faction = String(values.get("factionId"));
             if (item.origin) item.edited = true;
-            if (item.space === "underground" && d.underground) d.underground.activeLevel = undergroundLevel(item.depth);
+            if (item.space === "underground" && d.underground)
+              d.underground.activeLevel = d.underground.mode === "hollow" ? "upper" : undergroundLevel(item.depth);
             if (faction) item.factionId = faction;
             else delete item.factionId;
           });
@@ -355,7 +365,7 @@ async function travel(id: string): Promise<void> {
   if (!site) return;
   if (site.space === "underground" && WorldSpaces.snapshot().underground)
     WorldSpaces.update(d => {
-      d.underground!.activeLevel = undergroundLevel(site.depth);
+      d.underground!.activeLevel = d.underground!.mode === "hollow" ? "upper" : undergroundLevel(site.depth);
     });
   await switchView(site.space);
   selected = site.id;
@@ -459,6 +469,15 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
         WorldSpaces.update(d => {
           const site = d.sites.find(s => s.id === selected);
           if (site) {
+            if (
+              site.space === "underground" &&
+              site.kind === "city" &&
+              d.underground?.mode === "hollow" &&
+              ![1, 4, 5].includes(d.underground.levels[0].cells[undergroundIndex(d.underground, x, y)])
+            )
+              throw new Error(
+                text("공동 세계의 도시는 내부 육지로 옮기세요.", "Move hollow-world cities onto inner land.")
+              );
             if (site.space === "underwater" && d.underwater && !d.underwater.depths[seabedIndex(d.underwater, x, y)])
               throw new Error(text("수중 장소는 바다 위로 옮기세요.", "Move underwater places onto water."));
             site.x = x;

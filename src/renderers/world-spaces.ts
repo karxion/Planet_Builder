@@ -1,4 +1,4 @@
-import { siteInActiveLevel, undergroundLabel, undergroundLevel } from "@/data/underground";
+import { siteInActiveLevel, undergroundLabel, undergroundLevel, undergroundModeLabel } from "@/data/underground";
 import type { SpaceSite, WorldSpace, WorldSpacesData } from "@/types/world-spaces";
 import { drawUndergroundTerrain } from "./underground-map";
 import { drawUnderwaterTerrain } from "./underwater-map";
@@ -76,7 +76,7 @@ export function drawWorldSpaces(input: {
     const from = byId.get(link.from)!;
     const to = byId.get(link.to)!;
     if (siteInActiveLevel(from, data) && siteInActiveLevel(to, data)) {
-      if (underground && link.origin === "underground") continue;
+      if (underground && underground.mode !== "hollow" && link.origin === "underground") continue;
       const [x1, y1] = point(from);
       const [x2, y2] = point(to);
       const line = element(link.path ? "path" : "line", {
@@ -87,9 +87,10 @@ export function drawWorldSpaces(input: {
         y1,
         x2,
         y2,
-        stroke: "#bca874",
+        stroke: link.transport === "water" ? "#9edcd9" : "#bca874",
         "stroke-width": 2,
-        "stroke-dasharray": "6 4",
+        "stroke-dasharray": link.transport === "land" ? "none" : "6 4",
+        ...(underground?.mode === "hollow" && link.origin === "underground" ? { "data-inner-route": link.id } : {}),
         "vector-effect": "non-scaling-stroke",
         ...(underwater && link.origin === "underwater"
           ? { "clip-path": "url(#fpb-sea-water)", "data-sea-route": link.id }
@@ -114,7 +115,7 @@ export function drawWorldSpaces(input: {
           role: "button",
           tabindex: 0
         },
-        `↪ ${target.space === "underground" && data.underground ? undergroundLabel(undergroundLevel(target.depth)) : labels[target.space]}`
+        `↪ ${target.space === "underground" && data.underground ? (data.underground.mode === "hollow" ? undergroundModeLabel("hollow") : undergroundLabel(undergroundLevel(target.depth))) : labels[target.space]}`
       );
       portal.append(element("title", {}, `${link.name} → ${target.name} (${target.depth} m)`));
       labelBounds.push({

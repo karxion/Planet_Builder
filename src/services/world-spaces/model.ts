@@ -1,4 +1,4 @@
-import { isUndergroundMap, UNDERGROUND_DEPTHS } from "@/data/underground";
+import { HOLLOW_REFERENCE_DEPTH, isUndergroundMap, UNDERGROUND_DEPTHS, undergroundIndex } from "@/data/underground";
 import { isUnderwaterMap, SEA_RELATIONS, seabedIndex } from "@/data/underwater";
 import { SITE_KINDS, SPACE_IDS, type SpaceSite, TERRAIN_KINDS, type WorldSpacesData } from "@/types/world-spaces";
 
@@ -108,6 +108,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         sites.has(l.to) &&
         l.from !== l.to &&
         (l.origin === undefined || l.origin === "underground" || l.origin === "underwater") &&
+        (l.transport === undefined || l.transport === "land" || l.transport === "water") &&
         (l.path === undefined ||
           (Array.isArray(l.path) &&
             l.path.length >= 2 &&
@@ -162,6 +163,13 @@ export class WorldSpaceStore {
     });
   }
   addSite(space: SpaceSite["space"], kind: SpaceSite["kind"], x: number, y: number): SpaceSite {
+    if (
+      space === "underground" &&
+      kind === "city" &&
+      this.data.underground?.mode === "hollow" &&
+      ![1, 4, 5].includes(this.data.underground.levels[0].cells[undergroundIndex(this.data.underground, x, y)])
+    )
+      throw new Error("공동 세계의 도시는 내부 육지에 배치하세요.");
     const seaDepth = this.data.underwater?.depths[seabedIndex(this.data.underwater, x, y)];
     if (space === "underwater" && seaDepth === 0) throw new Error("수중 장소는 바다 위에 배치하세요.");
     const site: SpaceSite = {
@@ -184,7 +192,9 @@ export class WorldSpaceStore {
           : space === "underwater"
             ? (seaDepth ?? 100)
             : this.data.underground
-              ? UNDERGROUND_DEPTHS[this.data.underground.activeLevel]
+              ? this.data.underground.mode === "hollow"
+                ? HOLLOW_REFERENCE_DEPTH
+                : UNDERGROUND_DEPTHS[this.data.underground.activeLevel]
               : 1000,
       radius: 0.035,
       terrain: space === "underground" ? "cavern" : "plain",

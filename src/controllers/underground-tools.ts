@@ -1,10 +1,16 @@
-import { undergroundLabel } from "@/data/underground";
+import { undergroundLabel, undergroundModeLabel } from "@/data/underground";
 import { generateUnderground, type UndergroundEntrance } from "@/generators/underground";
 import { scenePng } from "@/renderers/scene-assets";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
-import { UNDERGROUND_LEVELS, type UndergroundCell, type UndergroundLevelId } from "@/types/underground";
+import {
+  UNDERGROUND_LEVELS,
+  type UndergroundCell,
+  type UndergroundLevelId,
+  type UndergroundMode
+} from "@/types/underground";
+import { sampleSurfaceGrid } from "./surface-snapshot";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, value = "") => {
@@ -36,9 +42,38 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
   const map = data.underground;
   const section = node("section");
   section.className = "fpb-underground-tools";
-  const title = node("h4", text("지저 지형", "Underground terrain"));
+  const title = node(
+    "h4",
+    map
+      ? `${undergroundModeLabel(map.mode || "tunnels")} · ${text("지저 지형", "Underground terrain")}`
+      : text("지저 지형", "Underground terrain")
+  );
   const generation = node("form");
   generation.dataset.undergroundGenerate = "";
+  const modeLabel = node("label", text("지저 세계 구조", "Underground world structure"));
+  const mode = node("select");
+  mode.name = "mode";
+  mode.dataset.undergroundMode = "";
+  mode.add(new Option(text("거대 터널형 · 언더다크 모티프", "Continental tunnels · Underdark motif"), "tunnels"));
+  mode.add(new Option(text("공동 세계형 · 아가르타 모티프", "Hollow world · Agartha motif"), "hollow"));
+  mode.value = map?.mode || "tunnels";
+  modeLabel.append(mode);
+  const description = node("p");
+  description.dataset.undergroundDescription = "";
+  const describe = () => {
+    description.textContent =
+      mode.value === "hollow"
+        ? text(
+            "지상의 육지·산지는 내부의 내해·저지대로, 바다·분지는 내부의 대륙·고지대로 뒤집습니다. 넓은 내부 공간을 육로와 내해 항로로 연결합니다.",
+            "Surface land and mountains become inner seas and lowlands; surface seas become inner continents and uplands, connected by roads and sea routes."
+          )
+        : text(
+            "반전된 저지대를 따라 대륙 규모의 공동·좁은 터널을 만듭니다. 얕은 지저·중층·심층을 층간 통로로 잇습니다.",
+            "Continental cave networks and narrow passages follow inverse lowlands. Upper, middle and deep layers connect through descents."
+          );
+  };
+  mode.onchange = describe;
+  describe();
   const seedLabel = node("label", text("생성 시드", "Generation seed"));
   const seedInput = node("input");
   seedInput.name = "seed";
@@ -46,7 +81,7 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
   seedInput.maxLength = 120;
   seedInput.value = map?.seed || (typeof seed === "undefined" ? "underground" : `${seed}:underground`).slice(0, 120);
   seedLabel.append(seedInput);
-  const densityLabel = node("label", text("공동 밀도", "Cavern density"));
+  const densityLabel = node("label", text("배치 밀도", "Placement density"));
   const density = node("select");
   density.name = "chambers";
   for (const [value, name] of [
@@ -62,7 +97,7 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
     text(map ? "지저 다시 생성" : "지저 지도 생성", map ? "Regenerate underground" : "Generate underground")
   );
   generate.type = "submit";
-  generation.append(seedLabel, densityLabel, generate);
+  generation.append(modeLabel, seedLabel, densityLabel, generate);
   generation.onsubmit = event => {
     event.preventDefault();
     if (!generation.reportValidity()) return;
@@ -83,7 +118,12 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
         if (site.origin === "underground" && drafts.has(`space-site:${site.id}`)) site.edited = true;
       const result = generateUnderground(
         existing,
-        { seed: seedInput.value.trim(), chambers: Number(density.value) },
+        {
+          seed: seedInput.value.trim(),
+          chambers: Number(density.value),
+          mode: mode.value as UndergroundMode,
+          surface: sampleSurfaceGrid(128, 80)
+        },
         surfaceEntrances()
       );
       WorldSpaces.update(draft => Object.assign(draft, result));
@@ -93,7 +133,7 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
       context.error(error);
     }
   };
-  section.append(title, generation);
+  section.append(title, generation, description);
   if (map) {
     const levelLabel = node("label", text("깊이 층", "Depth layer"));
     const levels = node("select");
@@ -108,10 +148,16 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
       document.querySelector<HTMLSelectElement>("#fpb-space-panel select[data-underground-level]")?.focus();
     };
     levelLabel.append(levels);
+    if (map.mode === "hollow") levelLabel.hidden = true;
     const ranges = { upper: "0–749 m", middle: "750–2499 m", deep: "2500–100000 m" };
     const legend = node(
       "p",
-      `${ranges[map.activeLevel]} · ${text("공동·터널 / 파랑: 호수 / 주황: 용암 / 색 영역: 세력권", "Caverns/tunnels / Blue: water / Orange: lava / Tints: territories")}`
+      map.mode === "hollow"
+        ? text(
+            "공동 세계 · 초록: 평원·숲 / 황토: 산지 / 파랑: 내해 / 실선: 육로 / 점선: 항로",
+            "Hollow world · Green: plains / forests · Ochre: uplands · Blue: inner seas · Solid: roads · Dashed: sea routes"
+          )
+        : `${ranges[map.activeLevel]} · ${text("공동·터널 / 파랑: 호수 / 주황: 용암 / 색 영역: 세력권", "Caverns/tunnels / Blue: water / Orange: lava / Tints: territories")}`
     );
     const brush = node("form");
     brush.dataset.undergroundBrush = "";
@@ -126,6 +172,13 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
     ] as const)
       terrain.add(new Option(name, String(value)));
     terrainLabel.append(terrain);
+    if (map.mode === "hollow") {
+      terrain.options[1].text = text("암반·벽", "Rock / wall");
+      terrain.options[0].text = text("평원", "Plain");
+      terrain.options[2].text = text("내해", "Inner sea");
+      terrain.add(new Option(text("산지", "Uplands"), "4"));
+      terrain.add(new Option(text("숲", "Forest"), "5"));
+    }
     const radiusLabel = node("label", text("붓 반경", "Brush radius"));
     const radius = node("input");
     radius.name = "radius";
@@ -169,7 +222,7 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
           const url = URL.createObjectURL(blob);
           const a = node("a");
           a.href = url;
-          a.download = `underground-${map.activeLevel}.${format.toLowerCase()}`;
+          a.download = `underground-${map.mode || "tunnels"}-${map.activeLevel}.${format.toLowerCase()}`;
           a.click();
           setTimeout(() => URL.revokeObjectURL(url), 5000);
         } catch (error) {

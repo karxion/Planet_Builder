@@ -44,6 +44,7 @@ export interface SpaceLink {
   to: string;
   origin?: "underground" | "underwater";
   path?: { x: number; y: number }[];
+  transport?: "land" | "water";
 }
 
 export interface WorldSpacesData {
