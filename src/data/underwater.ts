@@ -1,7 +1,78 @@
 import type { UnderwaterMap } from "@/types/underwater";
 
 export const SEA_RELATIONS = ["allied", "trade", "neutral", "rival", "war"] as const;
-export const SEABED_COLORS = ["#373f3d", "#4f9eac", "#25627f", "#12334f", "#080f2a", "#39788a", "#59ad91"];
+export const SEABED_TERRAINS = [
+  { ko: "육지", en: "Land", color: "#373f3d", description: "해양 지형에서 제외하는 육지" },
+  { ko: "대륙붕", en: "Continental shelf", color: "#4f9eac", description: "대체로 200m 이하의 완만한 연안 지형" },
+  {
+    ko: "대륙사면",
+    en: "Continental slope",
+    color: "#25627f",
+    description: "대륙붕 끝에서 깊은 바다로 급격히 내려가는 경사면"
+  },
+  { ko: "심해평원", en: "Abyssal plain", color: "#12334f", description: "수심 3000~6000m의 낮은 기복을 가진 심해저" },
+  {
+    ko: "해구",
+    en: "Ocean trench",
+    color: "#080f2a",
+    description: "활동성 대륙 주변부에 놓이는 6000m 이상의 좁고 깊은 골짜기"
+  },
+  {
+    ko: "중앙해령",
+    en: "Mid-ocean ridge",
+    color: "#39788a",
+    description: "주변 심해저보다 약 2000~4000m 솟은 대양 내부의 산맥"
+  },
+  { ko: "산호초", en: "Reef", color: "#59ad91", description: "얕은 연안의 산호초 군락" },
+  {
+    ko: "대륙대",
+    en: "Continental rise",
+    color: "#3b7087",
+    description: "완만한 퇴적성 사면 기슭. 수동형 대륙 주변부에 배치"
+  },
+  { ko: "해저 협곡", en: "Submarine canyon", color: "#213c67", description: "대륙사면을 바다 쪽으로 깊게 절개한 유로" },
+  {
+    ko: "해령 열곡",
+    en: "Axial rift valley",
+    color: "#244861",
+    description: "일부 해령의 양쪽 어깨보다 낮게 패인 축부 골짜기"
+  },
+  { ko: "해산", en: "Seamount", color: "#69877f", description: "주변 해저보다 1000m 이상 솟는 고립된 해저 산" },
+  { ko: "평정해산", en: "Guyot", color: "#9aaa88", description: "정상부가 평평한 해산" },
+  {
+    ko: "해저 선상지",
+    en: "Submarine fan",
+    color: "#aa9479",
+    description: "협곡 하단 바깥으로 부채꼴로 펼쳐지는 퇴적 지형"
+  },
+  { ko: "심해 구릉", en: "Abyssal hills", color: "#344f70", description: "심해저의 수백 미터 규모 낮은 기복" },
+  { ko: "해연", en: "Trench deep", color: "#040817", description: "해구 내부에 국지적으로 더 깊게 패인 함몰부" },
+  {
+    ko: "해양 단열대",
+    en: "Fracture zone",
+    color: "#767398",
+    description: "해령 바깥 심해저까지 이어지는 선형 단층 지형"
+  }
+] as const;
+export const SEABED_COLORS = SEABED_TERRAINS.map(t => t.color);
+export const SEABED_DETAILS_EN = [
+  "Land excluded from the marine floor.",
+  "A gently sloping coastal platform, generally shallower than 200 m.",
+  "The steep descent from the shelf edge toward the deep basin.",
+  "Low-relief deep-ocean floor at approximately 3000–6000 m depth.",
+  "A narrow subduction-style depression deeper than 6000 m.",
+  "An oceanic mountain system rising about 2000–4000 m above its surroundings.",
+  "A shallow coastal reef complex.",
+  "A gentle sedimentary apron at the foot of a passive continental slope.",
+  "A seaward incision through the continental slope.",
+  "An axial depression below the shoulders of some mid-ocean ridges.",
+  "An isolated submarine mountain with at least 1000 m of relief.",
+  "A flat-topped seamount.",
+  "A fan-shaped sediment body beyond a canyon mouth.",
+  "Low abyssal relief of a few hundred metres.",
+  "A local depression within a trench.",
+  "A linear fault-related feature extending across the abyssal floor."
+] as const;
 export const SEA_PEOPLES = [
   {
     id: "merfolk",
@@ -80,6 +151,30 @@ export function isUnderwaterMap(value: unknown): value is UnderwaterMap {
   )
     return false;
   const size = m.columns * m.rows;
+  if (m.geologyVersion !== undefined && m.geologyVersion !== 2) return false;
+  if (m.features !== undefined && m.geologyVersion !== 2) return false;
+  if (
+    m.features !== undefined &&
+    (!Array.isArray(m.features) ||
+      m.features.length > 200 ||
+      !Array.from(m.features).every(
+        f =>
+          f &&
+          Number.isInteger(f.kind) &&
+          f.kind > 0 &&
+          f.kind < SEABED_TERRAINS.length &&
+          Number.isFinite(f.x) &&
+          f.x >= 0 &&
+          f.x <= 1 &&
+          Number.isFinite(f.y) &&
+          f.y >= 0 &&
+          f.y <= 1 &&
+          [f.relief, f.baseDepth, f.summitDepth].every(
+            v => v === undefined || (Number.isFinite(v) && v >= 0 && v <= 11000)
+          )
+      ))
+  )
+    return false;
   if (![m.depths, m.terrain, m.owners].every(a => Array.isArray(a) && a.length === size)) return false;
   return Array.from(m.depths).every(
     (d, i) =>
@@ -88,7 +183,7 @@ export function isUnderwaterMap(value: unknown): value is UnderwaterMap {
       d <= 11000 &&
       Number.isInteger(m.terrain[i]) &&
       m.terrain[i] >= 0 &&
-      m.terrain[i] <= 6 &&
+      m.terrain[i] < (m.geologyVersion === 2 ? SEABED_TERRAINS.length : 7) &&
       Number.isInteger(m.owners[i]) &&
       m.owners[i] >= 0 &&
       m.owners[i] <= m.factionIds.length &&

@@ -1,4 +1,4 @@
-import { SEA_RELATIONS, SEABED_COLORS } from "@/data/underwater";
+import { SEA_RELATIONS, SEABED_COLORS, SEABED_DETAILS_EN, SEABED_TERRAINS } from "@/data/underwater";
 import { generateUnderwater, type SeaSurface } from "@/generators/underwater";
 import { scenePng } from "@/renderers/scene-assets";
 import { EditorDrafts } from "@/services/editor-drafts";
@@ -111,19 +111,14 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
     };
     const legend = node("ul");
     legend.className = "fpb-sea-legend";
-    for (const [code, name] of [
-      text("육지", "Land"),
-      text("대륙붕 · ≤200m", "Shelf · ≤200m"),
-      text("대륙사면", "Continental slope"),
-      text("심해평원", "Abyssal plain"),
-      text("해구 · 6500m+", "Trench · 6500m+"),
-      text("해령", "Ridge"),
-      text("산호초", "Reef")
-    ].entries()) {
+    for (const [code, feature] of SEABED_TERRAINS.entries()) {
+      if (!map.terrain.includes(code as import("@/types/underwater").SeabedTerrain)) continue;
+      const name = text(feature.ko, feature.en);
       const item = node("li"),
         swatch = node("span");
       swatch.style.background = SEABED_COLORS[code];
       swatch.setAttribute("aria-hidden", "true");
+      item.title = text(feature.description, SEABED_DETAILS_EN[code]);
       item.append(swatch, name);
       legend.append(item);
     }
@@ -175,7 +170,26 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
       };
       exports.append(button);
     }
-    section.append(viewLabel, legend, node("h4", text("수중 세력", "Aquatic realms")), list, exports);
+    const geology = node("details");
+    geology.className = "fpb-seabed-guide";
+    const summary = node("summary", text("해저 지형 분류·생성 기준", "Seafloor classification / generation"));
+    geology.append(summary);
+    for (const [code, feature] of SEABED_TERRAINS.entries())
+      if (code)
+        geology.append(
+          node("p", `${text(feature.ko, feature.en)}: ${text(feature.description, SEABED_DETAILS_EN[code])}`)
+        );
+    if (map.geologyVersion !== 2)
+      geology.append(
+        node(
+          "p",
+          text(
+            "저장된 기존 지형을 유지하고 있습니다. 새 분류는 다시 생성하면 적용됩니다.",
+            "The saved terrain is preserved. Regenerate to apply the expanded classification."
+          )
+        )
+      );
+    section.append(viewLabel, legend, geology, node("h4", text("수중 세력", "Aquatic realms")), list, exports);
   }
   host.append(section);
 }

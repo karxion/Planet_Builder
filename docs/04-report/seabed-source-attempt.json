@@ -1,0 +1,41 @@
+{
+  "retrievedAt": "2026-10-28T01:51:50.783Z",
+  "results": [
+    {
+      "id": "noaa-seamounts",
+      "url": "https://oceanexplorer.noaa.gov/facts/seamounts.html",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "noaa-canyons",
+      "url": "https://oceanexplorer.noaa.gov/facts/submarine-canyons.html",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "iho-standards",
+      "url": "https://iho.int/en/standards-and-specifications",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "usgs-dynamic-earth",
+      "url": "https://pubs.usgs.gov/gip/dynamic/dynamic.html",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "crossref-geomorphology",
+      "url": "https://api.crossref.org/works?query.title=Geomorphology%20of%20the%20oceans&rows=3",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "crossref-canyons",
+      "url": "https://api.crossref.org/works?query.title=Global%20distribution%20of%20large%20submarine%20canyons&rows=3",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    }
+  ]
+}

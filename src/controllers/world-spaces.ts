@@ -1,5 +1,5 @@
 import { paintUnderground, siteInActiveLevel, undergroundLevel } from "@/data/underground";
-import { seabedIndex } from "@/data/underwater";
+import { SEABED_TERRAINS, seabedIndex } from "@/data/underwater";
 import { drawWorldSpaces } from "@/renderers/world-spaces";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
@@ -215,6 +215,14 @@ function renderPanel(): void {
     };
     if (site) {
       const form = content.querySelector<HTMLFormElement>("form")!;
+      if (site.space === "underwater" && data.underwater) {
+        const i = seabedIndex(data.underwater, site.x, site.y),
+          info = document.createElement("p");
+        const feature = SEABED_TERRAINS[data.underwater.terrain[i]];
+        info.dataset.seabedInfo = "";
+        info.textContent = `${text("해저 지형", "Seabed")}: ${text(feature.ko, feature.en)} · ${text("바닥 수심", "Floor depth")}: ${data.underwater.depths[i]} m`;
+        form.prepend(info);
+      }
       EditorDrafts.bind(form, key("site", site.id), () => renderPanel());
       form.onsubmit = event => {
         event.preventDefault();

@@ -37,7 +37,7 @@ describe("seabed and aquatic realms", () => {
         expect(map.terrain[i]).toBe(0);
         expect(map.owners[i]).toBe(0);
       }
-    expect(new Set(map.terrain)).toEqual(new Set([0, 1, 2, 3, 4, 5, 6]));
+    for (const kind of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) expect(map.terrain).toContain(kind);
     expect(map.depths).not.toEqual(generateUnderwater(source, "other-sea", input).underwater!.depths);
   });
   it("creates six peoples' cities on water, routes around land, and editable diplomacy", () => {

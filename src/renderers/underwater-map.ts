@@ -1,5 +1,6 @@
 import { contours, geoPath } from "d3";
-import { SEABED_COLORS } from "@/data/underwater";
+import { SEABED_COLORS, SEABED_TERRAINS } from "@/data/underwater";
+import { getUiLanguage } from "@/services/ui-language";
 import type { UnderwaterMap } from "@/types/underwater";
 import type { SpaceFaction } from "@/types/world-spaces";
 
@@ -34,7 +35,7 @@ export function drawUnderwaterTerrain(
   root.append(defs);
   // Land remains opaque so seabed and politics are visually distinct from the surface.
   shape(path(map.depths.map(d => Number(d === 0))), SEABED_COLORS[0], { "data-sea-terrain": "0" });
-  for (let code = 1; code <= 6; code++)
+  for (let code = 1; code < SEABED_TERRAINS.length; code++)
     shape(path(map.terrain.map(t => Number(t === code))), map.view === "political" ? "#1c4a62" : SEABED_COLORS[code], {
       "data-sea-terrain": String(code),
       stroke: "#97c6cb",
@@ -65,6 +66,20 @@ export function drawUnderwaterTerrain(
       title.textContent = `${contour.value} m`;
       line.append(title);
     }
+  }
+  const relevant = map.features?.filter(f => [5, 8, 10, 11, 14].includes(f.kind)) || [];
+  for (const feature of relevant) {
+    const mark = document.createElementNS(NS, "circle");
+    mark.setAttribute("cx", String(feature.x * width));
+    mark.setAttribute("cy", String(feature.y * height));
+    mark.setAttribute("r", "3");
+    mark.setAttribute("fill", SEABED_COLORS[feature.kind]);
+    mark.setAttribute("stroke", "#d4d5be");
+    mark.setAttribute("data-seabed-feature", String(feature.kind));
+    const title = document.createElementNS(NS, "title");
+    title.textContent = `${getUiLanguage() === "ko" ? SEABED_TERRAINS[feature.kind].ko : SEABED_TERRAINS[feature.kind].en}${feature.relief === undefined ? "" : ` · ${getUiLanguage() === "ko" ? "주변 해저 대비" : "relief"} ${feature.relief} m`}`;
+    mark.append(title);
+    root.append(mark);
   }
   return root;
 }

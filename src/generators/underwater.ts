@@ -1,32 +1,17 @@
 import Alea from "alea";
 import { SEA_PEOPLES } from "@/data/underwater";
-import type { SeabedTerrain, UnderwaterMap } from "@/types/underwater";
+import type { UnderwaterMap } from "@/types/underwater";
 import type { SpaceSite, WorldSpacesData } from "@/types/world-spaces";
 
-export interface SeaSurface {
-  columns: number;
-  rows: number;
-  heights: number[];
-}
+import { generateSeabed, type SeaSurface } from "./seabed";
+
+export type { SeaSurface } from "./seabed";
+
 export function generateUnderwater(existing: WorldSpacesData, seed: string, surface: SeaSurface): WorldSpacesData {
-  const { columns, rows, heights } = surface,
+  const { columns, rows } = surface,
     size = columns * rows;
-  if (
-    !seed.trim() ||
-    seed.length > 120 ||
-    !Number.isInteger(columns) ||
-    !Number.isInteger(rows) ||
-    columns < 24 ||
-    rows < 24 ||
-    columns > 192 ||
-    rows > 192 ||
-    heights.length !== size ||
-    !Array.from(heights).every(h => Number.isFinite(h) && h >= 0 && h <= 100)
-  )
-    throw new Error("수중 생성 시드와 지상 지형을 확인하세요.");
-  const water = heights.map(h => h < 20);
-  if (water.filter(Boolean).length < 24) throw new Error("수중 지도를 생성할 바다가 부족합니다.");
-  const rng = Alea(`${seed.trim()}:seabed`);
+  const { depths, terrain, features, water } = generateSeabed(seed, surface);
+  const rng = Alea(`${seed.trim()}:aquatic-realms-v2`);
   const neighbors = (i: number) => {
     const x = i % columns,
       y = Math.floor(i / columns),
@@ -37,64 +22,6 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
     if (y < rows - 1) result.push(i + columns);
     return result;
   };
-  // Distance from the actual sampled coastline defines continental shelves and slopes.
-  const distance = Array<number>(size).fill(Infinity),
-    queue: number[] = [];
-  water.forEach((sea, i) => {
-    if (!sea) {
-      distance[i] = 0;
-      queue.push(i);
-    }
-  });
-  for (let p = 0; p < queue.length; p++)
-    for (const n of neighbors(queue[p]))
-      if (distance[n] > distance[queue[p]] + 1) {
-        distance[n] = distance[queue[p]] + 1;
-        queue.push(n);
-      }
-  const phase = rng() * Math.PI * 2;
-  const depths = heights.map((h, i) => {
-    if (!water[i]) return 0;
-    const d = Number.isFinite(distance[i]) ? distance[i] : 12;
-    const shelf = 2.2 + Math.sin((i % columns) * 0.09 + Math.floor(i / columns) * 0.11 + phase) * 0.6;
-    if (d <= shelf) return Math.round(25 + (d / shelf) * 170);
-    if (d < shelf + 4) return Math.round(200 + ((d - shelf) / 4) ** 1.2 * 3000);
-    return Math.round(
-      3600 +
-        (20 - h) * 65 +
-        550 * Math.sin((i % columns) * 0.07 + phase) +
-        400 * Math.cos(Math.floor(i / columns) * 0.12)
-    );
-  });
-  const terrain: SeabedTerrain[] = depths.map(d => (d === 0 ? 0 : d <= 200 ? 1 : d < 3200 ? 2 : 3));
-  const offshore = depths
-    .map((d, i) => ({ d, i }))
-    .filter(p => p.d > 2400)
-    .map(p => p.i);
-  // Seeded tectonic features enrich the world-map bathymetry; they never cross land.
-  for (let feature = 0; feature < 5 && offshore.length; feature++) {
-    const start = offshore[Math.floor(rng() * offshore.length)],
-      angle = rng() * Math.PI * 2;
-    const length = 12 + rng() * Math.min(columns, rows) * 0.45;
-    for (let step = -length / 2; step < length / 2; step += 0.4) {
-      const x = Math.round((start % columns) + Math.cos(angle) * step + Math.sin(step * 0.18) * 2);
-      const y = Math.round(Math.floor(start / columns) + Math.sin(angle) * step);
-      if (x < 0 || y < 0 || x >= columns || y >= rows) continue;
-      const i = y * columns + x;
-      if (depths[i] < 1600 || distance[i] < 3) continue;
-      if (feature % 2 === 0) {
-        terrain[i] = 4;
-        depths[i] = Math.round(6500 + rng() * 4000);
-      } else if (terrain[i] !== 4) {
-        terrain[i] = 5;
-        depths[i] = Math.round(900 + rng() * 1400);
-      }
-    }
-  }
-  for (let i = 0; i < size; i++) {
-    const reef = Math.sin((i % columns) * 0.31 + phase) * Math.sin(Math.floor(i / columns) * 0.23 - phase);
-    if (terrain[i] === 1 && reef > 0.5) terrain[i] = 6;
-  }
 
   const data = structuredClone(existing);
   data.sites = data.sites.filter(s => s.origin !== "underwater" || s.edited);
@@ -174,7 +101,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
       ...point(i),
       depth: depths[i],
       radius: 0.035,
-      terrain: terrain[i] === 6 ? "reef" : terrain[i] === 4 ? "trench" : "plain",
+      terrain: terrain[i] === 6 ? "reef" : [4, 14].includes(terrain[i]) ? "trench" : "plain",
       factionId: faction.id,
       residents: faction.people || profile.people,
       population,
@@ -229,7 +156,9 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
     terrain,
     owners,
     factionIds,
-    view: "combined"
+    view: "combined",
+    geologyVersion: 2,
+    features
   };
   data.underwater = map;
   data.activeSpace = "underwater";
