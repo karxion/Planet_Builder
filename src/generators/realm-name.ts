@@ -53,5 +53,5 @@ export function generateRealmName(seed: string, language: GenerationLanguage = g
 }
 
 export function isDefaultRealmName(name: string): boolean {
-  return ["", "새로운 판타지 행성", "New fantasy planet"].includes(name.trim());
+  return ["", "새로운 판타지 행성", "new fantasy planet"].includes(name.trim().replace(/\s+/g, " ").toLowerCase());
 }

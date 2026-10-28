@@ -70,10 +70,7 @@ async function init(): Promise<void> {
   initLocalEncounters();
   initSettlementTools();
   initUiLanguage();
-  if (isFirstRun && isDefaultRealmName(settings.name)) {
-    settings.name = generateRealmName(settings.seed || crypto.randomUUID());
-    settings.nameGenerated = true;
-  }
+  if (repairDefaultRealmName()) localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   initRpgMapAssets();
   initMapIconGroups();
   initMapTransportStyle();
@@ -273,6 +270,7 @@ function bindEvents(): void {
         settings.name = mapName.value;
         settings.nameGenerated = false;
       }
+      repairDefaultRealmName(typeof seed === "string" ? seed : undefined);
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
       updateForm();
       scheduleAutosave();
@@ -414,6 +412,17 @@ async function generatePlanet(event: SubmitEvent): Promise<void> {
   preparedGenerationName = true;
   // Replacement has already been confirmed; do not mutate settings before a second, cancelable prompt.
   regenerateMap(settings.seed ? { seed: settings.seed } : undefined);
+}
+
+/** Upgrade only old placeholders; loading a real generated or manual name must be stable. */
+function repairDefaultRealmName(mapSeed?: string, savedMapName?: string): boolean {
+  if (!isDefaultRealmName(settings.name)) return false;
+  const hasSavedName = savedMapName !== undefined && !isDefaultRealmName(savedMapName);
+  settings.name = hasSavedName
+    ? savedMapName
+    : generateRealmName(settings.seed || mapSeed || crypto.randomUUID());
+  settings.nameGenerated = !hasSavedName;
+  return true;
 }
 
 function renderPlanetName(): void {
@@ -572,6 +581,15 @@ async function loadProject(project: PlanetProject, snapshot?: RecoverySnapshot):
     await Services.Load.loadMap(new Blob([project.mapPayload], { type: "text/plain" }));
     if (!session.isCurrent(generation)) throw new Error("Project changed during loading");
     settings = structuredClone(project.planet);
+    const mapSeed = project.mapPayload.split(/\r?\n/, 1)[0].split("|")[3];
+    if (repairDefaultRealmName(mapSeed || project.savedAt, mapName.value)) {
+      worldChangedDuringRestore = true;
+      const pending = recoveredDrafts.entries.find(draft => draft.key === "planet-settings");
+      if (pending) {
+        if (pending.values.name === project.planet.name) pending.values.name = settings.name;
+        pending.baseline.name = settings.name;
+      }
+    }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     EditorDrafts.restore(recoveredDrafts.entries);
     Campaign.restore(project.campaign);

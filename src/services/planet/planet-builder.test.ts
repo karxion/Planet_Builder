@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
-import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
+import { DEFAULT_PLANET_SETTINGS as BASE_PLANET_SETTINGS } from "@/types/planet-project";
 import type { RecoverySnapshot } from "./recovery-repository";
 
 const mocks = vi.hoisted(() => ({
@@ -50,6 +50,7 @@ vi.mock("./project-codec", async original => {
 });
 
 const mapPayload = `1.135.0|license|2026-7-12|123|960|540|1\r\nsettings\r\n{}\r\nbiomes\r\nnotes\r\n<svg id="map">${"x".repeat(120)}</svg>`;
+const DEFAULT_PLANET_SETTINGS = { ...BASE_PLANET_SETTINGS, name: "복구 검증 행성" };
 
 describe("Planet persistence integration", () => {
   let builder: typeof import("./planet-builder").PlanetBuilder;
@@ -110,6 +111,7 @@ describe("Planet persistence integration", () => {
 
   const changed = () => window.dispatchEvent(new Event("project:changed"));
   it("generates and synchronizes a Korean realm name for a newly generated map", async () => {
+    document.getElementById("fpb-name-randomize")!.click();
     window.dispatchEvent(new CustomEvent("map:generated", { detail: { seed: "realm-one" } }));
     const first = (await builder.buildProject()).planet;
     expect(first.name).toMatch(/^[가-힣]+$/);
@@ -363,8 +365,8 @@ describe("Planet persistence integration", () => {
       upstreamCommit: "test"
     });
   };
-  const restart = async (records: RecoverySnapshot[]) => {
-    const project = await projectFixture();
+  const restart = async (records: RecoverySnapshot[], restoredProject?: Awaited<ReturnType<typeof projectFixture>>) => {
+    const project = restoredProject ?? (await projectFixture());
     for (const [type, listener, options] of windowEvents.mock.calls)
       window.removeEventListener(type, listener, options);
     for (const [type, listener, options] of documentEvents.mock.calls)
@@ -383,6 +385,73 @@ describe("Planet persistence integration", () => {
     await vi.advanceTimersByTimeAsync(0);
   };
   const lastSaved = () => mocks.save.mock.calls.at(-1)![0] as RecoverySnapshot;
+
+  it("repairs cached placeholder settings even when this is not the first run", async () => {
+    localStorage.setItem("fpb-planet-settings", JSON.stringify({ ...BASE_PLANET_SETTINGS, seed: "cached" }));
+    await restart([]);
+    const planet = (await builder.buildProject()).planet;
+    expect(planet.name).toMatch(/^[가-힣]+$/);
+    expect(planet.nameGenerated).toBe(true);
+    expect(JSON.parse(localStorage.getItem("fpb-planet-settings")!).name).toBe(planet.name);
+    expect(mapName.value).toBe(planet.name);
+    expect(regenerateMap).not.toHaveBeenCalled();
+  });
+
+  it("repairs an old FPB name once using its saved map seed and preserves its map payload", async () => {
+    const project = await projectFixture();
+    project.planet = { ...BASE_PLANET_SETTINGS };
+    mocks.loadMap.mockImplementation(async () => { mapName.value = BASE_PLANET_SETTINGS.name; });
+    await builder.loadProject(project);
+    const repaired = await builder.buildProject();
+    const { generateRealmName } = await import("@/generators/realm-name");
+    expect(repaired.planet.name).toBe(generateRealmName("123", "ko"));
+    expect(repaired.mapPayload).toBe(mapPayload);
+    expect(document.getElementById("fpb-planet-name")!.textContent).toBe(repaired.planet.name);
+    await builder.loadProject(repaired);
+    expect((await builder.buildProject()).planet.name).toBe(repaired.planet.name);
+    expect(regenerateMap).not.toHaveBeenCalled();
+  });
+
+  it("adopts a real saved map name when only the FPB planet metadata is a placeholder", async () => {
+    const project = await projectFixture();
+    project.planet.name = BASE_PLANET_SETTINGS.name;
+    mocks.loadMap.mockImplementation(async () => { mapName.value = "직접 이름 붙인 렐름"; });
+    await builder.loadProject(project);
+    expect((await builder.buildProject()).planet).toMatchObject({ name: "직접 이름 붙인 렐름", nameGenerated: false });
+  });
+
+  it("repairs legacy map placeholders in the selected generation language", async () => {
+    const { setGenerationLanguage } = await import("@/services/generation-language");
+    setGenerationLanguage("en");
+    vi.stubGlobal("seed", "legacy-map");
+    mapName.value = "New fantasy planet";
+    window.dispatchEvent(new Event("map:loaded"));
+    expect((await builder.buildProject()).planet.name).toMatch(/^[A-Z][a-z]+$/);
+    expect(document.getElementById("fpb-planet-name")!.textContent).toBe(mapName.value);
+  });
+
+  it("rewrites the recovery blob after repairing its name while preserving unrelated drafts", async () => {
+    const project = await projectFixture();
+    project.planet.name = BASE_PLANET_SETTINGS.name;
+    mocks.loadMap.mockImplementation(async () => { mapName.value = BASE_PLANET_SETTINGS.name; });
+    await builder.loadProject(project);
+    const radius = document.getElementById("fpb-radius") as HTMLInputElement;
+    radius.value = "8000";
+    radius.dispatchEvent(new Event("input", { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(10_000);
+    const old = lastSaved();
+    old.name = BASE_PLANET_SETTINGS.name;
+    old.drafts!.entries[0].baseline.name = BASE_PLANET_SETTINGS.name;
+    old.drafts!.entries[0].values.name = BASE_PLANET_SETTINGS.name;
+    await restart([old], project);
+    const name = (await builder.buildProject()).planet.name;
+    expect(name).not.toBe(BASE_PLANET_SETTINGS.name);
+    expect(drafts.read("planet-settings")!.radiusKm).toBe("8000");
+    expect(document.querySelector<HTMLInputElement>("#fpb-name")!.value).toBe(name);
+    await vi.advanceTimersByTimeAsync(750);
+    expect(lastSaved().blob).not.toBe(old.blob);
+    expect(lastSaved().name).toBe(name);
+  });
 
   it("restores saved raw settings drafts into a fresh app session without applying them", async () => {
     settingsDraft();

@@ -13,6 +13,7 @@ describe("Realm names", () => {
   it("recognizes only the old blank and placeholder names", () => {
     expect(isDefaultRealmName("새로운 판타지 행성")).toBe(true);
     expect(isDefaultRealmName("New fantasy planet")).toBe(true);
+    expect(isDefaultRealmName("  New   Fantasy Planet  ")).toBe(true);
     expect(isDefaultRealmName("  ")).toBe(true);
     expect(isDefaultRealmName("나의 렐름")).toBe(false);
   });
