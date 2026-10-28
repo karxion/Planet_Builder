@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { synchronizeSpaceContent } from "./space-content";
 import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import { UNDERGROUND_DEPTHS, undergroundLevel } from "@/data/underground";
 import type { HollowEntranceStyle, HollowIllumination, UndergroundMode, UndergroundSurface } from "@/types/underground";
@@ -256,5 +257,6 @@ export function generateUnderground(
     levels
   };
   data.activeSpace = "underground";
+  synchronizeSpaceContent(data);
   return data;
 }

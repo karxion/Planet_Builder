@@ -1,0 +1,183 @@
+{
+  "mode": "built-in image_gen",
+  "commonPrompt": "Use case: stylized-concept. Asset type: isolated transparent PNG modular game prop for a hand-painted fantasy cartography app. Make ONE wide 2:1 landscape sheet showing the SAME single asset twice: LEFT HALF a 35-degree isometric overview; RIGHT HALF a strict vertical 90-degree top-down battle-map view. Each isolated object centered within its equal half with 6% clear transparent margin at all outer edges and the center seam. Both views must show the exact same object design and material. Finely painted fantasy game illustration, convincing tactile surfaces, sharp readable silhouette at 32px, soft light from top-left, very short tight shadow only. Composition is one object in two views, not an atlas of different objects. No ground disk, no pedestal, no badge, no decorative border, no text, no labels, no grid, no watermark, no full environment or scene. Transparent alpha background, no white or checkerboard baked in. Entire objects visible without clipping or overlap at center.",
+  "assets": [
+    {
+      "id": "ST01",
+      "ko": "가지산호 군락",
+      "en": "Branching coral colony",
+      "space": "underwater",
+      "subject": "a compact natural cluster of rose-orange branching coral, turquoise tips"
+    },
+    {
+      "id": "ST03",
+      "ko": "켈프 묶음",
+      "en": "Kelp bundle",
+      "space": "underwater",
+      "subject": "one rooted bundle of tall green-brown ribbon kelp, broad curling leaves, no water or bubbles"
+    },
+    {
+      "id": "ST06",
+      "ko": "열수 분출공",
+      "en": "Hydrothermal vent",
+      "space": "underwater",
+      "subject": "one dark basalt hydrothermal chimney with a short narrow pale mineral plume, ochre mineral crust around the mouth, no surrounding landscape"
+    },
+    {
+      "id": "SR01",
+      "ko": "진주조개 산지",
+      "en": "Pearl oyster cluster",
+      "space": "underwater",
+      "subject": "one natural cluster of three pearl oysters with one open shell revealing a lustrous pearl, grey-violet shell and ivory interior, no ground disk"
+    },
+    {
+      "id": "SR02",
+      "ko": "다금속 단괴 산지",
+      "en": "Polymetallic nodules",
+      "space": "underwater",
+      "subject": "one low natural cluster of six small rounded black and rusty manganese polymetallic nodules, varied dark mineral surfaces, not sacks or ingots"
+    },
+    {
+      "id": "SR03",
+      "ko": "황화광물 노두",
+      "en": "Sulfide mineral outcrop",
+      "space": "underwater",
+      "subject": "one compact angular golden-brown and black sulfide mineral outcrop, natural crusty crystalline ore formation, not refined bars"
+    },
+    {
+      "id": "SS01",
+      "ko": "산호 주택",
+      "en": "Coral house",
+      "space": "underwater",
+      "subject": "one small inhabited underwater coral house, salmon-coral organic masonry, teal shell roof, arched doorway, a few tiny windows, no people and no surrounding town"
+    },
+    {
+      "id": "SS05",
+      "ko": "산호·석재 성벽 구간",
+      "en": "Coral stone wall",
+      "space": "underwater",
+      "subject": "one straight modular underwater wall segment in weathered grey stone with restrained rose coral growth, flat connectable ends, approximately three times longer than thick, no base"
+    },
+    {
+      "id": "SS06",
+      "ko": "수중 성문",
+      "en": "Underwater gate",
+      "space": "underwater",
+      "subject": "one standalone underwater stone-and-coral arched gate, two short supports and a tall open doorway, fits coral stone wall modules, no long walls and no surrounding buildings"
+    },
+    {
+      "id": "UT01",
+      "ko": "석순 무리",
+      "en": "Stalagmite cluster",
+      "space": "underground",
+      "subject": "one compact cluster of five natural pale-grey limestone stalagmites at varied heights, detailed mineral ridges, no cave wall or floor"
+    },
+    {
+      "id": "UT02",
+      "ko": "동굴 석주",
+      "en": "Cave pillar",
+      "space": "underground",
+      "subject": "one thick grey limestone cave pillar, vertically ridged rock column with a broad natural foot and broken top, isolated object without ceiling or floor"
+    },
+    {
+      "id": "UT05",
+      "ko": "거대 버섯",
+      "en": "Giant mushroom",
+      "space": "underground",
+      "subject": "one large fantasy mushroom, thick pale stalk and broad indigo-violet cap with subtle turquoise bioluminescent gills, one object only, no other mushrooms and no ground base"
+    },
+    {
+      "id": "UT09",
+      "ko": "심연 가장자리 구간",
+      "en": "Chasm edge",
+      "space": "underground",
+      "subject": "one long jagged dark basalt rock ledge forming one side of a deep chasm, modular cliff-edge piece with flat back and fractured overhanging front, no opposite shore or bridge, no ground disk"
+    },
+    {
+      "id": "UT10",
+      "ko": "용암 웅덩이",
+      "en": "Lava pool",
+      "space": "underground",
+      "subject": "one small irregular orange molten lava pool bordered by its thin natural crust of black basalt, flat self-contained patch, visible cracks and short restrained glow, no landscape or smoke"
+    },
+    {
+      "id": "UT11",
+      "ko": "지하 샘",
+      "en": "Underground spring",
+      "space": "underground",
+      "subject": "one small natural freshwater spring emerging between three pale limestone rocks, compact turquoise water basin, tiny trickle, no large lake or surrounding ground"
+    },
+    {
+      "id": "UR01",
+      "ko": "철광맥 노출부",
+      "en": "Iron ore outcrop",
+      "space": "underground",
+      "subject": "one natural jagged grey stone outcrop with exposed reddish-brown iron ore seams, mineral veins embedded in rock, no sacks, no refined ingots, no tools"
+    },
+    {
+      "id": "UR04",
+      "ko": "보석 광맥",
+      "en": "Gemstone vein",
+      "space": "underground",
+      "subject": "one jagged dark stone outcrop with embedded clusters of small violet and blue gemstone crystals, natural exposed mineral vein, no refined cut gems, restrained light"
+    },
+    {
+      "id": "UR06",
+      "ko": "암염 결정",
+      "en": "Rock salt crystals",
+      "space": "underground",
+      "subject": "one natural cluster of pale pink and translucent ivory cubic rock salt crystals, chunky halite mineral growth, not a bowl of salt, no surrounding floor"
+    },
+    {
+      "id": "US01",
+      "ko": "암굴 주택",
+      "en": "Cavern house",
+      "space": "underground",
+      "subject": "one small fantasy underground dwelling carved into a compact grey limestone rock face, arched wooden door and two warm tiny windows, subtle turquoise fungus lantern, no town, no cave background"
+    },
+    {
+      "id": "US05",
+      "ko": "지저 성벽 구간",
+      "en": "Underground wall",
+      "space": "underground",
+      "subject": "one straight modular dwarven-style dark basalt masonry wall segment, subdued stone carving and short crenellations, flat connectable ends, three times longer than thick, no ground base"
+    },
+    {
+      "id": "US06",
+      "ko": "지저 성문",
+      "en": "Underground gate",
+      "space": "underground",
+      "subject": "one standalone heavy dark basalt underground fortress gate with open arched passage and two blocky supports, fits dark basalt wall modules, restrained small teal crystal lamps, no surrounding fortress"
+    },
+    {
+      "id": "C01",
+      "ko": "석교 경간",
+      "en": "Stone bridge span",
+      "space": "shared",
+      "subject": "one straight modular medieval stone bridge span, weathered grey limestone, open arched support, low parapets, roughly six times longer than its walking lane width, isolated with no river or chasm backdrop"
+    },
+    {
+      "id": "C02",
+      "ko": "하강 계단 입구",
+      "en": "Descending stair entrance",
+      "space": "shared",
+      "subject": "one compact square ancient stone stairwell entrance descending underground, visible descending steps inside a thick low stone frame, no building or surrounding floor"
+    },
+    {
+      "id": "C04",
+      "ko": "통로 관문 아치",
+      "en": "Passage gateway arch",
+      "space": "shared",
+      "subject": "one standalone ancient stone passage gateway arch with open center, textured grey limestone blocks and a restrained teal crystal keystone, no portal energy disk, no door leaf, no surrounding scenery"
+    }
+  ],
+  "promptOverridesAndEdits": {
+    "ST01": "Use case: stylized-concept. Asset type: isolated transparent PNG game-map module for a hand-painted fantasy map builder. Primary request: branching coral colony, a single compact natural cluster of rose-orange branching corals with a few teal branch tips. Make ONE asset reference sheet, very wide landscape 2:1 composition, showing this EXACT SAME coral object twice: LEFT HALF a 35-degree isometric overview; RIGHT HALF a strict vertical top-down battle-map view. Equal halves, each object centered in its own half, consistent physical design/materials between the views, generous transparent margin at outer edges and the center seam. Rich finely painted fantasy cartography illustration, readable silhouette and tactile natural coral detail; realistic painterly game prop, not cartoon vector. Soft top-left light, very short tight shadow only. No ground disk, no base, no seabed background, no ocean/water, no circular badge or frame, no text, no labels, no grid, no watermark. Truly transparent alpha background. Entire objects visible, no overlap across the central division. These two views are one same asset, not two different assets.",
+    "UT05FramingEdit": "Edit this transparent dual-view game module. Preserve exactly the same mushroom design, indigo cap, turquoise gills, painterly style and both camera viewpoints. Change only framing: scale each mushroom down enough to fit completely inside its own equal half of the image. Leave a clearly empty transparent vertical strip occupying 12% of total width centered on the 50% midpoint; no painted part may enter that strip. Keep a minimum 5% transparent margin around the full image. LEFT is isometric, RIGHT is top-down. No new objects, text, background or frame; preserve actual transparency. The left mushroom cap currently crosses the midpoint: correct that clipping risk by shrinking both views consistently."
+  },
+  "generatedAt": "2026-10-29",
+  "toolCalls": {
+    "new": 24,
+    "framingEdits": 1
+  }
+}

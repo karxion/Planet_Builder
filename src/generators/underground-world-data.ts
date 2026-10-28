@@ -1,9 +1,11 @@
 import type { UndergroundMode } from "@/types/underground";
 import type { WorldSpacesData } from "@/types/world-spaces";
 import { generatedText as gt } from "@/utils/generation-text";
+import { protectSpaceContent } from "./space-content";
 
 export function prepareUndergroundWorld(existing: WorldSpacesData, mode: UndergroundMode) {
   const data = structuredClone(existing);
+  protectSpaceContent(data);
   data.sites = data.sites.filter(site => site.origin !== "underground" || site.edited);
   const ids = new Set(data.sites.map(site => site.id));
   data.links = data.links.filter(link => link.origin !== "underground" && ids.has(link.from) && ids.has(link.to));

@@ -1,3 +1,4 @@
+import { openSpaceContent } from "./space-content";
 import {
   ALL_REFERENCE_OPTIONS,
   MAGIC_ITEM_BY_ID,
@@ -160,6 +161,7 @@ function translateChrome(): void {
 }
 
 export function openItemLibrary(): void {
+  if (openSpaceContent("items")) return;
   const current = Campaign.get();
   if (!current) return;
   if (current !== world) {

@@ -40,6 +40,7 @@ import { createRulesReferences } from "./rules-references";
 import { mountWorldDetail, mountWorldWorkspace, showWorldRecord } from "./world-workspace";
 import { geographyFromTerrain } from "@/generators/unique-item-bonuses";
 import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
+import { openSpaceContent } from "./space-content";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
@@ -466,6 +467,7 @@ function init(): void {
 }
 
 function open(): void {
+  if (openSpaceContent("npcs")) return;
   headquartersPanel?.close(false);
   refresh();
   renderFilters();

@@ -94,6 +94,8 @@ export function readDraftRecovery(
     allowed.set(`space-site:${site.id}`, "name depth population residents factionId radius terrain notes");
   for (const faction of project.worldSpaces?.factions || [])
     allowed.set(`space-faction:${faction.id}`, "name color notes");
+  for (const npc of project.worldSpaces?.content?.npcs || []) allowed.set(`space-npc:${npc.id}`, "name offer notes");
+  for (const item of project.worldSpaces?.content?.items || []) allowed.set(`space-item:${item.id}`, "name notes");
   for (const npc of project.campaign?.npcs || []) allowed.set(`npc:${npc.id}`, npcFields);
   for (const item of project.campaign?.itemLibrary?.items || []) allowed.set(`item:${item.id}`, itemFields);
   for (const treasure of project.campaign?.heritage?.treasures || [])

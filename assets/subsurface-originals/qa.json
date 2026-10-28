@@ -1,0 +1,578 @@
+[
+  {
+    "id": "st01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.548,
+    "leftSolidBBox": [
+      47,
+      69,
+      874,
+      804
+    ],
+    "rightSolidBBox": [
+      64,
+      64,
+      836,
+      825
+    ]
+  },
+  {
+    "id": "st03",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6066,
+    "leftSolidBBox": [
+      94,
+      23,
+      773,
+      865
+    ],
+    "rightSolidBBox": [
+      105,
+      82,
+      797,
+      804
+    ]
+  },
+  {
+    "id": "st06",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.7036,
+    "leftSolidBBox": [
+      298,
+      43,
+      742,
+      841
+    ],
+    "rightSolidBBox": [
+      174,
+      162,
+      728,
+      810
+    ]
+  },
+  {
+    "id": "sr01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5638,
+    "leftSolidBBox": [
+      52,
+      148,
+      844,
+      739
+    ],
+    "rightSolidBBox": [
+      80,
+      111,
+      835,
+      785
+    ]
+  },
+  {
+    "id": "sr02",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6166,
+    "leftSolidBBox": [
+      73,
+      160,
+      857,
+      748
+    ],
+    "rightSolidBBox": [
+      121,
+      180,
+      841,
+      748
+    ]
+  },
+  {
+    "id": "sr03",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6075,
+    "leftSolidBBox": [
+      104,
+      133,
+      813,
+      761
+    ],
+    "rightSolidBBox": [
+      76,
+      151,
+      783,
+      768
+    ]
+  },
+  {
+    "id": "ss01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5849,
+    "leftSolidBBox": [
+      155,
+      43,
+      822,
+      763
+    ],
+    "rightSolidBBox": [
+      114,
+      115,
+      790,
+      795
+    ]
+  },
+  {
+    "id": "ss05",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.7745,
+    "leftSolidBBox": [
+      69,
+      162,
+      835,
+      748
+    ],
+    "rightSolidBBox": [
+      16,
+      423,
+      826,
+      614
+    ]
+  },
+  {
+    "id": "ss06",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6336,
+    "leftSolidBBox": [
+      79,
+      21,
+      786,
+      856
+    ],
+    "rightSolidBBox": [
+      63,
+      124,
+      829,
+      724
+    ]
+  },
+  {
+    "id": "ut01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.7481,
+    "leftSolidBBox": [
+      221,
+      56,
+      744,
+      823
+    ],
+    "rightSolidBBox": [
+      180,
+      256,
+      729,
+      675
+    ]
+  },
+  {
+    "id": "ut02",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6005,
+    "leftSolidBBox": [
+      187,
+      20,
+      771,
+      873
+    ],
+    "rightSolidBBox": [
+      145,
+      138,
+      800,
+      822
+    ]
+  },
+  {
+    "id": "ut05",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.7344,
+    "leftSolidBBox": [
+      146,
+      170,
+      797,
+      741
+    ],
+    "rightSolidBBox": [
+      214,
+      221,
+      783,
+      742
+    ]
+  },
+  {
+    "id": "ut09",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6791,
+    "leftSolidBBox": [
+      45,
+      73,
+      851,
+      816
+    ],
+    "rightSolidBBox": [
+      11,
+      289,
+      850,
+      624
+    ]
+  },
+  {
+    "id": "ut10",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5958,
+    "leftSolidBBox": [
+      41,
+      195,
+      873,
+      716
+    ],
+    "rightSolidBBox": [
+      69,
+      121,
+      846,
+      750
+    ]
+  },
+  {
+    "id": "ut11",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5781,
+    "leftSolidBBox": [
+      123,
+      115,
+      855,
+      789
+    ],
+    "rightSolidBBox": [
+      79,
+      125,
+      769,
+      811
+    ]
+  },
+  {
+    "id": "ur01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5599,
+    "leftSolidBBox": [
+      81,
+      71,
+      864,
+      815
+    ],
+    "rightSolidBBox": [
+      118,
+      118,
+      820,
+      784
+    ]
+  },
+  {
+    "id": "ur04",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6022,
+    "leftSolidBBox": [
+      65,
+      101,
+      851,
+      803
+    ],
+    "rightSolidBBox": [
+      74,
+      194,
+      828,
+      743
+    ]
+  },
+  {
+    "id": "ur06",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5357,
+    "leftSolidBBox": [
+      103,
+      84,
+      803,
+      799
+    ],
+    "rightSolidBBox": [
+      109,
+      89,
+      797,
+      806
+    ]
+  },
+  {
+    "id": "us01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5647,
+    "leftSolidBBox": [
+      76,
+      140,
+      867,
+      758
+    ],
+    "rightSolidBBox": [
+      82,
+      154,
+      822,
+      745
+    ]
+  },
+  {
+    "id": "us05",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.7291,
+    "leftSolidBBox": [
+      50,
+      135,
+      846,
+      771
+    ],
+    "rightSolidBBox": [
+      39,
+      381,
+      845,
+      601
+    ]
+  },
+  {
+    "id": "us06",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6224,
+    "leftSolidBBox": [
+      32,
+      56,
+      857,
+      818
+    ],
+    "rightSolidBBox": [
+      14,
+      241,
+      862,
+      632
+    ]
+  },
+  {
+    "id": "c01",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.7598,
+    "leftSolidBBox": [
+      65,
+      153,
+      866,
+      774
+    ],
+    "rightSolidBBox": [
+      45,
+      356,
+      838,
+      568
+    ]
+  },
+  {
+    "id": "c02",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.5904,
+    "leftSolidBBox": [
+      98,
+      102,
+      858,
+      785
+    ],
+    "rightSolidBBox": [
+      169,
+      155,
+      759,
+      732
+    ]
+  },
+  {
+    "id": "c04",
+    "original": [
+      1774,
+      887
+    ],
+    "deployed": [
+      1182,
+      591
+    ],
+    "transparentFraction": 0.6794,
+    "leftSolidBBox": [
+      110,
+      30,
+      818,
+      856
+    ],
+    "rightSolidBBox": [
+      85,
+      121,
+      814,
+      732
+    ]
+  }
+]

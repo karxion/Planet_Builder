@@ -1,6 +1,8 @@
 import { HOLLOW_REFERENCE_DEPTH, isUndergroundMap, UNDERGROUND_DEPTHS, undergroundIndex } from "@/data/underground";
 import { isUnderwaterMap, SEA_RELATIONS, seabedIndex } from "@/data/underwater";
 import { SITE_KINDS, SPACE_IDS, type SpaceSite, TERRAIN_KINDS, type WorldSpacesData } from "@/types/world-spaces";
+import { spaceCityName, synchronizeSpaceContent } from "@/generators/space-content";
+import { isNpcProgression } from "@/data/campaign-validation";
 
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
@@ -85,6 +87,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
         text(s.residents, 500) &&
         number(s.population, 0, 1e10) &&
         Number.isSafeInteger(s.population) &&
+        (s.capital === undefined || typeof s.capital === "boolean") &&
         text(s.notes) &&
         (s.origin === undefined || s.origin === "underground" || s.origin === "underwater") &&
         (s.edited === undefined || typeof s.edited === "boolean") &&
@@ -95,6 +98,65 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
   if (!unique(value.sites)) return false;
   const sites = new Set(value.sites.map(s => s.id));
   const locations = new Map<string, SpaceSite>(value.sites.map(s => [s.id, s]));
+  if (value.content !== undefined) {
+    const content = value.content;
+    if (
+      !record(content) ||
+      content.version !== 1 ||
+      !Array.isArray(content.npcs) ||
+      !Array.isArray(content.items) ||
+      content.npcs.length > 20000 ||
+      content.items.length > 15000
+    )
+      return false;
+    const contentId = (value: unknown): value is string => text(value, 150) && /^[a-zA-Z0-9:_-]+$/.test(value);
+    const home = (siteId: unknown) =>
+      typeof siteId === "string" &&
+      locations.get(siteId)?.kind === "city" &&
+      locations.get(siteId)?.space !== "surface";
+    if (
+      !content.npcs.every(
+        n =>
+          record(n) &&
+          contentId(n.id) &&
+          home(n.siteId) &&
+          text(n.name, 200) &&
+          n.name.trim() &&
+          text(n.role, 200) &&
+          text(n.people, 500) &&
+          ["trade", "quest", "lore"].includes(n.interaction as string) &&
+          text(n.greeting, 2000) &&
+          text(n.offer, 2000) &&
+          text(n.notes) &&
+          (n.progression === undefined || isNpcProgression(n.progression)) &&
+          typeof n.edited === "boolean"
+      ) ||
+      !unique(content.npcs)
+    )
+      return false;
+    const residents = new Map(content.npcs.map(n => [n.id, n]));
+    if (
+      !content.items.every(
+        i =>
+          record(i) &&
+          contentId(i.id) &&
+          home(i.siteId) &&
+          residents.get(i.npcId)?.siteId === i.siteId &&
+          text(i.name, 200) &&
+          i.name.trim() &&
+          text(i.category, 200) &&
+          ["rare", "veryRare", "legendary"].includes(i.rarity as string) &&
+          Array.isArray(i.effects) &&
+          i.effects.length === ({ rare: 2, veryRare: 3, legendary: 4 } as Record<string, number>)[i.rarity as string] &&
+          i.effects.every(effect => text(effect, 2000)) &&
+          text(i.history) &&
+          text(i.notes) &&
+          typeof i.edited === "boolean"
+      ) ||
+      !unique(content.items)
+    )
+      return false;
+  }
   return (
     Array.from(value.links).every(
       l =>
@@ -132,10 +194,12 @@ export class WorldSpaceStore {
   restore(value?: WorldSpacesData): void {
     if (value !== undefined && !isWorldSpaces(value)) throw new Error("Invalid world spaces");
     this.data = value ? structuredClone(value) : emptyWorldSpaces();
+    synchronizeSpaceContent(this.data);
   }
   update(change: (draft: WorldSpacesData) => void): void {
     const draft = this.snapshot();
     change(draft);
+    synchronizeSpaceContent(draft);
     if (!isWorldSpaces(draft)) throw new Error("도시·세력·연결 정보를 확인해 주세요.");
     this.data = draft;
     this.changed();
@@ -172,15 +236,18 @@ export class WorldSpaceStore {
       throw new Error("공동 세계의 도시는 내부 육지에 배치하세요.");
     const seaDepth = this.data.underwater?.depths[seabedIndex(this.data.underwater, x, y)];
     if (space === "underwater" && seaDepth === 0) throw new Error("수중 장소는 바다 위에 배치하세요.");
+    const siteId = crypto.randomUUID();
     const site: SpaceSite = {
-      id: crypto.randomUUID(),
+      id: siteId,
       space,
       kind,
       x,
       y,
       name:
         kind === "city"
-          ? "새 도시"
+          ? space === "surface"
+            ? "새 도시"
+            : spaceCityName(siteId, space)
           : kind === "territory"
             ? "새 영지"
             : kind === "gateway"

@@ -47,7 +47,7 @@ describe("seabed and aquatic realms", () => {
     expect(data.factions.map(f => f.people)).toContain("사후아긴");
     expect(map.factionIds).toHaveLength(6);
     expect(data.relations).toHaveLength(15);
-    const capitals = data.sites.filter(s => s.name.endsWith("중심도시"));
+    const capitals = data.sites.filter(s => s.kind === "city" && s.capital);
     expect(capitals).toHaveLength(6);
     for (const site of data.sites) expect(map.depths[seabedIndex(map, site.x, site.y)]).toBe(site.depth);
     for (const link of data.links) {

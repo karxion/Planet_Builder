@@ -1,5 +1,6 @@
 import type { UndergroundMap } from "./underground";
 import type { SeaRelation, UnderwaterMap } from "./underwater";
+import type { NpcProgression } from "./campaign-world";
 
 export const SPACE_IDS = ["surface", "underwater", "underground"] as const;
 export type WorldSpace = (typeof SPACE_IDS)[number];
@@ -31,6 +32,7 @@ export interface SpaceSite {
   factionId?: string;
   residents: string;
   population: number;
+  capital?: boolean;
   notes: string;
   origin?: "underground" | "underwater";
   /** Edited generated places survive explicit space regeneration. */
@@ -56,4 +58,36 @@ export interface WorldSpacesData {
   underground?: UndergroundMap;
   underwater?: UnderwaterMap;
   relations?: SeaRelation[];
+  content?: SpaceContent;
+}
+
+export interface SpaceNpc {
+  id: string;
+  siteId: string;
+  name: string;
+  role: string;
+  people: string;
+  interaction: "trade" | "quest" | "lore";
+  greeting: string;
+  offer: string;
+  notes: string;
+  edited: boolean;
+  progression?: NpcProgression;
+}
+export interface SpaceItem {
+  id: string;
+  siteId: string;
+  npcId: string;
+  name: string;
+  category: string;
+  rarity: "rare" | "veryRare" | "legendary";
+  effects: string[];
+  history: string;
+  notes: string;
+  edited: boolean;
+}
+export interface SpaceContent {
+  version: 1;
+  npcs: SpaceNpc[];
+  items: SpaceItem[];
 }

@@ -8,6 +8,7 @@ import type { UndergroundCell } from "@/types/underground";
 import { SITE_KINDS, SPACE_IDS, type SpaceSiteKind, TERRAIN_KINDS, type WorldSpace } from "@/types/world-spaces";
 import { mountUndergroundTools } from "./underground-tools";
 import { mountSeaDiplomacy, mountUnderwaterTools } from "./underwater-tools";
+import { openSpaceContent } from "./space-content";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -214,6 +215,13 @@ function renderPanel(): void {
       renderPanel();
     };
     if (site) {
+      if (site.kind === "city" && site.space !== "surface") {
+        const records = document.createElement("button");
+        records.type = "button";
+        records.textContent = text("이 도시의 NPC·아이템", "NPCs / items in this city");
+        records.onclick = () => openSpaceContent("npcs", site.id);
+        content.prepend(records);
+      }
       const form = content.querySelector<HTMLFormElement>("form")!;
       if (site.space === "underground" && data.underground) {
         const elevations = data.underground.levels.find(l => l.id === data.underground!.activeLevel)?.elevations;
@@ -381,6 +389,10 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
   panel = document.createElement("aside");
   panel.id = "fpb-space-panel";
   panel.hidden = true;
+  window.addEventListener("space:focus-site", event => {
+    const id = (event as CustomEvent<unknown>).detail;
+    if (typeof id === "string") void travel(id);
+  });
   panel.dataset.i18nSkip = "";
   document.body.append(panel);
   const button = document.createElement("button");

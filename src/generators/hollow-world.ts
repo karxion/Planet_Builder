@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { synchronizeSpaceContent } from "./space-content";
 import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import { HOLLOW_REFERENCE_DEPTH } from "@/data/underground";
 import type { UndergroundCell } from "@/types/underground";
@@ -262,5 +263,6 @@ export function generateHollowWorld(
     levels: [{ id: "upper", cells, elevations }]
   };
   data.activeSpace = "underground";
+  synchronizeSpaceContent(data);
   return data;
 }

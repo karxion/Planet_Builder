@@ -2,6 +2,7 @@ import { siteInActiveLevel, undergroundLabel, undergroundLevel, undergroundModeL
 import type { SpaceSite, WorldSpace, WorldSpacesData } from "@/types/world-spaces";
 import { drawUndergroundTerrain } from "./underground-map";
 import { drawUnderwaterTerrain } from "./underwater-map";
+import { subsurfaceDefs, subsurfaceMarker, subsurfaceScenery } from "./subsurface-assets";
 
 const NS = "http://www.w3.org/2000/svg";
 const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
@@ -25,6 +26,7 @@ export function drawWorldSpaces(input: {
   const { parent, data, width, height, selected, labels } = input;
   parent.querySelector("#fpb-world-spaces")?.remove();
   const root = element("g", { id: "fpb-world-spaces", "data-space": data.activeSpace });
+  if (data.activeSpace !== "surface") root.append(subsurfaceDefs());
   if (data.activeSpace !== "surface") {
     root.append(element("rect", { width, height, fill: data.activeSpace === "underwater" ? "#102f42" : "#201d2b" }));
     if (input.landMask)
@@ -39,6 +41,7 @@ export function drawWorldSpaces(input: {
   if (underground) root.append(drawUndergroundTerrain(underground, width, height));
   const underwater = data.activeSpace === "underwater" ? data.underwater : undefined;
   if (underwater) root.append(drawUnderwaterTerrain(underwater, data.factions, width, height));
+  if (data.activeSpace !== "surface") root.append(subsurfaceScenery(data, width, height));
   const sites = data.sites.filter(s => siteInActiveLevel(s, data));
   const point = (s: SpaceSite) => [s.x * width, s.y * height];
   const labelBounds: { x: number; y: number; width: number; height: number }[] = [];
@@ -127,8 +130,8 @@ export function drawWorldSpaces(input: {
       root.append(portal);
     }
   }
-  const priority = (site: SpaceSite) => (site.kind === "gateway" ? 0 : site.kind === "city" ? 1 : 2);
-  for (const site of underground ? [...sites].sort((a, b) => priority(a) - priority(b)) : sites) {
+  const priority = (site: SpaceSite) => (site.kind === "city" ? 0 : site.kind === "gateway" ? 1 : 2);
+  for (const site of [...sites].sort((a, b) => priority(a) - priority(b))) {
     if (underground && site.origin === "underground" && site.kind === "territory") continue;
     const [x, y] = point(site);
     const group = element("g", {
@@ -162,7 +165,27 @@ export function drawWorldSpaces(input: {
               }
         )
       );
-    const bounds = { x: x + 7, y: y - 17, width: [...site.name].length * 10, height: 14 };
+    if (data.activeSpace !== "surface" && (site.kind === "city" || site.kind === "gateway")) {
+      group.append(
+        subsurfaceMarker(
+          site.kind === "gateway" ? "c04" : site.space === "underwater" ? "ss01" : "us01",
+          x,
+          y - 4,
+          site.kind === "city" ? 36 : 28
+        )
+      );
+      if (site.kind === "city") {
+        group.append(subsurfaceMarker(site.space === "underwater" ? "ss05" : "us05", x - 14, y + 6, 20));
+        group.append(subsurfaceMarker(site.space === "underwater" ? "ss06" : "us06", x + 14, y + 6, 20));
+      }
+    }
+    const labelY = site.kind === "city" ? y + 25 : site.kind === "territory" ? y + 45 : y - 6;
+    const bounds = {
+      x: site.kind === "city" ? x - [...site.name].length * 3.5 : x + 7,
+      y: labelY - 11,
+      width: [...site.name].length * 7,
+      height: 14
+    };
     const overlaps = labelBounds.some(
       other =>
         bounds.x < other.x + other.width + 3 &&
@@ -170,14 +193,18 @@ export function drawWorldSpaces(input: {
         bounds.y < other.y + other.height + 3 &&
         bounds.y + bounds.height + 3 > other.y
     );
-    if (!(underground && site.origin === "underground" && site.kind === "terrain" && overlaps)) {
+    if (!((site.kind === "terrain" || site.kind === "territory") && overlaps)) {
       labelBounds.push(bounds);
       group.append(
         element(
           "text",
           {
-            x: x + 7,
-            y: y - 6,
+            x: site.kind === "city" ? x : x + 7,
+            y: labelY,
+            "text-anchor": site.kind === "city" ? "middle" : "start",
+            "data-space-city-label": site.kind === "city" ? site.id : "",
+            "font-family": "Arial, Malgun Gothic, sans-serif",
+            "font-weight": site.kind === "city" ? 700 : 400,
             fill: "#f8edca",
             stroke: "#18201e",
             "stroke-width": 3,

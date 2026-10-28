@@ -5,6 +5,7 @@ import type { UnderwaterMap } from "@/types/underwater";
 import type { SpaceSite, WorldSpacesData } from "@/types/world-spaces";
 
 import { generateSeabed, type SeaSurface } from "./seabed";
+import { protectSpaceContent, spaceCityName, synchronizeSpaceContent } from "./space-content";
 
 export type { SeaSurface } from "./seabed";
 
@@ -25,6 +26,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
   };
 
   const data = structuredClone(existing);
+  protectSpaceContent(data);
   data.sites = data.sites.filter(s => s.origin !== "underwater" || s.edited);
   const kept = new Set(data.sites.map(s => s.id));
   data.links = data.links.filter(l => l.origin !== "underwater" && kept.has(l.from) && kept.has(l.to));
@@ -112,10 +114,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
       id: `${prefix}city:${n}:${capital ? 0 : 1}`,
       space: "underwater",
       kind: "city",
-      name: gf("{name} {kind}", "{name} {kind}", {
-        name: faction.name.slice(0, 90),
-        kind: gt(capital ? "중심도시" : "교역항")
-      }),
+      name: spaceCityName(`${seed}:${n}:${capital ? 0 : 1}`, "underwater"),
       ...point(i),
       depth: depths[i],
       radius: 0.035,
@@ -123,6 +122,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
       factionId: faction.id,
       residents: faction.people || gt(profile.people),
       population,
+      capital,
       notes: gt("해저 거주지 · 깊이는 해수면 아래 바닥 수심"),
       origin: "underwater",
       edited: false
@@ -182,5 +182,6 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
   };
   data.underwater = map;
   data.activeSpace = "underwater";
+  synchronizeSpaceContent(data);
   return data;
 }
