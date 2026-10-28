@@ -194,7 +194,17 @@ export class WorldSpaceStore {
   restore(value?: WorldSpacesData): void {
     if (value !== undefined && !isWorldSpaces(value)) throw new Error("Invalid world spaces");
     this.data = value ? structuredClone(value) : emptyWorldSpaces();
+    const previousNames = this.data.sites.map(site => site.name);
+    const previousNpcs = this.data.content?.npcs.length || 0,
+      previousItems = this.data.content?.items.length || 0;
     synchronizeSpaceContent(this.data);
+    if (
+      value &&
+      (previousNpcs !== (this.data.content?.npcs.length || 0) ||
+        previousItems !== (this.data.content?.items.length || 0) ||
+        this.data.sites.some((site, i) => site.name !== previousNames[i]))
+    )
+      this.changed();
   }
   update(change: (draft: WorldSpacesData) => void): void {
     const draft = this.snapshot();

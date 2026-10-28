@@ -26,6 +26,18 @@ const project = () =>
   });
 
 describe("shared-coordinate world spaces", () => {
+  it("marks old-file content backfill dirty so recovery never reuses the pre-migration blob", () => {
+    const legacy = populated().store.snapshot();
+    delete legacy.content;
+    const notify = vi.fn(),
+      store = new WorldSpaceStore(notify);
+    store.restore(legacy);
+    expect(notify).toHaveBeenCalledOnce();
+    expect(store.snapshot().content!.npcs).toHaveLength(4);
+    notify.mockClear();
+    store.restore(store.snapshot());
+    expect(notify).not.toHaveBeenCalled();
+  });
   it("supports overlapping cities at different depths and spaces without sharing IDs", () => {
     const { store, a, b } = populated();
     expect(a.id).not.toBe(b.id);
