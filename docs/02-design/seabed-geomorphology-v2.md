@@ -33,6 +33,8 @@
 
 ## 웹 자료 확인 상태
 
+2026-10-28 19:57 KST 재접속에서도 기관/논문 검색 6건은 모두 실패했다. 현재 정책과 저장 초안의 차이, 지저 참고 링크를 포함한 8개 주소의 [재검수 기록](../04-report/reference-access-recheck-2026-10-28.md)을 추가했다. 원문 대조 완료 상태로 바꾸지 않는다.
+
 사용자가 요청한 논문·기관 자료 조회를 시도했으나, 현재 클라우드 HTTP 정책이 대상 도메인을 허용하지 않아 모두 403으로 차단되었다. **이 문서의 지형학 설명은 사용자 제공 기준과 일반 지형학 지식에 기반하며, 아래 자료를 읽고 검증했다고 주장하지 않는다.** 추가 지형인 선상지·구릉·단열대의 논문 대조도 미완료다.
 
 조회 대상(미열람): NOAA Ocean Exploration의 해산/협곡 설명, IHO 표준 목록, USGS *This Dynamic Earth*, Crossref의 `Geomorphology of the oceans` 및 `Global distribution of large submarine canyons` 제목 검색. 검색 결과나 논문 초록을 실제 수신하지 못했으므로 DOI·논문 결론을 검증된 인용으로 기재하지 않았다.

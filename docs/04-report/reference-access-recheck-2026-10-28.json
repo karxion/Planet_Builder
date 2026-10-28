@@ -1,0 +1,133 @@
+{
+  "attemptedAt": "2026-10-28T10:57:22.484Z",
+  "recordedAt": "2026-10-28T10:59:55.796Z",
+  "displayTimezone": "Asia/Seoul",
+  "uniqueSourceCount": 8,
+  "retrievedSourceCount": 0,
+  "results": [
+    {
+      "id": "noaa-seamounts",
+      "url": "https://oceanexplorer.noaa.gov/facts/seamounts.html",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "noaa-canyons",
+      "url": "https://oceanexplorer.noaa.gov/facts/submarine-canyons.html",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "iho-standards",
+      "url": "https://iho.int/en/standards-and-specifications",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "usgs-dynamic-earth",
+      "url": "https://pubs.usgs.gov/gip/dynamic/dynamic.html",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "crossref-geomorphology",
+      "url": "https://api.crossref.org/works?query.title=Geomorphology%20of%20the%20oceans&rows=3",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "crossref-canyons",
+      "url": "https://api.crossref.org/works?query.title=Global%20distribution%20of%20large%20submarine%20canyons&rows=3",
+      "status": "unavailable",
+      "reason": "curl: (22) The requested URL returned error: 403"
+    },
+    {
+      "id": "namu-underdark",
+      "url": "https://namu.wiki/w/%EC%96%B8%EB%8D%94%EB%8B%A4%ED%81%AC",
+      "status": "unavailable",
+      "reason": "curl: (56) CONNECT tunnel failed, response 403",
+      "originHttpStatus": null
+    },
+    {
+      "id": "fmkorea-agartha",
+      "url": "https://m.fmkorea.com/8008775376",
+      "status": "unavailable",
+      "reason": "curl: (56) CONNECT tunnel failed, response 403",
+      "originHttpStatus": null
+    }
+  ],
+  "proxyDiagnostics": [
+    {
+      "id": "noaa-seamounts",
+      "proxyHeaders": [
+        "HTTP/1.1 403 Forbidden",
+        "content-length: 16",
+        "content-type: text/plain",
+        "date: Wed, 28 Oct 2026 10:57:49 GMT",
+        "server: envoy",
+        "connection: close"
+      ],
+      "curlExitCode": 56,
+      "curlHttpCode": "000",
+      "originHttpStatus": null,
+      "failurePhase": "proxy-connect",
+      "reason": "curl: (56) CONNECT tunnel failed, response 403"
+    },
+    {
+      "id": "namu-underdark",
+      "proxyHeaders": [
+        "HTTP/1.1 403 Forbidden",
+        "content-length: 16",
+        "content-type: text/plain",
+        "date: Wed, 28 Oct 2026 10:57:49 GMT",
+        "server: envoy",
+        "connection: close"
+      ],
+      "curlExitCode": 56,
+      "curlHttpCode": "000",
+      "originHttpStatus": null,
+      "failurePhase": "proxy-connect",
+      "reason": "curl: (56) CONNECT tunnel failed, response 403"
+    },
+    {
+      "id": "fmkorea-agartha",
+      "proxyHeaders": [
+        "HTTP/1.1 403 Forbidden",
+        "content-length: 16",
+        "content-type: text/plain",
+        "date: Wed, 28 Oct 2026 10:57:49 GMT",
+        "server: envoy",
+        "connection: close"
+      ],
+      "curlExitCode": 56,
+      "curlHttpCode": "000",
+      "originHttpStatus": null,
+      "failurePhase": "proxy-connect",
+      "reason": "curl: (56) CONNECT tunnel failed, response 403"
+    }
+  ],
+  "environmentObservation": {
+    "observationsCurrent": true,
+    "connectivity": "connected",
+    "networkPolicyState": "enforced",
+    "appliedCustomAllowedHosts": [],
+    "draftRevision": 3,
+    "draftAllowedHosts": [
+      "api.crossref.org",
+      "iho.int",
+      "m.fmkorea.com",
+      "namu.wiki",
+      "oceanexplorer.noaa.gov",
+      "oceanservice.noaa.gov",
+      "pubs.usgs.gov",
+      "www.frontiersin.org"
+    ],
+    "draftMatchesAppliedCustomHosts": false
+  },
+  "contentReviewCompleted": false,
+  "notes": [
+    "No source body or Crossref metadata was retrieved.",
+    "Proxy diagnostic requests are separate from the original six collector requests.",
+    "No network configuration or application code was changed."
+  ]
+}
