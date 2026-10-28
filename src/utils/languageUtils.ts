@@ -30,6 +30,7 @@ export const trimVowels = (string: string, minLength: number = 3) => {
  * @returns The adjective form of the noun.
  */
 export const getAdjective = (nounToBeAdjective: string) => {
+  if (/[가-힣]/.test(nounToBeAdjective)) return nounToBeAdjective;
   const adjectivizationRules = [
     {
       name: "guo",

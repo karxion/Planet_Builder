@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt } from "@/utils/generation-text";
 import { max } from "d3";
 import { ensureEl, gauss, generateSeed, getMixedColor, getPolesOfInaccessibility, P, rand } from "../utils";
 
@@ -115,7 +116,7 @@ class ProvinceModule {
         const c = stateBurgs[i].culture!;
         const nameByBurg = P(0.5);
         const name = nameByBurg ? stateBurgs[i].name! : Names.getState(Names.getCultureShort(c), c);
-        const formName = "영지";
+        const formName = gt("영지");
         const fullName = `${name} ${formName}`;
         const color = getMixedColor(s.color!);
         const kinship = nameByBurg ? 0.8 : 0.4;
@@ -257,7 +258,7 @@ class ProvinceModule {
           return Names.getState(Names.getCultureShort(c), c);
         })();
 
-        const formName = "영지";
+        const formName = gt("영지");
 
         const fullName = `${name} ${formName}`;
 

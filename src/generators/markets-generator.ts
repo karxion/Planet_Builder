@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt } from "@/utils/generation-text";
 import { quadtree } from "d3-quadtree";
 import { minmax } from "../utils";
 import { getColors, getRandomColor } from "../utils/colorUtils";
@@ -248,7 +249,7 @@ export class MarketsModule {
 
   // Display name: the custom name if set, otherwise derived from the center burg.
   public getName(market: Market): string {
-    return market.name || pack.burgs[market.centerBurgId]?.name || `Market ${market.i}`;
+    return market.name || pack.burgs[market.centerBurgId]?.name || `${gt("Market")} ${market.i}`;
   }
 
   addMarket(burgId: number): Market | null {

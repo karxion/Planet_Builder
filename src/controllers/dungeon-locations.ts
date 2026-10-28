@@ -11,6 +11,7 @@ import { defaultAdventureSettings, isAdventureSettings } from "@/generators/adve
 import { clearMapIconGroups } from "@/renderers/map-icon-groups";
 import { escapeAttribute, rpgIconPreview } from "@/renderers/rpg-asset-renderer";
 import { getUiLanguage, t } from "@/services/ui-language";
+import { generatedText as gt } from "@/utils/generation-text";
 import type { AdventureSettings } from "@/types/adventure-site";
 import { initDungeonInterior, openDungeonInteriorMap } from "./dungeon-interior";
 
@@ -47,7 +48,7 @@ function render(): void {
               const monster = site && ADVENTURE_MONSTER_BY_ID.get(site.monsterId)!;
               const description =
                 site && monster && theme
-                  ? `${theme.name} · ${t(CREATURE_TYPES[monster.type])} · ${monster.name} · CR ${monster.cr} · ${site.inhabitants}${text(" creatures (est.)", "개체 추정")} · ${site.cleared ? text("Cleared", "공략 완료") : text("Active", "활성")}`
+                  ? `${gt(theme.name, getUiLanguage())} · ${t(CREATURE_TYPES[monster.type])} · ${gt(monster.name, getUiLanguage())} · CR ${monster.cr} · ${site.inhabitants}${text(" creatures (est.)", "개체 추정")} · ${site.cleared ? text("Cleared", "공략 완료") : text("Active", "활성")}`
                   : text("Legacy marker · no theme data", "기존 표식 · 테마 정보 없음");
               return `<div class="fpb-dungeon-row">${rpgIconPreview(marker.icon)}<div><strong>${escapeAttribute(name)}</strong>
         <small>${escapeAttribute(state?.name || text("Wilderness", "미개척지"))} · ${marker.x}, ${marker.y}</small><small>${escapeAttribute(description)}</small>${monster ? `<a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD ${monster.edition} · CR ${monster.cr} · p.${monster.page}</a>` : ""}${site ? `<label><input type="checkbox" data-cleared="${marker.i}" ${site.cleared ? "checked" : ""}>${text("Cleared", "공략 완료")}</label>` : ""}<label><input type="checkbox" data-lock="${marker.i}" ${marker.lock ? "checked" : ""}>${text("Preserve on regeneration", "재생성 시 보존")}</label></div>

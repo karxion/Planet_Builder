@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import { TREASURE_FORMS } from "@/data/magic-item-references";
 import {
   ALIGNMENT_TENETS,
@@ -39,20 +40,33 @@ function createTreasure(
     stateId,
     ownerType,
     ...(settlementId ? { settlementId } : {}),
-    name: `${placeName}의 ${TREASURE_EPITHETS[slot]} · ${TREASURE_FORMS[reference.reference.category]}`,
+    name: gf("{place}의 {epithet} · {form}", "{epithet} of {place} · {form}", {
+      place: placeName,
+      epithet: gt(TREASURE_EPITHETS[slot]),
+      form: gt(TREASURE_FORMS[reference.reference.category])
+    }),
     rarity,
     unique: true,
     power: "",
-    symbolism: motif.symbolism,
-    rpEffect: `이 보물을 공식적으로 위탁받은 자는 '${motif.symbolism}'의 계승자로 인정받으며 공개 행사와 외교에서 그 전통을 지킬 책임을 진다`,
-    history: {
-      military: ["국경 전쟁에서 병사들을 지킨 대장장이의 유작이다", "수호의 맹세를 새겨 전열에 수여한 보물이다"],
-      arcane: ["고대 마력 봉인 의식을 위해 제작한 실험작이다", "먼 차원의 탐험에서 돌아온 마법사가 남긴 보물이다"],
-      theocratic: ["신전의 제의에서 축복을 받아 탄생한 보물이다", "재난의 희생자를 구호한 성직자를 기려 제작했다"],
-      nature: ["숲을 지키겠다는 맹세를 담아 만든 보물이다", "위험한 순례 여정에서 길잡이가 남긴 상징품이다"],
-      mercantile: ["먼바다 항해의 성공을 기념해 제작한 보물이다", "교역로의 구호 활동을 도운 상단의 기념품이다"],
-      balanced: ["국가가 선대의 맹세를 기리며 보존해 온 보물이다", "장인의 가문이 선대의 기술을 계승해 만든 상징품이다"]
-    }[archetype][Math.floor(random() * 2)],
+    symbolism: gt(motif.symbolism),
+    rpEffect: gf(
+      "이 보물을 공식적으로 위탁받은 자는 '{symbolism}'의 계승자로 인정받으며 공개 행사와 외교에서 그 전통을 지킬 책임을 진다",
+      "The entrusted bearer is recognized as the heir to '{symbolism}' and must uphold that tradition in public ceremonies and diplomacy",
+      { symbolism: gt(motif.symbolism) }
+    ),
+    history: gt(
+      {
+        military: ["국경 전쟁에서 병사들을 지킨 대장장이의 유작이다", "수호의 맹세를 새겨 전열에 수여한 보물이다"],
+        arcane: ["고대 마력 봉인 의식을 위해 제작한 실험작이다", "먼 차원의 탐험에서 돌아온 마법사가 남긴 보물이다"],
+        theocratic: ["신전의 제의에서 축복을 받아 탄생한 보물이다", "재난의 희생자를 구호한 성직자를 기려 제작했다"],
+        nature: ["숲을 지키겠다는 맹세를 담아 만든 보물이다", "위험한 순례 여정에서 길잡이가 남긴 상징품이다"],
+        mercantile: ["먼바다 항해의 성공을 기념해 제작한 보물이다", "교역로의 구호 활동을 도운 상단의 기념품이다"],
+        balanced: [
+          "국가가 선대의 맹세를 기리며 보존해 온 보물이다",
+          "장인의 가문이 선대의 기술을 계승해 만든 상징품이다"
+        ]
+      }[archetype][Math.floor(random() * 2)]
+    ),
     notes: "",
     edited: false
   };
@@ -79,12 +93,18 @@ function createReligion(
   return {
     id,
     stateId,
-    name: `${countryName} ${motif.name} 교단`,
-    symbol: motif.symbol,
+    name: gf("{country} {motif} 교단", "{country} Order of {motif}", { country: countryName, motif: gt(motif.name) }),
+    symbol: gt(motif.symbol),
     alignment,
-    deityName: `${DEITY_NAMES[Math.floor(random() * DEITY_NAMES.length)]}, ${motif.name}의 신`,
+    deityName: gf("{deity}, {motif}의 신", "{deity}, deity of {motif}", {
+      deity: gt(DEITY_NAMES[Math.floor(random() * DEITY_NAMES.length)]),
+      motif: gt(motif.name)
+    }),
     deityRank: ranks[Math.floor(random() * ranks.length)],
-    doctrine: `${motif.name}의 신성함을 기리며 ${ALIGNMENT_TENETS[alignment]}.`,
+    doctrine: gf("{motif}의 신성함을 기리며 {tenet}.", "Honors the sanctity of {motif} and {tenet}.", {
+      motif: gt(motif.name),
+      tenet: gt(ALIGNMENT_TENETS[alignment])
+    }),
     headquartersId,
     notes: "",
     edited: false

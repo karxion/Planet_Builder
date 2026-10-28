@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedTemplate as gf, generatedText as gt } from "@/utils/generation-text";
 import {
   ALL_REFERENCE_OPTIONS,
   CATEGORY_WEIGHTS,
@@ -46,7 +47,15 @@ export function chooseItemReference(
 }
 
 export function referencePowerSummary(option: ReferenceOption): string {
-  return `${MAGIC_ITEM_CATEGORIES[option.reference.category]} · ${option.reference.name}${option.variant ? ` (${option.variant})` : ""} · ${option.reference.edition}. 원본의 핵심 효과·행동 비용·충전·재충전·저주·제약은 선택한 판본과 하위형을 따릅니다. RP 상징성은 추가 전투 효과를 자동 부여하지 않습니다.`;
+  return gf(
+    "{category} · {reference} · {edition}. 원본의 핵심 효과·행동 비용·충전·재충전·저주·제약은 선택한 판본과 하위형을 따릅니다. RP 상징성은 추가 전투 효과를 자동 부여하지 않습니다.",
+    "{category} · {reference} · {edition}. Core effects, action costs, charges, recharge, curses and restrictions follow the selected edition and variant. RP symbolism does not automatically grant additional combat effects.",
+    {
+      category: gt(MAGIC_ITEM_CATEGORIES[option.reference.category]),
+      reference: `${option.reference.name}${option.variant ? ` (${option.variant})` : ""}`,
+      edition: option.reference.edition
+    }
+  );
 }
 
 export function applyItemReference(

@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import { MAJOR_NPC_GOALS } from "@/data/npc-progression";
 import type { AdministrativeUnit, CampaignWorld, NpcTemplateId, WorldNpc } from "@/types/campaign-world";
 import {
@@ -53,7 +54,14 @@ export function buildAdministration(input: AdministrativeSnapshot): Administrati
     const villages = input.villages.filter(v => v.stateId === state.id);
     const fiefs = input.fiefs.filter(f => f.stateId === state.id).sort((a, b) => a.id - b.id);
     if (villages.some(v => !fiefs.some(f => f.id === v.fiefId))) {
-      fiefs.push({ id: 0, stateId: state.id, name: `${state.name} 직할령`, x: state.x, y: state.y, neighbors: [] });
+      fiefs.push({
+        id: 0,
+        stateId: state.id,
+        name: gf("{name} 직할령", "{name} Crownlands", { name: state.name }),
+        x: state.x,
+        y: state.y,
+        neighbors: []
+      });
     }
     const remaining = new Map(fiefs.map(f => [f.id, f]));
     while (remaining.size) {
@@ -74,7 +82,7 @@ export function buildAdministration(input: AdministrativeSnapshot): Administrati
         level: "region",
         sourceId: first.id,
         stateId: state.id,
-        name: `${first.name.replace(/ 영지$/, "")} 지역`,
+        name: gf("{name} 지역", "{name} Region", { name: first.name.replace(/ 영지$| Fief$/, "") }),
         parentId: countryId,
         x: first.x,
         y: first.y
@@ -171,13 +179,16 @@ export function generateVillageNpcs(
     return {
       id,
       villageId: `village:${village.id}`,
-      name: `${pick(firstNames)} ${pick(lastNames)}`,
-      role: professionRole,
+      name: `${gt(pick(firstNames))} ${gt(pick(lastNames))}`,
+      role: gt(professionRole),
       templateId,
-      appearance: pick(appearances),
-      personality: pick(personalities),
-      goal: `${village.name}에서 ${pick(progression.scope === "settlement" ? goals : MAJOR_NPC_GOALS[progression.scope])}`,
-      secret: pick(secrets),
+      appearance: gt(pick(appearances)),
+      personality: gt(pick(personalities)),
+      goal: gf("{place}에서 {goal}", "In {place}: {goal}", {
+        place: village.name,
+        goal: gt(pick(progression.scope === "settlement" ? goals : MAJOR_NPC_GOALS[progression.scope]))
+      }),
+      secret: gt(pick(secrets)),
       notes: "",
       edited: false,
       progression
@@ -297,6 +308,8 @@ export function synchronizeNpcPlaceNames(
     if (npc.edited) return npc;
     const newName = currentNames.get(npc.villageId);
     const previousName = previousNames.get(npc.villageId);
+    if (newName && previousName && newName !== previousName && npc.goal.startsWith(`In ${previousName}: `))
+      return { ...npc, goal: `In ${newName}: ${npc.goal.slice(previousName.length + 5)}` };
     const prefix = npc.goal.match(/^(.*?)에서 /)?.[1];
     if (!newName || !prefix || prefix === newName) return npc;
     if (prefix !== previousName && !/[a-z]/i.test(prefix)) return npc;

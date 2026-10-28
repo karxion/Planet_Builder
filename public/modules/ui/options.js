@@ -659,7 +659,7 @@ function setRendering(value) {
 // generate current year and era name
 function generateEra() {
   if (!stored("year")) yearInput.value = rand(100, 2000); // current year
-  if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
+  if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " " + (window.fpbGeneratedText?.("Era") || "Era");
   options.year = +yearInput.value;
   options.era = eraInput.value;
   options.eraShort = options.era
@@ -670,7 +670,7 @@ function generateEra() {
 
 function regenerateEra() {
   unlock("era");
-  options.era = eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
+  options.era = eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " " + (window.fpbGeneratedText?.("Era") || "Era");
   options.eraShort = options.era
     .split(" ")
     .map(w => w[0].toUpperCase())

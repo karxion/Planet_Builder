@@ -39,6 +39,7 @@ import { createHeritagePanel, type HeritageView } from "./realm-heritage";
 import { createRulesReferences } from "./rules-references";
 import { mountWorldDetail, mountWorldWorkspace, showWorldRecord } from "./world-workspace";
 import { geographyFromTerrain } from "@/generators/unique-item-bonuses";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 
 let campaign: CampaignWorld | undefined;
 let selectedNpc = "";
@@ -108,7 +109,7 @@ function snapshot(): AdministrativeSnapshot {
         const [x, y] = pack.cells.p[s.center] || [graphWidth / 2, graphHeight / 2];
         return {
           id: s.i,
-          name: s.i ? s.fullName || s.name : "무소속",
+          name: s.i ? s.fullName || s.name : gt("무소속"),
           x,
           y,
           government: `${s.form || ""} ${s.formName || ""} ${s.fullName || ""}`,
@@ -120,7 +121,14 @@ function snapshot(): AdministrativeSnapshot {
       .filter(p => p?.i && !p.removed)
       .map(p => {
         const [x, y] = pack.cells.p[p.center] || [0, 0];
-        return { id: p.i, stateId: p.state, name: `${p.name} 영지`, x, y, neighbors: [...(adjacent.get(p.i) || [])] };
+        return {
+          id: p.i,
+          stateId: p.state,
+          name: gf("{name} 영지", "{name} Fief", { name: p.name }),
+          x,
+          y,
+          neighbors: [...(adjacent.get(p.i) || [])]
+        };
       })
   };
 }
@@ -164,11 +172,9 @@ function reset(): void {
   campaign = undefined;
   selectedNpc = "";
   mapLevel = "country";
-  const renamed = applyKoreanNames();
   refresh();
   applyClassification();
   if (el<HTMLDialogElement>("fpb-world-dialog")?.open) renderFilters();
-  if (renamed) changed();
 }
 
 function applyKoreanNames(): boolean {
@@ -456,9 +462,7 @@ function init(): void {
     },
     true
   );
-  const renamed = applyKoreanNames();
   refresh();
-  if (renamed) changed();
 }
 
 function open(): void {

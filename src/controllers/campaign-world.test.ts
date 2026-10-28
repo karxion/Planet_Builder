@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/generators/administration-policy", () => ({ removeLegacyDivisions: () => [] }));
 vi.mock("@/generators/korean-world-names", async importOriginal => ({
   ...(await importOriginal<typeof import("@/generators/korean-world-names")>()),
-  koreanizeWorldNames: () => false
+  koreanizeWorldNames: vi.fn(() => false)
 }));
 vi.mock("@/renderers/administration-renderer", () => ({ drawAdministration: vi.fn() }));
 vi.mock("@/services/npc-portrait-image", () => ({ prepareNpcPortrait: vi.fn() }));
@@ -44,6 +44,14 @@ describe("NPC progression controls", () => {
     control.value = value;
     control.dispatchEvent(new Event("change", { bubbles: true }));
   };
+
+  it("does not rewrite saved map names on initialization, load or language changes", async () => {
+    const { koreanizeWorldNames } = await import("@/generators/korean-world-names");
+    expect(koreanizeWorldNames).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event("map:loaded"));
+    window.dispatchEvent(new Event("ui:language-changed"));
+    expect(koreanizeWorldNames).not.toHaveBeenCalled();
+  });
 
   it("starts with a readable summary and applies or cancels explicit edits without losing other drafts", () => {
     const original = Campaign.get()!.npcs[0].name;

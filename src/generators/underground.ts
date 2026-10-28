@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import { UNDERGROUND_DEPTHS, undergroundLevel } from "@/data/underground";
 import type { HollowEntranceStyle, HollowIllumination, UndergroundMode, UndergroundSurface } from "@/types/underground";
 import { UNDERGROUND_LEVELS, type UndergroundCell, type UndergroundLayer } from "@/types/underground";
@@ -52,13 +53,13 @@ export function generateUnderground(
       id: prefix + suffix,
       space: "underground",
       kind,
-      name,
+      name: gt(name),
       x: point.x / COLUMNS,
       y: point.y / ROWS,
       depth,
       radius: kind === "territory" ? 0.075 : 0.03,
       terrain: "cavern",
-      residents: kind === "city" ? "지저 거주민" : "",
+      residents: kind === "city" ? gt("지저 거주민") : "",
       population: kind === "city" ? 1200 : 0,
       notes: "",
       origin: "underground",
@@ -68,7 +69,13 @@ export function generateUnderground(
     return site;
   };
   const link = (a: SpaceSite, b: SpaceSite, name: string) => {
-    data.links.push({ id: `${prefix}link:${data.links.length}`, name, from: a.id, to: b.id, origin: "underground" });
+    data.links.push({
+      id: `${prefix}link:${data.links.length}`,
+      name: gt(name),
+      from: a.id,
+      to: b.id,
+      origin: "underground"
+    });
   };
   const selectedEntrances: UndergroundEntrance[] = [];
   for (const entrance of entrances) {
@@ -143,12 +150,22 @@ export function generateUnderground(
         city ? "city" : "terrain",
         point,
         UNDERGROUND_DEPTHS[levelId],
-        `${["회색", "푸른", "흑요"][levelIndex]} ${city ? "거주지" : "공동"} ${i + 1}`
+        gf("{color} {kind} {number}", "{color} {kind} {number}", {
+          color: gt(["회색", "푸른", "흑요"][levelIndex]),
+          kind: gt(city ? "거주지" : "공동"),
+          number: i + 1
+        })
       );
       site.factionId = `ug-faction:${Math.min(2, Math.floor((point.x / COLUMNS) * 3))}`;
       if (city) {
         site.population = 800 + Math.floor(rng() * 70) * 100;
-        const territory = add(`${levelId}:territory:${i}`, "territory", point, site.depth, `${site.name} 세력권`);
+        const territory = add(
+          `${levelId}:territory:${i}`,
+          "territory",
+          point,
+          site.depth,
+          gf("{name} 세력권", "{name} Territory", { name: site.name })
+        );
         territory.factionId = site.factionId;
       }
       draw(point, 1.8, 1.8, 1);
@@ -199,8 +216,20 @@ export function generateUnderground(
   }
   for (const [i, entrance] of selectedEntrances.entries()) {
     const p = { x: entrance.x * COLUMNS, y: entrance.y * ROWS };
-    const below = add(`entry:${i}`, "gateway", p, 300, `${entrance.name.slice(0, 75)} 아래 입구`);
-    const above = add(`surface:${i}`, "gateway", p, 0, `${entrance.name.slice(0, 75)} 지저 입구`);
+    const below = add(
+      `entry:${i}`,
+      "gateway",
+      p,
+      300,
+      gf("{name} 아래 입구", "Lower entrance beneath {name}", { name: entrance.name.slice(0, 75) })
+    );
+    const above = add(
+      `surface:${i}`,
+      "gateway",
+      p,
+      0,
+      gf("{name} 지저 입구", "{name} Underground entrance", { name: entrance.name.slice(0, 75) })
+    );
     above.space = "surface";
     carvers[0](p);
     link(above, below, "지상·지저 출입구");

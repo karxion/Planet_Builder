@@ -16,6 +16,7 @@ import {
   trimVowels
 } from "../utils";
 import { koreanStateFullName } from "./korean-world-names";
+import { generatedText as gt } from "@/utils/generation-text";
 import type { Regiment } from "./military-generator";
 
 declare global {
@@ -76,7 +77,7 @@ const DEFAULT_TAX: TaxBases = DEFAULT_TAX_BY_FORM.Monarchy;
 
 class StatesModule {
   private createStates() {
-    const states: State[] = [{ i: 0, name: "무소속", salesTax: 0, pollTax: 0, treasury: 0 } as State];
+    const states: State[] = [{ i: 0, name: gt("무소속"), salesTax: 0, pollTax: 0, treasury: 0 } as State];
     const each5th = each(5);
     const sizeVariety = (ensureEl("sizeVariety") as HTMLInputElement).valueAsNumber;
 
@@ -349,7 +350,7 @@ class StatesModule {
         const name = i && P(0.8) ? pack.states[i].name : Names.getCultureShort(state.culture);
         const start = gauss(options.year - 100, 150, 1, options.year - 6);
         const end = start + gauss(4, 5, 1, options.year - start - 1);
-        return { name: `${getAdjective(name)} ${rw(wars)}`, start, end, attacker: state.i!, defender: i };
+        return { name: `${getAdjective(name)} ${gt(rw(wars))}`, start, end, attacker: state.i!, defender: i };
       })
       .sort((a, b) => a.start - b.start);
   }

@@ -1,4 +1,6 @@
 import { quadtree, sum } from "d3";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
+import { getGenerationLanguage } from "@/services/generation-language";
 import { findAllInQuadtree, gauss, minmax, nth, ra, rand, rn, si } from "../utils";
 import type { State } from "./states-generator";
 
@@ -524,8 +526,10 @@ class MilitaryModule {
           ? pack.burgs[cells.burg[r.cell]].name
           : null;
     const number = nth(regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1);
-    const form = r.n ? "Fleet" : "Regiment";
-    return `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
+    const form = gt(r.n ? "Fleet" : "Regiment");
+    return getGenerationLanguage() === "ko"
+      ? `제${regiments.filter(reg => reg.n === r.n && reg.i < r.i).length + 1}${form}${proper ? ` (${proper})` : ""}`
+      : `${number}${proper ? ` (${proper}) ` : ` `}${form}`;
   }
 
   // utilize si function to make regiment total text fit regiment box
@@ -541,23 +545,33 @@ class MilitaryModule {
         : cells.province[r.cell] && pack.provinces[cells.province[r.cell]]
           ? pack.provinces[cells.province[r.cell]].fullName
           : null;
-    const station = base ? `${r.name} is ${r.n ? "based" : "stationed"} in ${base}. ` : "";
+    const station = base
+      ? gf("{name}의 주둔지는 {base}이다. ", "{name} is based in {base}. ", { name: r.name, base })
+      : "";
 
     const composition = r.a
       ? Object.keys(r.u)
-          .map(t => `— ${t}: ${r.u[t as keyof typeof r.u]}`)
+          .map(t => `— ${gt(t)}: ${r.u[t as keyof typeof r.u]}`)
           .join("\r\n")
       : null;
     const troops = composition
-      ? `\r\n\r\nRegiment composition in ${options.year} ${options.eraShort}:\r\n${composition}.`
+      ? gf(
+          "\r\n\r\n{year} {era} 부대 구성:\r\n{composition}.",
+          "\r\n\r\nRegiment composition in {year} {era}:\r\n{composition}.",
+          { year: options.year, era: options.eraShort, composition }
+        )
       : "";
 
     const campaign = s.campaigns ? ra(s.campaigns) : null;
     const year = campaign
       ? rand(campaign.start, campaign.end || options.year)
       : gauss(options.year - 100, 150, 1, options.year - 6);
-    const conflict = campaign ? ` during the ${campaign.name}` : "";
-    const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
+    const conflict = campaign ? gf(" · {name} 당시", " during the {name}", { name: campaign.name }) : "";
+    const legend = gf(
+      "이 부대는 {year} {era}{conflict}에 창설되었다. {station}{troops}",
+      "Regiment was formed in {year} {era}{conflict}. {station}{troops}",
+      { year, era: options.era, conflict, station, troops }
+    );
     const id = `regiment${s.i}-${r.i}`;
     const existing = notes.find(n => n.id === id);
     if (existing) {

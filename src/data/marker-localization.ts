@@ -1,4 +1,6 @@
 type Language = "ko" | "en";
+import { getGenerationLanguage } from "@/services/generation-language";
+import { generatedText } from "@/utils/generation-text";
 
 // Generated names use this vocabulary; unknown proper names and user prose stay untouched.
 const terms = new Map<string, string>(
@@ -658,4 +660,18 @@ export function readableInscription(legend: string): string {
     /^(An ancient (?:statue|obelisk|monument|column|monolith|pillar|megalith|stele|runestone|sculpture|effigy|idol))\. It has an inscription, but no one can translate it:\s*<div style="font-size: 1\.8em; line-break: anywhere;">[^<]*<\/div>\s*$/i,
     `$1.<p>${INSCRIPTION_DESCRIPTION}</p>`
   );
+}
+
+export function generatedMarkerNote<T extends { name: string; legend: string }>(
+  note: T,
+  language: Language = getGenerationLanguage()
+): T {
+  return {
+    ...note,
+    name: translateMarkerName(note.name, language),
+    legend: readableInscription(note.legend)
+      .split(/(<[^>]*>)/g)
+      .map(part => (part.startsWith("<") ? part : generatedText(translateMarkerText(part, language), language)))
+      .join("")
+  };
 }

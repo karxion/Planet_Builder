@@ -1,4 +1,5 @@
 import { mean, select, sum } from "d3";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import type { Marker } from "../generators/markers-generator";
 import type { Regiment } from "../generators/military-generator";
 import { capitalize, ensureEl, getAdjective, last, list, minmax, P, Pint, rand, rn, wiki } from "../utils";
@@ -157,12 +158,12 @@ function definePlace(): string | null {
 
 function defineBattleName(): string {
   const b = battle!;
-  if (b.type === "field") return `Battle of ${b.place}`;
-  if (b.type === "naval") return `Naval Battle of ${b.place}`;
-  if (b.type === "siege") return `Siege of ${b.place}`;
-  if (b.type === "ambush") return `${b.place} Ambush`;
-  if (b.type === "landing") return `${b.place} Landing`;
-  return `${b.place} ${P(0.8) ? "Air Battle" : "Dogfight"}`; // "air"
+  if (b.type === "field") return gf("{place} 전투", "Battle of {place}", { place: b.place || "" });
+  if (b.type === "naval") return gf("{place} 해전", "Naval Battle of {place}", { place: b.place || "" });
+  if (b.type === "siege") return gf("{place} 공성전", "Siege of {place}", { place: b.place || "" });
+  if (b.type === "ambush") return gf("{place} 매복전", "{place} Ambush", { place: b.place || "" });
+  if (b.type === "landing") return gf("{place} 상륙전", "{place} Landing", { place: b.place || "" });
+  return `${b.place} ${gt(P(0.8) ? "Air Battle" : "Dogfight")}`;
 }
 
 function getTypeName(): string {
@@ -750,7 +751,11 @@ function runBattle(): void {
     return;
   }
 
-  const currentPhase = `Attackers: ${b.attackers.phase}, defenders: ${b.defenders.phase}`;
+  const currentPhase = gf(
+    "공격군: {attackers}, 방어군: {defenders}",
+    "Attackers: {attackers}, defenders: {defenders}",
+    { attackers: gt(b.attackers.phase || "waiting"), defenders: gt(b.defenders.phase || "waiting") }
+  );
   const lastRecord = b.phasesRecord.at(-1);
   if (lastRecord?.phase === currentPhase) lastRecord.count += 1;
   else b.phasesRecord.push({ phase: currentPhase, count: 1 });
@@ -939,14 +944,18 @@ function applyResults(): void {
       const losses = r.a ? Math.abs(sum(Object.values(r.casualties!))) / r.a : 1;
       const regStatus = getRegimentStatus(losses);
       const initialList = Object.keys(r.u)
-        .map(t => (r.u[t] ? `${r.u[t]} ${t}` : null))
+        .map(t => (r.u[t] ? `${r.u[t]} ${gt(t)}` : null))
         .filter((c): c is string => Boolean(c));
-      const initialText = initialList.length ? ` Initial forces: ${list(initialList)}.` : "";
+      const initialText = initialList.length
+        ? gf(" 최초 병력: {forces}.", " Initial forces: {forces}.", { forces: list(initialList) })
+        : "";
       const casualtiesList = Object.keys(r.casualties!)
-        .map(t => (r.casualties![t] ? `${Math.abs(r.casualties![t])} ${t}` : null))
+        .map(t => (r.casualties![t] ? `${Math.abs(r.casualties![t])} ${gt(t)}` : null))
         .filter((c): c is string => Boolean(c));
-      const casualtiesText = casualtiesList.length ? ` Casualties: ${list(casualtiesList)}.` : "";
-      const legend = `<br><br>${battleName} (${options.year} ${options.eraShort}): ${status}. The regiment ${regStatus}.${initialText}${casualtiesText}`;
+      const casualtiesText = casualtiesList.length
+        ? gf(" 손실: {forces}.", " Casualties: {forces}.", { forces: list(casualtiesList) })
+        : "";
+      const legend = `<br><br>${battleName} (${options.year} ${options.eraShort}): ${gt(status)}. ${gf("이 부대는 {status}.", "The regiment {status}.", { status: gt(regStatus) })}${initialText}${casualtiesText}`;
       note.legend += legend;
     }
 
@@ -968,7 +977,10 @@ function applyResults(): void {
 
   const getSide = (regs: Regiment[], n: number): string =>
     regs.length > 1
-      ? `${n ? "regiments" : "forces"} of ${list([...new Set(regs.map(r => pack.states[r.state].name))])}`
+      ? gf("{names}의 {kind}", "{kind} of {names}", {
+          names: list([...new Set(regs.map(r => pack.states[r.state].name))]),
+          kind: gt(n ? "Regiments" : "Forces")
+        })
       : `${getAdjective(pack.states[regs[0].state].name)} ${regs[0].name}`;
   const getLosses = (casualties: number): number => Math.min(rn(casualties * 100), 100);
 
@@ -980,7 +992,7 @@ function applyResults(): void {
     }, {});
   const unitsToText = (units: Record<string, number>): string => {
     const items = Object.keys(units)
-      .map(t => (units[t] ? `${units[t]} ${t}` : null))
+      .map(t => (units[t] ? `${units[t]} ${gt(t)}` : null))
       .filter((c): c is string => Boolean(c));
     return items.length ? list(items) : "";
   };
@@ -990,26 +1002,40 @@ function applyResults(): void {
       aggregateUnits(side.regiments, (r, u) => (r.survivors![u] || 0) + Math.abs(r.casualties![u]))
     );
     const casualties = unitsToText(aggregateUnits(side.regiments, (r, u) => Math.abs(r.casualties![u])));
-    let text = initial ? `<br>${label} initial forces: ${initial}.` : "";
-    if (casualties) text += ` Casualties: ${casualties}.`;
+    let text = initial
+      ? `<br>${gf("{label} 최초 병력: {forces}.", "{label} initial forces: {forces}.", { label: gt(label), forces: initial })}`
+      : "";
+    if (casualties) text += gf(" 손실: {forces}.", " Casualties: {forces}.", { forces: casualties });
     return text;
   };
 
   const status = battleStatus[+P(0.7)];
-  const result = `The ${getTypeName()} ended in ${status}`;
-  let legend = `${b.name} took place in ${options.year} ${options.eraShort}. It was fought between ${getSide(
-    b.attackers.regiments,
-    1
-  )} and ${getSide(b.defenders.regiments, 0)}. ${result}.
-      <br>Attackers losses: ${getLosses(b.attackers.casualties)}%, defenders losses: ${getLosses(
-        b.defenders.casualties
-      )}%.`;
+  const result = gf("{type} 결과: {status}", "The {type} ended in {status}", {
+    type: gt(getTypeName()),
+    status: gt(status)
+  });
+  let legend = gf(
+    "{name}은 {year} {era}에 {attackers} 및 {defenders} 사이에서 벌어졌다. {result}.<br>공격군 손실: {attackLoss}%, 방어군 손실: {defendLoss}%.",
+    "{name} took place in {year} {era} between {attackers} and {defenders}. {result}.<br>Attackers losses: {attackLoss}%, defenders losses: {defendLoss}%.",
+    {
+      name: b.name,
+      year: options.year,
+      era: options.eraShort,
+      attackers: getSide(b.attackers.regiments, 1),
+      defenders: getSide(b.defenders.regiments, 0),
+      result,
+      attackLoss: getLosses(b.attackers.casualties),
+      defendLoss: getLosses(b.defenders.casualties)
+    }
+  );
   legend += getForcesLegend("Attackers", b.attackers);
   legend += getForcesLegend("Defenders", b.defenders);
 
   if (b.phasesRecord.length) {
-    const phasesText = b.phasesRecord.map(r => (r.count > 1 ? `${r.phase} (x${r.count})` : r.phase)).join("<br>");
-    legend += `<br><br>Engagement progression:<br>${phasesText}`;
+    const phasesText = b.phasesRecord
+      .map(r => (r.count > 1 ? `${gt(r.phase)} (x${r.count})` : gt(r.phase)))
+      .join("<br>");
+    legend += `<br><br>${gf("교전 경과", "Engagement progression")} :<br>${phasesText}`;
   }
 
   notes.push({ id: `marker${i}`, name: b.name, legend });

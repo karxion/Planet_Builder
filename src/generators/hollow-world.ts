@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import { HOLLOW_REFERENCE_DEPTH } from "@/data/underground";
 import type { UndergroundCell } from "@/types/underground";
 import type { SpaceSite, SpaceSiteKind, WorldSpacesData } from "@/types/world-spaces";
@@ -22,7 +23,7 @@ export function hollowPolarEntrances(bounds?: { north: number; south: number }):
     { name: "남극권 관문", latitude: -85 }
   ]
     .filter(p => p.latitude <= bounds.north && p.latitude >= bounds.south)
-    .map(p => ({ name: p.name, x: 0.5, y: (bounds.north - p.latitude) / (bounds.north - bounds.south) }));
+    .map(p => ({ name: gt(p.name), x: 0.5, y: (bounds.north - p.latitude) / (bounds.north - bounds.south) }));
 }
 
 /** A single continuous inner landscape, not a stack of disconnected cave floors. */
@@ -73,13 +74,13 @@ export function generateHollowWorld(
       id: `${prefix}hollow:${suffix}`,
       kind,
       space: "underground",
-      name,
+      name: gt(name),
       ...p,
       depth: HOLLOW_REFERENCE_DEPTH,
       radius: kind === "territory" ? 0.085 : 0.03,
       terrain: cells[i] === 2 ? "lake" : cells[i] === 4 ? "rock" : "plain",
       population,
-      residents: kind === "city" ? "내부 세계 거주민" : "",
+      residents: kind === "city" ? gt("내부 세계 거주민") : "",
       notes: "",
       origin: "underground",
       edited: false,
@@ -123,9 +124,21 @@ export function generateHollowWorld(
     if (selected < 0) break;
     centers.push(selected);
     const faction = `ug-faction:${Math.min(2, Math.floor(((selected % columns) / columns) * 3))}`;
-    const city = add(`city:${n}`, "city", selected, `내부 거주지 ${n + 1}`, faction);
+    const city = add(
+      `city:${n}`,
+      "city",
+      selected,
+      gf("내부 거주지 {number}", "Inner settlement {number}", { number: n + 1 }),
+      faction
+    );
     settlements.push(city);
-    add(`territory:${n}`, "territory", selected, `${city.name} 영역`, city.factionId);
+    add(
+      `territory:${n}`,
+      "territory",
+      selected,
+      gf("{name} 영역", "{name} Territory", { name: city.name }),
+      city.factionId
+    );
   }
   const connect = (a: SpaceSite, b: SpaceSite) => {
     const route = undergroundRoute(columns, rows, cell(a), cell(b), i =>
@@ -138,7 +151,7 @@ export function generateHollowWorld(
     path[path.length - 1] = { x: b.x, y: b.y };
     data.links.push({
       id: `${prefix}hollow:route:${data.links.length}`,
-      name: transport === "water" ? "내부 육로·내해 항로" : "내부 육로",
+      name: gt(transport === "water" ? "내부 육로·내해 항로" : "내부 육로"),
       from: a.id,
       to: b.id,
       origin: "underground",
@@ -186,7 +199,11 @@ export function generateHollowWorld(
         `entry:${n}`,
         "gateway",
         i,
-        entranceStyle === "polar" ? `${entry.name} · 내부 출구` : cells[i] === 2 ? "내해 관문" : "내부 세계 관문"
+        entranceStyle === "polar"
+          ? gf("{name} · 내부 출구", "{name} · Inner exit", { name: entry.name })
+          : cells[i] === 2
+            ? "내해 관문"
+            : "내부 세계 관문"
       );
     if (!below.edited) {
       below.x = entry.x;
@@ -200,7 +217,7 @@ export function generateHollowWorld(
         id: `${prefix}hollow:surface:${n}`,
         space: "surface",
         depth: 0,
-        name: `${entry.name.slice(0, 75)} 공동세계 출입구`,
+        name: gf("{name} 공동세계 출입구", "{name} Hollow-world gateway", { name: entry.name.slice(0, 75) }),
         x: entry.x,
         y: entry.y,
         edited: false
@@ -209,7 +226,7 @@ export function generateHollowWorld(
     }
     data.links.push({
       id: `${prefix}hollow:entry-link:${n}`,
-      name: "지상·공동세계 통로",
+      name: gt("지상·공동세계 통로"),
       from: above.id,
       to: below.id,
       origin: "underground"

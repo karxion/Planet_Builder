@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import {
   CLASS_PROFILES,
   COMMONER_CR_PROFILES,
@@ -147,10 +148,10 @@ export function generateNpcProgression(
 }
 
 export function npcProfession(progression: NpcProgression): string {
-  const title = NPC_PROFESSIONS[progression.classId];
-  if (progression.scope === "continent") return `전설의 ${title}`;
-  if (progression.rank === "noble") return `${progression.scope === "country" ? "대귀족" : "영주"} · ${title}`;
-  if (progression.scope === "country") return `국가 수석 ${title}`;
+  const title = gt(NPC_PROFESSIONS[progression.classId]);
+  if (progression.scope === "continent") return gf("전설의 {title}", "Legendary {title}", { title });
+  if (progression.rank === "noble") return `${gt(progression.scope === "country" ? "대귀족" : "영주")} · ${title}`;
+  if (progression.scope === "country") return gf("국가 수석 {title}", "National chief {title}", { title });
   return title;
 }
 

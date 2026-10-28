@@ -1,4 +1,6 @@
 import Alea from "alea";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
+import { getGenerationLanguage } from "@/services/generation-language";
 import { itemOrigin, synchronizeUniqueItemBonus } from "./unique-item-bonuses";
 import {
   ALL_REFERENCE_OPTIONS,
@@ -67,13 +69,19 @@ export function createWorldItem(
   const option = options[Math.floor(random() * options.length)];
   const item: WorldMagicItem = {
     id,
-    name: `${name}의 ${TREASURE_FORMS[option.reference.category]}`.slice(0, 200),
+    name: gf("{name}의 {form}", "{form} of {name}", {
+      name,
+      form: gt(TREASURE_FORMS[option.reference.category])
+    }).slice(0, 200),
     category: option.reference.category,
     rarity,
     unique: true,
-    appearance: "문양이 새겨진 금속 장식과 은은한 마법의 빛",
-    power: `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""} · SRD ${option.reference.edition} 원본 규칙 참조`,
-    history: "세계관의 전승에 따라 이름과 외형이 달라진 마법 아이템이다",
+    appearance: gt("문양이 새겨진 금속 장식과 은은한 마법의 빛"),
+    power: gf("{reference} · SRD {edition} 원본 규칙 참조", "{reference} · See the original SRD {edition} rules", {
+      reference: `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""}`,
+      edition: option.reference.edition
+    }),
+    history: gt("세계관의 전승에 따라 이름과 외형이 달라진 마법 아이템이다"),
     notes: "",
     owner,
     referenceId: option.reference.id,
@@ -151,6 +159,16 @@ export function itemOwnerLabel(item: WorldMagicItem, world: CampaignWorld): stri
 }
 
 export function itemImagePrompt(item: WorldMagicItem): string {
+  if (getGenerationLanguage() === "en")
+    return [
+      "Create a high-quality fantasy TRPG magic-item illustration.",
+      `Item name: ${item.name}`,
+      `Category: ${gt(MAGIC_ITEM_CATEGORIES[item.category])}`,
+      `Rarity: ${gt(ITEM_RARITY_LABELS[item.rarity])}${item.unique ? " · Narratively unique" : ""}`,
+      `Appearance: ${item.appearance || "An appearance suited to this item category"}`,
+      "The item alone, finely detailed materials and ornament, clear lighting, fantasy RPG inventory concept art.",
+      "Square composition with room around the entire silhouette. No people, hands, text, logos or watermarks."
+    ].join("\n");
   return [
     "다음 판타지 TRPG 매직 아이템의 고품질 아이템 일러스트를 생성해주세요.",
     `아이템 이름: ${item.name}`,

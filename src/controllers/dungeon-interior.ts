@@ -14,6 +14,7 @@ import { generateDungeonInterior } from "@/generators/dungeon-interior";
 import { renderDungeonMap, renderDungeonRoom, roomName as renderRoomName } from "@/renderers/dungeon-interior";
 import { escapeAttribute as esc, rpgIconPreview } from "@/renderers/rpg-asset-renderer";
 import { getUiLanguage } from "@/services/ui-language";
+import { generatedText as gt } from "@/utils/generation-text";
 import type { DungeonDifficulty, DungeonInterior, DungeonRoom } from "@/types/dungeon-interior";
 
 declare global {
@@ -72,10 +73,10 @@ function render(): void {
       )
       .join("")}</select></label>${
       !site
-        ? `<label>${text("테마", "Theme")}<select data-theme>${ADVENTURE_THEMES.map(option => `<option value="${option.id}" ${theme.id === option.id ? "selected" : ""}>${esc(option.name)}</option>`).join("")}</select></label><label>${text("대표 몬스터", "Representative monster")}<select data-monster>${theme.monsters
+        ? `<label>${text("테마", "Theme")}<select data-theme>${ADVENTURE_THEMES.map(option => `<option value="${option.id}" ${theme.id === option.id ? "selected" : ""}>${esc(gt(option.name, getUiLanguage()))}</option>`).join("")}</select></label><label>${text("대표 몬스터", "Representative monster")}<select data-monster>${theme.monsters
             .map(id => {
               const monster = ADVENTURE_MONSTER_BY_ID.get(id)!;
-              return `<option value="${id}" ${dungeon?.monsterId === id ? "selected" : ""}>${esc(monster.name)} · CR ${monster.cr}</option>`;
+              return `<option value="${id}" ${dungeon?.monsterId === id ? "selected" : ""}>${esc(gt(monster.name, getUiLanguage()))} · CR ${monster.cr}</option>`;
             })
             .join("")}</select></label>`
         : ""

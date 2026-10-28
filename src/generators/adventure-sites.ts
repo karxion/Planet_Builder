@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt } from "@/utils/generation-text";
 import { type QuadtreeLeaf, quadtree } from "d3";
 import { ADVENTURE_MONSTER_BY_ID, ADVENTURE_THEMES } from "@/data/adventure-sites";
 import type { AdventurePlacementResult, AdventureSettings, AdventureSnapshot } from "@/types/adventure-site";
@@ -109,7 +110,7 @@ export function generateAdventureSites(
         stateId: country.id,
         x: cell.x,
         y: cell.y,
-        name: `${country.name} · ${theme.name} ${existing + added + 1}`,
+        name: `${country.name} · ${gt(theme.name)} ${existing + added + 1}`,
         adventure: {
           version: 1,
           themeId: theme.id,

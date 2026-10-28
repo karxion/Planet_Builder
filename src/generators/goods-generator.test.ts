@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { setGenerationLanguage } from "@/services/generation-language";
 
 describe("GoodsModule", () => {
   let goodsModule: any;
 
   beforeEach(async () => {
+    setGenerationLanguage("ko");
     globalThis.TIME = false;
     globalThis.seed = "seed";
     globalThis.window = globalThis.window || ({} as any);
@@ -60,6 +62,20 @@ describe("GoodsModule", () => {
     goodsModule = new GoodsModule();
     globalThis.Goods = goodsModule as any;
   });
+  afterEach(() => setGenerationLanguage("ko"));
+
+  it("uses the selected language for new catalogue names while preserving IDs, recipes and custom names", () => {
+    goodsModule.restoreDefaults();
+    const ko = structuredClone(globalThis.pack.goods);
+    expect(ko.every((good: { name: string }) => /[가-힣]/.test(good.name))).toBe(true);
+    expect(ko[1].name).toBe("석재");
+    setGenerationLanguage("en");
+    goodsModule.restoreDefaults();
+    expect(globalThis.pack.goods[0].name).toBe("Wood");
+    expect(globalThis.pack.goods.map(({ name, unit, ...rest }: any) => rest)).toEqual(
+      ko.map(({ name, unit, ...rest }: any) => rest)
+    );
+  });
 
   it("keeps the current catalogue when rerolling placement", () => {
     goodsModule.generate({ randomSeed: 123 });
@@ -72,7 +88,7 @@ describe("GoodsModule", () => {
   it("restores the default catalogue when requested explicitly", () => {
     goodsModule.restoreDefaults();
 
-    expect(globalThis.pack.goods.some((good: any) => good.name === "Wood")).toBe(true);
+    expect(globalThis.pack.goods.some((good: any) => good.name === "목재")).toBe(true);
     expect(globalThis.pack.goods[0].name).not.toBe("Custom A");
   });
 
@@ -82,25 +98,25 @@ describe("GoodsModule", () => {
 
     goodsModule.restoreDefaults();
 
-    expect(globalThis.pack.goods[0].name).toBe("Wood");
+    expect(globalThis.pack.goods[0].name).toBe("목재");
   });
 
   it("initialises the catalogue from defaults when none exists yet", () => {
     globalThis.pack.goods = [];
     goodsModule.generate();
 
-    expect(globalThis.pack.goods.some((good: any) => good.name === "Wood")).toBe(true);
+    expect(globalThis.pack.goods.some((good: any) => good.name === "목재")).toBe(true);
   });
 
   it("does not corrupt the default template when a restored good is edited", () => {
     goodsModule.restoreDefaults();
-    const wood = globalThis.pack.goods.find((good: any) => good.name === "Wood")!;
+    const wood = globalThis.pack.goods.find((good: any) => good.name === "목재")!;
     wood.name = "Edited Wood";
 
     goodsModule.restoreDefaults();
 
     expect(globalThis.pack.goods.find((good: any) => good.name === "Edited Wood")).toBeUndefined();
-    expect(globalThis.pack.goods.some((good: any) => good.name === "Wood")).toBe(true);
+    expect(globalThis.pack.goods.some((good: any) => good.name === "목재")).toBe(true);
   });
 
   it("clears a single good when it is no longer placeable", () => {

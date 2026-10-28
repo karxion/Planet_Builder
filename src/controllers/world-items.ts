@@ -24,6 +24,7 @@ import {
   type TreasureItemSeed
 } from "@/generators/world-items";
 import { t } from "@/services/ui-language";
+import { generatedTemplate as gf } from "@/utils/generation-text";
 import { EditorDrafts } from "@/services/editor-drafts";
 import type { CampaignWorld } from "@/types/campaign-world";
 import type { ItemDungeonChoice, WorldMagicItem } from "@/types/world-item";
@@ -504,8 +505,14 @@ function renderDetail(): void {
       const value = new FormData(form).get("reference");
       const option = ALL_REFERENCE_OPTIONS.find(option => optionKey(option) === value);
       if (option) {
-        form.querySelector<HTMLTextAreaElement>('[name="power"]')!.value =
-          `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""} · SRD ${option.reference.edition} 원본 규칙 참조`;
+        form.querySelector<HTMLTextAreaElement>('[name="power"]')!.value = gf(
+          "{reference} · SRD {edition} 원본 규칙 참조",
+          "{reference} · See the original SRD {edition} rules",
+          {
+            reference: `${option.reference.name}${option.variant ? ` · ${option.variant}` : ""}`,
+            edition: option.reference.edition
+          }
+        );
       }
     }
     form.dispatchEvent(new Event("input", { bubbles: true }));

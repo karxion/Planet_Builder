@@ -8,6 +8,7 @@ import { getDungeonUrl } from "@/data/dungeon-locations";
 import type { AdventureSettings, AdventureSnapshot } from "@/types/adventure-site";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { generateAdventureSites } from "./adventure-sites";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 
 interface SiteNote {
   id: string;
@@ -69,7 +70,7 @@ export function populateAdventureMarkers(
     notes.push({
       id: `marker${i}`,
       name: placement.name,
-      legend: `<p>${theme.hook}</p><p>대표 개체: ${monster.name} · CR ${monster.cr} · ${placement.adventure.inhabitants}개체 추정</p><p>CR은 대표 몬스터 한 개체의 값이며 거점 전체 난이도가 아닙니다. 배치·개체 수·적대 행동은 앱의 창작 설정입니다.</p><p><a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD ${monster.edition} · p.${monster.page}</a> · <a href="${getDungeonUrl(seed, placement.cell)}" target="_blank" rel="noopener noreferrer">Watabou</a></p>`
+      legend: `<p>${gt(theme.hook)}</p><p>${gf("대표 개체: {monster} · CR {cr} · {count}개체 추정", "Representative creature: {monster} · CR {cr} · estimated population {count}", { monster: gt(monster.name), cr: monster.cr, count: placement.adventure.inhabitants })}</p><p>${gt("CR은 대표 몬스터 한 개체의 값이며 거점 전체 난이도가 아닙니다. 배치·개체 수·적대 행동은 앱의 창작 설정입니다.")}</p><p><a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD ${monster.edition} · p.${monster.page}</a> · <a href="${getDungeonUrl(seed, placement.cell)}" target="_blank" rel="noopener noreferrer">Watabou</a></p>`
     });
   }
   return result;

@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedText as gt } from "@/utils/generation-text";
 import { color, shuffler } from "d3";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { CultureType } from "./cultures-generator";
@@ -1047,6 +1048,10 @@ export class GoodsModule {
 
   restoreDefaults() {
     pack.goods = structuredClone(this.defaultGoods);
+    for (const good of pack.goods) {
+      good.name = gt(good.name);
+      if (good.unit) good.unit = gt(good.unit);
+    }
     this.sync();
   }
 

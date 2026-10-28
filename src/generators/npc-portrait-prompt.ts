@@ -1,8 +1,24 @@
 import { NPC_CLASSES, NPC_RANKS } from "@/data/npc-progression";
 import type { WorldNpc } from "@/types/campaign-world";
+import { getGenerationLanguage } from "@/services/generation-language";
+import { generatedText as gt } from "@/utils/generation-text";
 
 export function npcPortraitPrompt(npc: WorldNpc): string {
   const progression = npc.progression;
+  if (getGenerationLanguage() === "en")
+    return [
+      "Create a fantasy TRPG NPC portrait using these details.",
+      `Name: ${npc.name}`,
+      `Role: ${npc.role}`,
+      progression ? `Class: ${gt(NPC_CLASSES[progression.classId])} · Rank: ${gt(NPC_RANKS[progression.rank])}` : "",
+      progression && progression.classId !== "none" ? `Narrative level: ${progression.level}` : "",
+      `Appearance: ${npc.appearance || "An appearance suited to the role"}`,
+      "One character, upper-body framing, detailed clothing and props, natural lighting, polished fantasy RPG concept art.",
+      "Vertical 3:4 composition. Show the face clearly and keep the background unobtrusive.",
+      "Do not assume an unspecified age, gender or ancestry. No text, logos or watermarks."
+    ]
+      .filter(Boolean)
+      .join("\n");
   return [
     "다음 설정의 판타지 TRPG NPC 캐릭터 초상화를 생성해주세요.",
     `이름: ${npc.name}`,

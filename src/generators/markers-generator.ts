@@ -1,7 +1,7 @@
 import { mean } from "d3";
 import { getDungeonUrl } from "@/data/dungeon-locations";
 import { createLocalEncounterNote } from "@/data/local-encounter";
-import { INSCRIPTION_DESCRIPTION } from "@/data/marker-localization";
+import { INSCRIPTION_DESCRIPTION, generatedMarkerNote } from "@/data/marker-localization";
 import { migrateMarkerIcon } from "@/data/rpg-map-assets";
 import type { AdventureSite } from "@/types/adventure-site";
 import type { DungeonInterior } from "@/types/dungeon-interior";
@@ -49,6 +49,10 @@ class MarkersModule {
   constructor() {
     this.config = this.getDefaultConfig();
     this.occupied = [];
+  }
+
+  private addNote(note: { id: string; name: string; legend: string }) {
+    notes.push(generatedMarkerNote(note));
   }
 
   getConfig() {
@@ -539,7 +543,7 @@ class MarkersModule {
     const proper = Names.getCulture(cells.culture[cell]);
     const name = P(0.3) ? `Mount ${proper}` : P(0.7) ? `${proper} Volcano` : proper;
     const status = P(0.6) ? "Dormant" : P(0.4) ? "Active" : "Erupting";
-    notes.push({
+    this.addNote({
       id,
       name,
       legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell])}.`
@@ -558,7 +562,7 @@ class MarkersModule {
     const name = P(0.3) ? `Hot Springs of ${proper}` : P(0.7) ? `${proper} Hot Springs` : proper;
     const legend = `A geothermal springs with naturally heated water that provide relaxation and medicinal benefits. Average temperature is ${temp}.`;
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listWaterSources({ cells }: PackedGraph) {
@@ -585,7 +589,7 @@ class MarkersModule {
     const legend =
       "This legendary water source is whispered about in ancient tales and believed to possess mystical properties. The spring emanates crystal-clear water, shimmering with an otherworldly iridescence that sparkles even in the dimmest light.";
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listMines({ cells }: PackedGraph) {
@@ -609,7 +613,7 @@ class MarkersModule {
     const name = `${burg.name} — ${resource} mining town`;
     const population = rn(burg.population! * populationRate * urbanization);
     const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listBridges({ cells, burgs }: PackedGraph) {
@@ -652,7 +656,7 @@ class MarkersModule {
       ? `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}.`
       : `An old crossing of the ${riverName}, rarely used since ${ra(barriers)}.`;
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listInns({ cells }: PackedGraph) {
@@ -914,7 +918,7 @@ class MarkersModule {
     const course = `${ra(methods)} ${meal}`.toLowerCase();
     const drink = `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`.toLowerCase();
     const legend = `A big and famous roadside ${typeName}. Delicious ${course} with ${drink} is served here.`;
-    notes.push({ id, name: `The ${name}`, legend });
+    this.addNote({ id, name: `The ${name}`, legend });
   }
 
   private listLighthouses({ cells }: PackedGraph) {
@@ -927,7 +931,7 @@ class MarkersModule {
     const { cells } = pack;
 
     const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name! : Names.getCulture(cells.culture[cell]);
-    notes.push({
+    this.addNote({
       id,
       name: `${getAdjective(proper)} Lighthouse`,
       legend: `A lighthouse to serve as a beacon for ships in the open sea.`
@@ -953,7 +957,7 @@ class MarkersModule {
     ];
 
     const proper = cells.burg[cell] ? pack.burgs[cells.burg[cell]].name! : Names.getCulture(cells.culture[cell]);
-    notes.push({
+    this.addNote({
       id,
       name: `${getAdjective(proper)} Waterfall`,
       legend: `${ra(descriptions)}`
@@ -975,7 +979,7 @@ class MarkersModule {
     const date = generateDate(campaign.start, campaign.end);
     const name = `${Names.getCulture(cells.culture[cell])} Battlefield`;
     const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listDungeons({ cells }: PackedGraph) {
@@ -985,7 +989,7 @@ class MarkersModule {
   private addDungeon(id: string, cell: number) {
     const name = "Dungeon";
     const legend = `<div>Undiscovered dungeon. <a href="${getDungeonUrl(String(seed), cell)}" target="_blank" rel="noopener noreferrer">Watabou: One Page Dungeon</a></div>`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listLakeMonsters({ features }: PackedGraph) {
@@ -1017,7 +1021,7 @@ class MarkersModule {
     const legend = `${ra(subjects)} say a relic monster of ${length} ${heightUnit.value} long inhabits ${
       lake.name
     } Lake. Truth or lie, folks are afraid to fish in the lake.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listSeaMonsters({ cells, features }: PackedGraph) {
@@ -1030,7 +1034,7 @@ class MarkersModule {
     const name = `${Names.getCultureShort(0)} Monster`;
     const length = gauss(25, 10, 10, 100);
     const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${heightUnit.value} long.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listHillMonsters({ cells }: PackedGraph) {
@@ -1106,7 +1110,7 @@ class MarkersModule {
     const legend = `${ra(subjects)} speak of a ${ra(adjectives)} ${monster} who inhabits ${toponym} hills and ${ra(
       modusOperandi
     )}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred mountains spawn on lonely mountains
@@ -1128,7 +1132,7 @@ class MarkersModule {
     const name = `${Names.getCulture(culture)} Mountain`;
     const height = getFriendlyHeight(cells.p[cell]);
     const legend = `A sacred mountain of ${religions[religion].name}. Height: ${height}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred forests spawn on temperate forests
@@ -1145,7 +1149,7 @@ class MarkersModule {
     const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Forest`;
     const legend = `A forest sacred to local ${religions[religion].name}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred pineries spawn on boreal forests
@@ -1160,7 +1164,7 @@ class MarkersModule {
     const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Pinery`;
     const legend = `A pinery sacred to local ${religions[religion].name}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred palm groves spawn on oasises
@@ -1183,7 +1187,7 @@ class MarkersModule {
     const religion = cells.religion[cell];
     const name = `${Names.getCulture(culture)} Palm Grove`;
     const legend = `A palm grove sacred to local ${religions[religion].name}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listBrigands({ cells }: PackedGraph) {
@@ -1242,7 +1246,7 @@ class MarkersModule {
 
     const name = `${Names.getCulture(culture)} ${ra(animals)}`;
     const legend = `A gang of ${locality} ${rw(types)}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Pirates spawn on sea routes
@@ -1253,7 +1257,7 @@ class MarkersModule {
   private addPirates(id: string, _cell: number) {
     const name = "Pirates";
     const legend = "Pirate ships have been spotted in these waters.";
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listStatues({ cells }: PackedGraph) {
@@ -1284,7 +1288,7 @@ class MarkersModule {
     const name = `${Names.getCulture(culture)} ${variant}`;
     const legend = `An ancient ${variant.toLowerCase()}.
         <p>${INSCRIPTION_DESCRIPTION}</p>`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listRuins({ cells }: PackedGraph) {
@@ -1311,7 +1315,7 @@ class MarkersModule {
     const ruinType = ra(types);
     const name = `Ruined ${ruinType}`;
     const legend = `Ruins of an ancient ${ruinType.toLowerCase()}. Untold riches may lie within.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listLibraries({ cells }: PackedGraph) {
@@ -1325,7 +1329,7 @@ class MarkersModule {
     const name = `${Names.getCulture(cells.culture[cell])} ${type}`;
     const legend = "A vast collection of knowledge, including many rare and ancient tomes.";
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listCircuses({ cells }: PackedGraph) {
@@ -1347,7 +1351,7 @@ class MarkersModule {
     const adjective = ra(adjectives);
     const name = `Travelling ${adjective} Circus`;
     const legend = `Roll up, roll up, this ${adjective.toLowerCase()} circus is here for a limited time only.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listJousts({ cells, burgs }: PackedGraph) {
@@ -1366,7 +1370,7 @@ class MarkersModule {
 
     const name = `${burgName} ${type}`;
     const legend = `Warriors from around the land gather for a ${type.toLowerCase()} of ${virtue} in ${burgName}, with fame, fortune and favour on offer to the victor.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listFairs({ cells, burgs }: PackedGraph) {
@@ -1388,7 +1392,7 @@ class MarkersModule {
 
     const name = `${burgName} ${type}`;
     const legend = `A fair is being held in ${burgName}, with all manner of local and foreign goods and services on offer.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listCanoes({ cells }: PackedGraph) {
@@ -1401,7 +1405,7 @@ class MarkersModule {
     const name = `Minor Jetty`;
     const riverName = river ? `${river.name} ${river.type}` : "river";
     const legend = `A small location along the ${riverName} to launch boats from sits here, along with a weary looking owner, willing to sell passage along the river.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listMigrations({ cells }: PackedGraph) {
@@ -1466,7 +1470,7 @@ class MarkersModule {
 
     const name = `${animalChoice} migration`;
     const legend = `A huge group of ${animalChoice.toLowerCase()} are migrating, whether part of their annual routine, or something more extraordinary.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listDances({ cells, burgs }: PackedGraph) {
@@ -1505,7 +1509,7 @@ class MarkersModule {
     const legend = `A ${socialType} has been organised at ${burgName} as a chance to gather the ${ra(
       people
     )} of the area together to be merry, make alliances and scheme around the crisis.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listMirage({ cells }: PackedGraph) {
@@ -1518,7 +1522,7 @@ class MarkersModule {
     const mirageAdjective = ra(adjectives);
     const name = `${mirageAdjective} mirage`;
     const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listCaves({ cells }: PackedGraph) {
@@ -1555,7 +1559,7 @@ class MarkersModule {
     }
     const name = `${toponym} ${formation}`;
     const legend = `The ${name}. Locals claim that it is ${rw(status)}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listPortals({ burgs }: PackedGraph) {
@@ -1573,7 +1577,7 @@ class MarkersModule {
 
     const name = `${burgName} Portal`;
     const legend = `An element of the magic portal system connecting major city. The portals were installed centuries ago, but still work fine.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listRifts({ cells }: PackedGraph) {
@@ -1594,7 +1598,7 @@ class MarkersModule {
     const riftType = ra(types);
     const name = `${riftType} Rift`;
     const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(descriptions)}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listDisturbedBurial({ cells }: PackedGraph) {
@@ -1604,7 +1608,7 @@ class MarkersModule {
   private addDisturbedBurial(id: string, _cell: number) {
     const name = "Disturbed Burial";
     const legend = "A burial site has been disturbed in this area, causing the dead to rise and attack the living.";
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listNecropolis({ cells }: PackedGraph) {
@@ -1639,7 +1643,7 @@ class MarkersModule {
       "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses."
     ]);
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listEncounters({ cells }: PackedGraph) {
@@ -1647,7 +1651,7 @@ class MarkersModule {
   }
 
   private addEncounter(id: string, _cell: number) {
-    notes.push(createLocalEncounterNote(id));
+    this.addNote(createLocalEncounterNote(id));
   }
 }
 

@@ -1,4 +1,5 @@
 import Alea from "alea";
+import { generatedTemplate as gf, generatedText as gt } from "@/utils/generation-text";
 import { Delaunay } from "d3";
 import type { SettlementMap, SettlementMapInput } from "@/types/settlement-map";
 
@@ -72,5 +73,17 @@ export function generateSettlementHistory(seed: string, name: string, capital: b
     "교역로가 열리면서 장인 길드가 성장했다",
     "국경 분쟁을 겪으며 방어 거점을 정비했다"
   ][Math.floor(random() * 4)];
-  return `${name}의 정착 역사는 약 ${age}년 전으로 전해진다. ${beginnings} 성장했으며, ${capital ? "수도로 자리 잡은 뒤 행정과 외교의 중심지가 되었다. " : "주변 영지의 교역과 생활을 이어 왔다. "}최근에는 ${event}.`;
+  return gf(
+    "{name}의 정착 역사는 약 {age}년 전으로 전해진다. {beginnings} 성장했으며, {development}최근에는 {event}.",
+    "The settlement of {name} is said to date back about {age} years. It grew {beginnings}, and {development}Recently, it {event}.",
+    {
+      name,
+      age,
+      beginnings: gt(beginnings),
+      development: gt(
+        capital ? "수도로 자리 잡은 뒤 행정과 외교의 중심지가 되었다. " : "주변 영지의 교역과 생활을 이어 왔다. "
+      ),
+      event: gt(event)
+    }
+  );
 }

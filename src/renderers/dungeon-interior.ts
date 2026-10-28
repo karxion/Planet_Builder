@@ -1,4 +1,5 @@
 import { battleBox } from "@/data/battle-map";
+import { generatedText as gt } from "@/utils/generation-text";
 import type { BattleMapSettings } from "@/types/battle-map";
 import { sceneAsset, sceneAssetDefs } from "./scene-assets";
 import { ADVENTURE_MONSTER_BY_ID, adventureMonsterUrl } from "@/data/adventure-sites";
@@ -96,7 +97,7 @@ function renderFeature(dungeon: DungeonInterior, feature: DungeonFeature, langua
   if (feature.kind === "monster") {
     const monster = ADVENTURE_MONSTER_BY_ID.get(feature.monsterId)!;
     const elite = feature.hpMultiplier > 1;
-    return `<section><h4>${feature.boss ? text(language, "보스", "Boss") : text(language, "몬스터", "Monsters")} · ${esc(monster.name)} × ${feature.count}</h4><p>CR ${monster.cr} · ${monster.edition} <a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD p.${monster.page}</a></p>${elite ? `<p>${text(language, "비공식 정예 보정", "Homebrew elite adjustment")}: HP ×${feature.hpMultiplier}, ${text(language, "피해", "damage")} ×${feature.damageMultiplier}. ${text(language, "최종 HP·평균 피해를 반올림하고 나머지 원본 규칙은 유지합니다. 목표 CR은 검증된 공식 CR이 아닙니다.", "Round final HP and average damage; retain other source rules. Target CR is not a certified official CR.")}</p>` : ""}${feature.boss ? renderBossPatterns(dungeon, language) : ""}</section>`;
+    return `<section><h4>${feature.boss ? text(language, "보스", "Boss") : text(language, "몬스터", "Monsters")} · ${esc(gt(monster.name, language))} × ${feature.count}</h4><p>CR ${monster.cr} · ${monster.edition} <a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD p.${monster.page}</a></p>${elite ? `<p>${text(language, "비공식 정예 보정", "Homebrew elite adjustment")}: HP ×${feature.hpMultiplier}, ${text(language, "피해", "damage")} ×${feature.damageMultiplier}. ${text(language, "최종 HP·평균 피해를 반올림하고 나머지 원본 규칙은 유지합니다. 목표 CR은 검증된 공식 CR이 아닙니다.", "Round final HP and average damage; retain other source rules. Target CR is not a certified official CR.")}</p>` : ""}${feature.boss ? renderBossPatterns(dungeon, language) : ""}</section>`;
   }
   if (feature.kind === "chest") {
     const item = feature.itemId && MAGIC_ITEM_BY_ID.get(feature.itemId);

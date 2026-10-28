@@ -1,5 +1,6 @@
 import Alea from "alea";
 import { SEA_PEOPLES, SEABED_GEOLOGY_VERSION } from "@/data/underwater";
+import { generatedText as gt, generatedTemplate as gf } from "@/utils/generation-text";
 import type { UnderwaterMap } from "@/types/underwater";
 import type { SpaceSite, WorldSpacesData } from "@/types/world-spaces";
 
@@ -31,15 +32,29 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
   while ([...data.sites, ...data.links].some(s => s.id.startsWith(`sea:${generation}:`))) generation++;
   const prefix = `sea:${generation}:`,
     factionIds = SEA_PEOPLES.map(p => `sea-${p.id}`);
-  for (const [n, profile] of SEA_PEOPLES.entries())
-    if (!data.factions.some(f => f.id === factionIds[n]))
+  for (const [n, profile] of SEA_PEOPLES.entries()) {
+    const existing = data.factions.find(f => f.id === factionIds[n]);
+    const authored = (value: string | undefined, source: string) =>
+      [gt(source, "ko"), gt(source, "en")].includes(value || "");
+    if (
+      existing &&
+      authored(existing.name, profile.name) &&
+      authored(existing.notes, profile.notes) &&
+      authored(existing.people, profile.people)
+    ) {
+      existing.name = gt(profile.name);
+      existing.notes = gt(profile.notes);
+      existing.people = gt(profile.people);
+    }
+    if (!existing)
       data.factions.push({
         id: factionIds[n],
-        name: profile.name,
-        people: profile.people,
+        name: gt(profile.name),
+        people: gt(profile.people),
         color: profile.color,
-        notes: profile.notes
+        notes: gt(profile.notes)
       });
+  }
   const seaCells = depths
     .map((d, i) => ({ d, i }))
     .filter(p => p.d > 0)
@@ -97,15 +112,18 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
       id: `${prefix}city:${n}:${capital ? 0 : 1}`,
       space: "underwater",
       kind: "city",
-      name: `${faction.name.slice(0, 90)} ${capital ? "중심도시" : "교역항"}`,
+      name: gf("{name} {kind}", "{name} {kind}", {
+        name: faction.name.slice(0, 90),
+        kind: gt(capital ? "중심도시" : "교역항")
+      }),
       ...point(i),
       depth: depths[i],
       radius: 0.035,
       terrain: terrain[i] === 6 ? "reef" : [4, 14].includes(terrain[i]) ? "trench" : "plain",
       factionId: faction.id,
-      residents: faction.people || profile.people,
+      residents: faction.people || gt(profile.people),
       population,
-      notes: "해저 거주지 · 깊이는 해수면 아래 바닥 수심",
+      notes: gt("해저 거주지 · 깊이는 해수면 아래 바닥 수심"),
       origin: "underwater",
       edited: false
     };
@@ -129,7 +147,9 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
     route[route.length - 1] = { x: b.x, y: b.y };
     data.links.push({
       id: `${prefix}route:${n}`,
-      name: `${data.factions.find(f => f.id === factionIds[n])!.name.slice(0, 90)} 교역로`,
+      name: gf("{name} 교역로", "{name} Trade route", {
+        name: data.factions.find(f => f.id === factionIds[n])!.name.slice(0, 90)
+      }),
       from: a.id,
       to: b.id,
       origin: "underwater",

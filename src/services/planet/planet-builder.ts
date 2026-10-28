@@ -16,6 +16,7 @@ import { renderCloudProjectRow } from "@/renderers/cloud-project-row";
 import { Services } from "@/services";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage, initUiLanguage, t } from "@/services/ui-language";
+import { generatedText as gt } from "@/utils/generation-text";
 import type { CloudProject, PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
 import { ensureEl } from "@/utils";
@@ -268,7 +269,9 @@ function bindEvents(): void {
 
 async function switchSpace(space: WorldSpace): Promise<void> {
   if (viewMode !== "map") await setView("map");
-  WorldSpaces.update(d => { d.activeSpace = space; });
+  WorldSpaces.update(d => {
+    d.activeSpace = space;
+  });
   refreshWorldSpaces();
   renderSpacePanel();
 }
@@ -276,11 +279,16 @@ async function switchSpace(space: WorldSpace): Promise<void> {
 async function setView(mode: PlanetViewMode): Promise<void> {
   viewMode = mode;
   if (mode === "globe") {
-    WorldSpaces.update(d => { d.activeSpace = "surface"; });
+    WorldSpaces.update(d => {
+      d.activeSpace = "surface";
+    });
     refreshWorldSpaces();
     renderSpacePanel();
   }
-  ensureEl("fpb-map-view").classList.toggle("active", mode === "map" && WorldSpaces.snapshot().activeSpace === "surface");
+  ensureEl("fpb-map-view").classList.toggle(
+    "active",
+    mode === "map" && WorldSpaces.snapshot().activeSpace === "surface"
+  );
   ensureEl("fpb-globe-view").classList.toggle("active", mode === "globe");
   if (mode === "globe") await Controllers.View3d.open("viewGlobe");
   else {
@@ -348,6 +356,8 @@ async function generatePlanet(event: SubmitEvent): Promise<void> {
   if (loadingProject || customization) return;
   if (!confirmReplace("planet-settings")) return;
   const nextSettings = collectSettings();
+  if ([DEFAULT_PLANET_SETTINGS.name, gt(DEFAULT_PLANET_SETTINGS.name, "en")].includes(nextSettings.name))
+    nextSettings.name = gt(DEFAULT_PLANET_SETTINGS.name);
   beginDocument();
   settings = nextSettings;
   updateForm();

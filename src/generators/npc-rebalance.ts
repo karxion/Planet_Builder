@@ -1,4 +1,5 @@
 import { MAJOR_NPC_GOALS } from "@/data/npc-progression";
+import { generatedTemplate as gf, generatedText as gt } from "@/utils/generation-text";
 import type { CampaignWorld } from "@/types/campaign-world";
 import { type AdministrativeSnapshot, generateVillageNpcs } from "./campaign-generator";
 import { buildNpcContexts, generateNpcProgression, npcProfession } from "./npc-progression";
@@ -56,7 +57,10 @@ export function rebalanceCampaignNpcs(
           templateId: slot === 5 ? "guard" : "noble",
           progression,
           role: npcProfession(progression),
-          goal: `${home.name}에서 ${MAJOR_NPC_GOALS[slot === 6 ? "continent" : "country"][slot % 4]}`,
+          goal: gf("{place}에서 {goal}", "In {place}: {goal}", {
+            place: home.name,
+            goal: gt(MAJOR_NPC_GOALS[slot === 6 ? "continent" : "country"][slot % 4])
+          }),
           notes: "",
           edited: false
         });

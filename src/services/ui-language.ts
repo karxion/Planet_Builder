@@ -1,4 +1,6 @@
 import { UI_TRANSLATIONS } from "@/data/ui-translations";
+import { setGenerationLanguage } from "./generation-language";
+import { generatedText } from "@/utils/generation-text";
 
 export type UiLanguage = "ko" | "en";
 const STORAGE_KEY = "fpb-ui-language";
@@ -58,9 +60,13 @@ export const getUiLanguage = (): UiLanguage => language;
 declare global {
   interface Window {
     fpbTranslateUiText: typeof t;
+    fpbGeneratedText: typeof generatedText;
   }
 }
-if (typeof window !== "undefined") window.fpbTranslateUiText = t;
+if (typeof window !== "undefined") {
+  window.fpbTranslateUiText = t;
+  window.fpbGeneratedText = generatedText;
+}
 
 function ignored(element: Element | null): boolean {
   return !element || Boolean(element.closest(excluded));
@@ -119,6 +125,7 @@ function translateUi(roots: Iterable<Node> = [document.body]): void {
 export function setUiLanguage(next: UiLanguage): void {
   if (next !== "ko" && next !== "en") return;
   language = next;
+  setGenerationLanguage(next);
   try {
     localStorage.setItem(STORAGE_KEY, next);
   } catch {

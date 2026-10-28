@@ -1,5 +1,6 @@
 import { capitalize, isVowel, last, P, ra, rand } from "../utils";
 import { generateKoreanName } from "./korean-world-names";
+import { getGenerationLanguage } from "@/services/generation-language";
 
 declare global {
   var Names: NamesGenerator;
@@ -76,6 +77,7 @@ class NamesGenerator {
 
   // generate name using Markov's chain
   getBase(base: number, min?: number, max?: number, dupl?: string): string {
+    if (getGenerationLanguage() === "ko") return generateKoreanName();
     if (base === undefined) {
       ERROR && console.error("Please define a base");
       return "ERROR";
@@ -179,7 +181,7 @@ class NamesGenerator {
   }
 
   getDefault(): string {
-    return generateKoreanName();
+    return getGenerationLanguage() === "ko" ? generateKoreanName() : this.getBase(1);
   }
 
   // generate short name for base
@@ -301,7 +303,7 @@ class NamesGenerator {
     const min = nameBases[base].min - 1;
     const max = Math.max(nameBases[base].max - 3, min);
     const baseName = this.getBase(base, min, max, "") as string;
-    const name = P(0.7) ? this.addSuffix(baseName) : baseName;
+    const name = getGenerationLanguage() === "ko" ? baseName : P(0.7) ? this.addSuffix(baseName) : baseName;
     mapName.value = name;
   }
 

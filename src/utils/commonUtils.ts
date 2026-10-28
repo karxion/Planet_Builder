@@ -1,4 +1,5 @@
 import { clipPolygon } from "lineclip";
+import { getGenerationLanguage } from "@/services/generation-language";
 import { last } from "./arrayUtils";
 import { distanceSquared } from "./functionUtils";
 import { rn } from "./numberUtils";
@@ -133,7 +134,10 @@ export const parseError = (error: Error): string => {
   const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
   const errorString = isFirefox ? `${error.toString()} ${error.stack}` : error.stack || "";
   const regex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gi;
-  const safeError = errorString.replace(/[&<>]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[character]!);
+  const safeError = errorString.replace(
+    /[&<>]/g,
+    character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[character]!
+  );
   const errorNoURL = safeError.replace(regex, url => `<i>${last(url.split("/"))}</i>`);
   const errorParsed = errorNoURL.replace(/at /gi, "<br>&nbsp;&nbsp;at ");
   return errorParsed;
@@ -201,7 +205,7 @@ export const isCtrlClick = (event: MouseEvent | KeyboardEvent): boolean => {
  * @returns Formatted date string
  */
 export const generateDate = (from: number = 100, to: number = 1000): string => {
-  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString("en", {
+  return new Date(rand(from, to), rand(11), rand(1, 28)).toLocaleDateString(getGenerationLanguage(), {
     year: "numeric",
     month: "long",
     day: "numeric"

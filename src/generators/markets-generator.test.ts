@@ -245,7 +245,7 @@ describe("MarketsModule", () => {
       expect(marketsModule.getName(blank)).toBe("Riverton");
 
       const orphan: Market = { i: 7, centerBurgId: 99, color: "#fff", goods: {} };
-      expect(marketsModule.getName(orphan)).toBe("Market 7");
+      expect(marketsModule.getName(orphan)).toBe("시장 7");
     });
 
     it("sell() should record sales tax on burg deals when state has a sales tax", () => {

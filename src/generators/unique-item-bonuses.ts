@@ -13,7 +13,7 @@ export function itemCreationBackground(history: string): ItemHistory {
   if (/구원|구출|구호|치유|rescue|heal|salvation/i.test(history)) return "rescue";
   if (/전쟁|전투|전장|정복|war\b|battle|conquest/i.test(history)) return "war";
   if (/의식|제의|신전|봉인|ritual|temple|seal/i.test(history)) return "ritual";
-  if (/여행|항해|탐험|순례|journey|voyage|explor|pilgrim/i.test(history)) return "journey";
+  if (/여행|항해|탐험|순례|journey|voyage|explor|expedition|pilgrim/i.test(history)) return "journey";
   if (/맹세|서약|수호|oath|vow|guard/i.test(history)) return "oath";
   return "legacy";
 }
