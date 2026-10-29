@@ -9,6 +9,8 @@ import { SITE_KINDS, SPACE_IDS, type SpaceSiteKind, TERRAIN_KINDS, type WorldSpa
 import { mountUndergroundTools } from "./underground-tools";
 import { mountSeaDiplomacy, mountUnderwaterTools } from "./underwater-tools";
 import { openSpaceContent } from "./space-content";
+import { subsurfaceAssetName, type SubsurfaceAssetId } from "@/renderers/subsurface-assets";
+import { spaceLocation } from "@/services/world-spaces/location";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -23,6 +25,13 @@ let tab = "sites";
 let switchView: (space: WorldSpace) => Promise<void>;
 let currentData = "";
 let activeSpace: WorldSpace = "surface";
+let scenery: { asset: SubsurfaceAssetId; x: number; y: number } | undefined;
+
+declare global {
+  interface Window {
+    worldSpaceMapTip?: (point: number[], target: Element) => string | undefined;
+  }
+}
 const spaceLabels = (): Record<WorldSpace, string> => ({
   surface: text("지상", "Surface"),
   underwater: text("수중", "Underwater"),
@@ -50,6 +59,8 @@ export function refreshWorldSpaces(): void {
     activeSpace = data.activeSpace;
     placement = undefined;
     selected = "";
+    scenery = undefined;
+    if (tab === "object") tab = "sites";
     if (activeSpace === "underground" && !data.underground) tab = "terrain";
     if (activeSpace === "underwater" && !data.underwater) {
       tab = "seabed";
@@ -122,7 +133,8 @@ function renderPanel(): void {
       ...(data.activeSpace === "underwater" ? [["seabed", text("해저·세력", "Seabed / realms")]] : []),
       ["sites", text("장소", "Places")],
       ["factions", text("세력", "Factions")],
-      ["links", text("연결", "Connections")]
+      ["links", text("연결", "Connections")],
+      ...(scenery ? [["object", text("오브젝트", "Object")]] : [])
     ]
       .map(
         ([value, name]) => `<button type="button" data-tab="${value}" aria-pressed="${tab === value}">${name}</button>`
@@ -142,7 +154,10 @@ function renderPanel(): void {
     };
   });
   const content = panel.querySelector<HTMLElement>("[data-content]")!;
-  if (tab === "seabed" && data.activeSpace === "underwater") {
+  if (tab === "object" && scenery) {
+    content.innerHTML = `<h4>${esc(subsurfaceAssetName(scenery.asset))}</h4><p>${esc(spaceLocation(data, scenery.x, scenery.y) || "")}</p>`;
+    return;
+  } else if (tab === "seabed" && data.activeSpace === "underwater") {
     mountUnderwaterTools(content, {
       changed: () => {
         selected = "";
@@ -386,6 +401,17 @@ async function travel(id: string): Promise<void> {
 
 export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>): void {
   switchView = onSwitch;
+  window.worldSpaceMapTip = (point, target) => {
+    const data = WorldSpaces.snapshot();
+    const location = spaceLocation(data, point[0] / graphWidth, point[1] / graphHeight);
+    if (location === undefined) return;
+    const mark = target.closest<SVGElement>("[data-space-site]");
+    const site = data.sites.find(s => s.id === mark?.dataset.spaceSite && siteInActiveLevel(s, data));
+    const object = target.closest<SVGElement>("[data-scenery-asset]");
+    const name = site?.name || (object ? subsurfaceAssetName(object.dataset.sceneryAsset as SubsurfaceAssetId) : "");
+    // The legacy tooltip accepts HTML. Escape saved names before crossing that boundary.
+    return esc([name, location].filter(Boolean).join(" · "));
+  };
   panel = document.createElement("aside");
   panel.id = "fpb-space-panel";
   panel.hidden = true;
@@ -415,6 +441,8 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
   });
   const redraw = () => {
     selected = "";
+    scenery = undefined;
+    if (tab === "object") tab = "sites";
     placement = undefined;
     refreshWorldSpaces();
     if (!panel.hidden) renderPanel();
@@ -441,11 +469,22 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
     if (event instanceof KeyboardEvent && !["Enter", " "].includes(event.key)) return;
     const portal = target.closest<SVGElement>("[data-space-travel]");
     const mark = target.closest<SVGElement>("[data-space-site]");
-    if (!placement && (portal || mark)) {
+    const object = target.closest<SVGElement>("[data-scenery-asset]");
+    if (!placement && (portal || mark || object)) {
       event.preventDefault();
       event.stopImmediatePropagation();
       if (portal) void travel(portal.dataset.spaceTravel!);
-      else {
+      else if (object) {
+        scenery = {
+          asset: object.dataset.sceneryAsset as SubsurfaceAssetId,
+          x: Number(object.dataset.spaceX),
+          y: Number(object.dataset.spaceY)
+        };
+        tab = "object";
+        panel.hidden = false;
+        renderPanel();
+      } else {
+        scenery = undefined;
         selected = mark!.dataset.spaceSite!;
         tab = "sites";
         panel.hidden = false;

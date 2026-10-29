@@ -1,10 +1,12 @@
 import Alea from "alea";
 import manifest from "@/data/subsurface-image-manifest.json";
 import type { WorldSpacesData } from "@/types/world-spaces";
+import { getUiLanguage } from "@/services/ui-language";
 
 export type SubsurfaceAssetId = keyof typeof manifest;
 const NS = "http://www.w3.org/2000/svg";
 export const SUBSURFACE_ASSET_IDS = Object.keys(manifest) as SubsurfaceAssetId[];
+export const subsurfaceAssetName = (id: SubsurfaceAssetId): string => manifest[id][getUiLanguage() === "ko" ? "ko" : "en"];
 export function subsurfaceAssetUrl(id: SubsurfaceAssetId): string {
   return `${import.meta.env.BASE_URL || "/"}assets/subsurface/${manifest[id].file}?v=${manifest[id].sha256.slice(0, 12)}`;
 }
@@ -41,7 +43,6 @@ export function subsurfaceMarker(id: SubsurfaceAssetId, x: number, y: number, si
 export function subsurfaceScenery(data: WorldSpacesData, width: number, height: number): SVGGElement {
   const group = document.createElementNS(NS, "g");
   group.dataset.subsurfaceScenery = data.activeSpace;
-  group.setAttribute("pointer-events", "none");
   const map =
     data.activeSpace === "underwater"
       ? data.underwater
@@ -80,9 +81,25 @@ export function subsurfaceScenery(data: WorldSpacesData, width: number, height: 
       )
     )
       continue;
-    const marker = subsurfaceMarker(pool[Math.floor(rng() * pool.length)], x * width, y * height, 24);
-    marker.dataset.sceneryCell = String(i);
-    group.append(marker);
+    const id = pool[Math.floor(rng() * pool.length)], mark = document.createElementNS(NS, "g");
+    mark.dataset.sceneryCell = String(i);
+    mark.dataset.sceneryAsset = id;
+    mark.dataset.spaceX = String(x);
+    mark.dataset.spaceY = String(y);
+    mark.setAttribute("role", "button");
+    mark.setAttribute("tabindex", "0");
+    mark.setAttribute("aria-label", subsurfaceAssetName(id));
+    mark.setAttribute("cursor", "pointer");
+    const hit = document.createElementNS(NS, "circle");
+    hit.setAttribute("cx", String(x * width));
+    hit.setAttribute("cy", String(y * height));
+    hit.setAttribute("r", "12");
+    hit.setAttribute("fill", "transparent");
+    hit.setAttribute("pointer-events", "all");
+    const title = document.createElementNS(NS, "title");
+    title.textContent = subsurfaceAssetName(id);
+    mark.append(hit, subsurfaceMarker(id, x * width, y * height, 24), title);
+    group.append(mark);
   }
   return group;
 }

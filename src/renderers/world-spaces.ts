@@ -41,7 +41,6 @@ export function drawWorldSpaces(input: {
   if (underground) root.append(drawUndergroundTerrain(underground, width, height));
   const underwater = data.activeSpace === "underwater" ? data.underwater : undefined;
   if (underwater) root.append(drawUnderwaterTerrain(underwater, data.factions, width, height));
-  if (data.activeSpace !== "surface") root.append(subsurfaceScenery(data, width, height));
   const sites = data.sites.filter(s => siteInActiveLevel(s, data));
   const point = (s: SpaceSite) => [s.x * width, s.y * height];
   const labelBounds: { x: number; y: number; width: number; height: number }[] = [];
@@ -131,6 +130,8 @@ export function drawWorldSpaces(input: {
     }
   }
   const priority = (site: SpaceSite) => (site.kind === "city" ? 0 : site.kind === "gateway" ? 1 : 2);
+  // Keep hit areas above the territory fills and below city / gateway controls.
+  if (data.activeSpace !== "surface") root.append(subsurfaceScenery(data, width, height));
   for (const site of [...sites].sort((a, b) => priority(a) - priority(b))) {
     if (underground && site.origin === "underground" && site.kind === "territory") continue;
     const [x, y] = point(site);

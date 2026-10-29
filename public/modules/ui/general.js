@@ -84,6 +84,13 @@ const onMouseMove = debounce(handleMouseMove, 100);
 function handleMouseMove() {
   if (!this) return;
   const point = d3.mouse(this);
+  const spaceTip = window.worldSpaceMapTip?.(point, d3.event.target);
+  if (spaceTip !== undefined) {
+    if (!options.pinNotes && !notesEditor?.offsetParent) document.getElementById("notes").style.display = "none";
+    if (tooltip.dataset.main) showMainTip();
+    else tip(spaceTip);
+    return;
+  }
   const i = findCell(point[0], point[1]); // pack cell id
   if (i === undefined) return;
 

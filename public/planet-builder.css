@@ -956,3 +956,9 @@ body[data-world-space] #map #viewbox > :not(#fpb-world-spaces) * { visibility: h
 #fpb-space-content form { margin-top: 26px; padding-top: 18px; border-top: 1px solid #3b4538; }
 #fpb-space-content textarea { min-height: 82px; resize: vertical; }
 @media (max-width: 600px) { #fpb-space-content { height: 94dvh; } #fpb-space-content header, #fpb-space-content nav, .fpb-space-content-filters { padding-inline: 14px; } .fpb-space-content-layout { grid-template-columns: 1fr; grid-template-rows: 27% minmax(0, 1fr); height: calc(100% - 255px); } #fpb-space-content [data-list] { border-right: 0; border-bottom: 1px solid #3b4538; padding: 10px 14px; } #fpb-space-content [data-detail] { padding: 16px; } }
+/* Keep the dedicated scenery hit target visible during keyboard navigation. */
+[data-scenery-cell]:focus-visible > circle {
+  stroke: #f5d58d;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
