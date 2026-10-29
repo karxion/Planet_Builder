@@ -2,6 +2,9 @@ import type { Selection } from "d3";
 import { select } from "d3";
 import { connectVertices, ensureEl, getBase64, getCoordinates, getGridPolygon, rn, unique } from "@/utils";
 import { clearMapIconGroups } from "@/renderers/map-icon-groups";
+import { clearAnchoredMapObjects } from "@/renderers/anchored-map-objects";
+import { restoreIndividualMapIcons } from "@/renderers/individual-map-icons";
+import { restoreResourceIconSpacing } from "@/renderers/resource-icon-spacing";
 import { inlineDiplomacyAssets } from "./diplomacy-assets";
 import { scaleBorderTokens } from "@/renderers/border-diplomacy";
 
@@ -241,7 +244,12 @@ async function getMapURL(type: string, options: GetMapURLOptions = {}): Promise<
   } = options;
 
   const cloneEl = (document.getElementById("map") as unknown as SVGSVGElement).cloneNode(true) as SVGSVGElement; // clone svg
-  if (fullMap || noLabels) clearMapIconGroups(cloneEl);
+  if (fullMap || noLabels) {
+    clearMapIconGroups(cloneEl);
+    clearAnchoredMapObjects(cloneEl);
+    restoreIndividualMapIcons(cloneEl);
+    restoreResourceIconSpacing(cloneEl);
+  }
   cloneEl.id = "fantasyMap";
   // Texture/export preparation can await fonts. Keep its full-size clone out of the
   // visible map and document scroll bounds when switching spaces or resizing.

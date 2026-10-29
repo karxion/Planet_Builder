@@ -2,6 +2,9 @@
 
 import { removeLegacyDivisions } from "@/generators/administration-policy";
 import { clearMapIconGroups } from "@/renderers/map-icon-groups";
+import { clearAnchoredMapObjects } from "@/renderers/anchored-map-objects";
+import { restoreIndividualMapIcons } from "@/renderers/individual-map-icons";
+import { restoreResourceIconSpacing } from "@/renderers/resource-icon-spacing";
 import { Services } from "@/services";
 import { ensureEl, link, parseError, rn } from "@/utils";
 
@@ -95,6 +98,9 @@ function prepareMapData(): string {
   // save svg
   const cloneEl = ensureEl("map").cloneNode(true) as SVGSVGElement;
   clearMapIconGroups(cloneEl);
+  clearAnchoredMapObjects(cloneEl);
+  restoreIndividualMapIcons(cloneEl);
+  restoreResourceIconSpacing(cloneEl);
   cloneEl.querySelector("#fpb-world-spaces")?.remove();
   cloneEl.querySelector("#diplomacy")?.remove();
   cloneEl.querySelector("#fpb-headquarters")?.remove();
