@@ -204,6 +204,20 @@ describe("National wilderness adventure sites", () => {
     expect(pack.markers).toEqual(snapshot);
     expect(JSON.parse(JSON.stringify(pack.markers))).toEqual(snapshot);
   });
+  it.each([Uint16Array, Uint32Array])("accepts actual typed cell indexes without losing candidate coordinates: %s", ArrayType => {
+    const arrayPack = fixture();
+    const typedPack = { ...fixture(), cells: { ...fixture().cells, i: new ArrayType(arrayPack.cells.i) } };
+    const arrayNotes: { id: string; name: string; legend: string }[] = [];
+    const typedNotes: { id: string; name: string; legend: string }[] = [];
+    const expected = populateAdventureMarkers(arrayPack, arrayNotes, "typed-world", { width: 600, height: 400 }, settings);
+    const result = populateAdventureMarkers(typedPack, typedNotes, "typed-world", { width: 600, height: 400 }, settings);
+    expect(result.placements.length).toBeGreaterThan(0);
+    expect(result).toEqual(expected);
+    expect(typedPack.markers).toEqual(arrayPack.markers);
+    expect(typedNotes).toEqual(arrayNotes);
+    expect(typedPack.cells.i).toBeInstanceOf(ArrayType);
+    expect(populateAdventureMarkers(typedPack, typedNotes, "typed-world", { width: 600, height: 400 }, settings).placements).toHaveLength(0);
+  });
   it("round-trips marker metadata in the map payload of an FPB file", async () => {
     const pack = fixture();
     const notes: { id: string; name: string; legend: string }[] = [];

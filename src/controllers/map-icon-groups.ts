@@ -7,6 +7,8 @@ import { localizedMapNote } from "@/services/marker-notes";
 import { getUiLanguage } from "@/services/ui-language";
 import type { Marker } from "@/generators/markers-generator";
 import type { AnchoredObjectGroup } from "@/utils/anchoredMapObjects";
+import { isDungeonLocation } from "@/data/dungeon-locations";
+import { openDungeonInteriorMap } from "./dungeon-interior";
 
 declare global {
   var editMarker: (id?: number) => void;
@@ -50,7 +52,24 @@ function openObjects(group: AnchoredObjectGroup): void {
       if (view) clearAnchoredMapObjects(view);
       editMarker(marker.i);
     };
-    row.append(preview, label, button);
+    const actions = document.createElement("span");
+    actions.className = "fpb-object-actions";
+    if (isDungeonLocation(marker) || marker.type === "encounters") {
+      const primary = document.createElement("button");
+      primary.type = "button";
+      primary.dataset.objectAction = isDungeonLocation(marker) ? "dungeon" : "encounter";
+      primary.textContent = isDungeonLocation(marker)
+        ? text("던전 내부 지도", "Open dungeon map")
+        : text("인물 만나기", "Meet character");
+      primary.onclick = () => {
+        dialog.close();
+        if (isDungeonLocation(marker)) openDungeonInteriorMap(marker.i);
+        else if (typeof openLocalEncounter === "function") openLocalEncounter(marker.i);
+      };
+      actions.append(primary);
+    }
+    actions.append(button);
+    row.append(preview, label, actions);
     dialog.querySelector("ul")!.append(row);
   }
   document.body.append(dialog);

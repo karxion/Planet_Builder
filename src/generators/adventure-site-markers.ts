@@ -15,8 +15,11 @@ interface SiteNote {
   name: string;
   legend: string;
 }
+interface AdventureMarkerInput extends Omit<PackedGraph, "cells"> {
+  cells: Omit<PackedGraph["cells"], "i"> & { i: ArrayLike<number> };
+}
 export function populateAdventureMarkers(
-  pack: PackedGraph,
+  pack: AdventureMarkerInput,
   notes: SiteNote[],
   seed: string,
   dimensions: { width: number; height: number },
@@ -28,7 +31,7 @@ export function populateAdventureMarkers(
     countries: pack.states
       .filter(state => state?.i && !state.removed)
       .map(state => ({ id: state.i, name: state.fullName || state.name })),
-    cells: pack.cells.i
+    cells: Array.from(pack.cells.i)
       .filter(cell => pack.cells.h[cell] >= 20 && !pack.cells.burg[cell])
       .map(cell => ({
         id: cell,

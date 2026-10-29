@@ -24,10 +24,13 @@
 #fpb-object-dialog li svg { width: 48px; height: 48px; }
 #fpb-object-dialog strong { overflow-wrap: anywhere; }
 #fpb-object-dialog button { min-height: 44px; padding: 8px 12px; background: #29372d; color: #eee7cd; border: 1px solid #686650; border-radius: 4px; font: inherit; cursor: pointer; }
+.fpb-object-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+#fpb-object-dialog [data-object-action] { background: #3b5544; border-color: #bfa166; }
 #fpb-anchored-objects [role="button"] { cursor: pointer; }
 #fpb-anchored-objects [role="button"]:focus { outline: none; }
 #fpb-anchored-objects [role="button"]:focus-visible .fpb-object-badge { stroke: #66e7ed; stroke-width: 3; }
 body[data-world-space] #fpb-anchored-objects { display: none; }
+
 
 body.fpb-ready {
   padding-top: 58px;
@@ -976,4 +979,19 @@ body[data-world-space] #map #viewbox > :not(#fpb-world-spaces) * { visibility: h
   stroke: #f5d58d;
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
+}
+
+/* Isolate the language control from the scrolling actions after legacy breakpoint rules. */
+@media (min-width: 761px) {
+  #fpb-shell { display: flex; }
+  #fpb-shell > .fpb-brand { flex: 0 0 auto; min-width: max-content; }
+  #fpb-shell .fpb-brand-title { width: max-content; flex-wrap: nowrap; }
+  #fpb-shell .fpb-brand strong { white-space: nowrap; }
+  #fpb-shell > .fpb-view-switch { flex: 0 0 auto; }
+  #fpb-shell > .fpb-actions { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; justify-content: flex-start; }
+  #fpb-shell > .fpb-language-control { flex: 0 0 auto; min-width: 80px; }
+}
+@media (min-width: 761px) and (max-width: 1440px) {
+  #fpb-shell > .fpb-view-switch { position: fixed; left: 50%; bottom: 16px; height: 36px; transform: translateX(-50%); background: #171e18; box-shadow: 0 4px 18px #0006; }
+  #fpb-shell .fpb-extra-view[open] > button { top: auto; bottom: 100%; }
 }
