@@ -5,7 +5,27 @@
 #fpb-burg-details li { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid #49554a; font-size: 12px; }
 #fpb-burg-details li button { text-align: left; color: #a9dce8; padding: 0; background: none; border: 0; text-decoration: underline; }
 #fpb-burg-details li span { overflow-wrap: anywhere; }
-body.fpb-ready #burgEditor { max-height: 78vh !important; overflow-y: auto; max-width: min(520px, 90vw); }
+body.fpb-ready #burgEditor { box-sizing: border-box; width: auto !important; max-width: none; max-height: 78dvh !important; overflow-y: auto; text-align: left; }
+/* Override the legacy .dialog > div { width: max-content } for this editor only. */
+#burgEditor > div { box-sizing: border-box; width: 100%; min-width: 0; }
+#burgEditor .fpb-burg-summary { display: grid; grid-template-columns: minmax(0, 112px) minmax(0, 1fr); align-items: center; gap: 12px; }
+#burgEditor .fpb-burg-summary > svg { width: 100%; height: auto; max-height: 150px; }
+#burgEditor .fpb-burg-fields { display: grid; grid-template-columns: minmax(0, 1fr); grid-auto-rows: minmax(1.8em, auto); min-width: 0; }
+#burgEditor .fpb-burg-fields > div { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+#burgEditor .fpb-burg-fields > div:not(#burgProvinceAndState) { display: flex; align-items: center; flex-wrap: wrap; column-gap: 5px; row-gap: 3px; }
+#burgEditor #burgProvinceAndState { max-width: none !important; }
+#burgEditor input, #burgEditor select { box-sizing: border-box; min-width: 0; max-width: 100%; }
+#burgEditor #fpb-burg-details { max-width: none; }
+#burgEditor #fpb-burg-details li > * { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+#burgEditor #burgBottom { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+#burgEditor #burgStyleSection { flex-wrap: wrap; }
+body.fpb-ready .fpb-burg-editor-dialog .ui-dialog-titlebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; box-sizing: border-box; width: 100%; padding: 8px 12px; text-align: left; }
+body.fpb-ready .fpb-burg-editor-dialog .ui-dialog-title { flex: 1 1 auto; float: none; width: auto; min-width: 0; margin: 0; white-space: normal; overflow-wrap: anywhere; }
+body.fpb-ready .fpb-burg-editor-dialog .ui-dialog-titlebar-close { position: static; flex: 0 0 auto; width: auto; min-width: 52px; height: 32px; margin: 0; padding-inline: 8px; white-space: nowrap; }
+@media (max-width: 600px) {
+  #burgEditor .fpb-burg-summary { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  #burgEditor .fpb-burg-summary > svg { width: 88px; justify-self: center; }
+}
 #fpb-city-map-dialog { width: min(1200px, 96vw); max-width: 96vw; height: min(900px, 94vh); max-height: 94vh; padding: 0; border: 1px solid #9caa7c; border-radius: 6px; background: #202820; color: #e3eadd; box-sizing: border-box; overflow-y: auto; font: 13px/1.6 Arial, "Malgun Gothic", sans-serif; letter-spacing: 0; }
 #fpb-city-map-dialog::backdrop { background: #0b1617bb; }
 #fpb-city-map-dialog header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #68775d; }

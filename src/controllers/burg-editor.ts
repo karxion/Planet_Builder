@@ -30,6 +30,8 @@ function open(id: number | string): void {
 
   $("#burgEditor").dialog({
     title: "Edit Burg",
+    dialogClass: "fpb-burg-editor-dialog",
+    width: 560,
     resizable: false,
     close: closeBurgEditor,
     position: { my: "left top", at: "left+10 top+10", of: "svg", collision: "fit" }
