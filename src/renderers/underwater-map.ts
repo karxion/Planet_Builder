@@ -1,6 +1,5 @@
 import { contours, geoPath } from "d3";
 import { SEABED_COLORS, SEABED_TERRAINS } from "@/data/underwater";
-import { getUiLanguage } from "@/services/ui-language";
 import type { UnderwaterMap } from "@/types/underwater";
 import type { SpaceFaction } from "@/types/world-spaces";
 
@@ -75,31 +74,6 @@ export function drawUnderwaterTerrain(
     const title = document.createElementNS(NS, "title");
     title.textContent = `${contour.value} m`;
     line.append(title);
-  }
-  const relevant = map.features?.filter(f => [5, 8, 10, 11, 14].includes(f.kind)) || [];
-  for (const feature of relevant) {
-    const mark = document.createElementNS(NS, "circle");
-    mark.setAttribute("cx", String(feature.x * width));
-    mark.setAttribute("cy", String(feature.y * height));
-    mark.setAttribute("r", "3");
-    mark.setAttribute("fill", SEABED_COLORS[feature.kind]);
-    mark.setAttribute("stroke", "#d4d5be");
-    mark.setAttribute("data-seabed-feature", String(feature.kind));
-    mark.setAttribute("data-space-layer", "toggleRelief");
-    const title = document.createElementNS(NS, "title");
-    title.textContent = `${getUiLanguage() === "ko" ? SEABED_TERRAINS[feature.kind].ko : SEABED_TERRAINS[feature.kind].en}${feature.relief === undefined ? "" : ` · ${getUiLanguage() === "ko" ? "주변 해저 대비" : "relief"} ${feature.relief} m`}`;
-    if (feature.margin)
-      title.textContent +=
-        getUiLanguage() === "ko"
-          ? ` · ${feature.margin === "active" ? "활동형" : "수동형"} 주변부`
-          : ` · ${feature.margin} margin`;
-    if (feature.spreading)
-      title.textContent +=
-        getUiLanguage() === "ko"
-          ? ` · ${feature.spreading === "slow" ? "느린" : "빠른"} 확장 모티프`
-          : ` · ${feature.spreading}-spreading motif`;
-    mark.append(title);
-    root.append(mark);
   }
   return root;
 }

@@ -287,5 +287,14 @@ export function generateSeabed(seed: string, surface: SeaSurface) {
   for (let i = 0; i < size; i++)
     if (terrain[i] === 1 && Math.sin((i % w) * 0.31 + phase) * Math.sin(Math.floor(i / w) * 0.23 - phase) > 0.5)
       terrain[i] = 6;
+  // A separate shallow-shelf sediment motif, not a depth inferred from an icon.
+  // Keep all v3 depths and existing features unchanged; only classify some remaining shelf cells.
+  for (let i = 0; i < size; i++)
+    if (
+      terrain[i] === 1 &&
+      depths[i] <= 200 &&
+      Math.sin((i % w) * 0.19 + phase) * Math.cos(Math.floor(i / w) * 0.21 - phase) > 0.62
+    )
+      terrain[i] = 16;
   return { depths, terrain, features, water };
 }

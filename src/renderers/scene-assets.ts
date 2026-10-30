@@ -3,6 +3,7 @@ import { DUNGEON_ASSET_BY_ID, dungeonAssetUrl } from "@/data/dungeon-assets";
 import manifest from "@/data/scene-image-manifest.json";
 import type { DungeonAssetId } from "@/types/dungeon-v2";
 import { SUBSURFACE_ASSET_IDS, type SubsurfaceAssetId, subsurfaceAssetUrl } from "./subsurface-assets";
+import { SEABED_RELIEF_IDS, type SeabedReliefId, seabedReliefUrl } from "@/data/seabed-relief";
 
 export type SceneAssetView = "overview" | "battle";
 export type SceneAssetId = "house" | "keep" | "wall" | "gate" | "well" | "barn" | "paving" | "tree";
@@ -40,25 +41,34 @@ export async function inlineSceneImages(markup: string): Promise<string> {
   await Promise.all(
     [
       ...root.querySelectorAll<SVGImageElement>(
-        "image[data-generated-module], image[data-subsurface-module], image[data-dungeon-module]"
+        "image[data-generated-module], image[data-subsurface-module], image[data-dungeon-module], image[data-seabed-relief-module]"
       )
     ].map(async image => {
       const dungeon = image.dataset.dungeonModule as DungeonAssetId | undefined;
       const id = image.dataset.generatedModule as SceneAssetId;
       const sub = image.dataset.subsurfaceModule as SubsurfaceAssetId | undefined;
+      const relief = image.dataset.seabedReliefModule as SeabedReliefId | undefined;
       if (
-        dungeon
-          ? !DUNGEON_ASSET_BY_ID.has(dungeon)
-          : sub
-            ? !SUBSURFACE_ASSET_IDS.includes(sub)
-            : !SCENE_ASSET_IDS.includes(id)
+        relief
+          ? !SEABED_RELIEF_IDS.includes(relief)
+          : dungeon
+            ? !DUNGEON_ASSET_BY_ID.has(dungeon)
+            : sub
+              ? !SUBSURFACE_ASSET_IDS.includes(sub)
+              : !SCENE_ASSET_IDS.includes(id)
       )
         throw new Error("Unknown scene module");
       const url = new URL(
-        dungeon ? dungeonAssetUrl(dungeon) : sub ? subsurfaceAssetUrl(sub) : sceneAssetUrl(id),
+        relief
+          ? seabedReliefUrl(relief)
+          : dungeon
+            ? dungeonAssetUrl(dungeon)
+            : sub
+              ? subsurfaceAssetUrl(sub)
+              : sceneAssetUrl(id),
         location.href
       );
-      const key = dungeon ? `dungeon:${dungeon}` : sub ? `subsurface:${sub}` : id;
+      const key = relief ? `seabed-relief:${relief}` : dungeon ? `dungeon:${dungeon}` : sub ? `subsurface:${sub}` : id;
       if (url.origin !== location.origin) throw new Error("Scene assets must be local");
       if (!embedded.has(key))
         embedded.set(

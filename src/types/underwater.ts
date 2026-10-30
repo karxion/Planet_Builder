@@ -1,4 +1,4 @@
-export type SeabedTerrain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15;
+export type SeabedTerrain = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
 export interface SeabedFeature {
   kind: SeabedTerrain;
   x: number;
@@ -27,12 +27,12 @@ export interface UnderwaterMap {
   rows: number;
   /** Metres below sea level. Zero denotes land. */
   depths: number[];
-  /** Primary display class: legacy 0–6, extended geomorphology 7–15. */
+  /** Primary display class: legacy 0–6, geomorphology 7–15, v4 sand waves 16. */
   terrain: SeabedTerrain[];
   /** Zero = unclaimed; otherwise 1-based index into factionIds. */
   owners: number[];
   factionIds: string[];
   view: "combined" | "terrain" | "political";
-  geologyVersion?: 2 | 3;
+  geologyVersion?: 2 | 3 | 4;
   features?: SeabedFeature[];
 }

@@ -93,9 +93,8 @@ export function subsurfaceScenery(data: WorldSpacesData, width: number, height: 
       )
     )
       continue;
-    const seaMountain = "depths" in map && [5, 9, 10, 11].includes(cell);
-    if ((hollow && cell !== 3 && rng() > 0.18) || seaMountain) {
-      const kind = seaMountain || cell === 4 ? "mount" : cell === 5 ? "deciduous" : "grass";
+    if (hollow && cell !== 3 && rng() > 0.18) {
+      const kind = cell === 4 ? "mount" : cell === 5 ? "deciduous" : "grass";
       const mark = document.createElementNS(NS, "use");
       mark.setAttribute("href", `#fpb-hollow-${kind}`);
       mark.setAttribute("x", String(x * width - 9));
@@ -103,8 +102,7 @@ export function subsurfaceScenery(data: WorldSpacesData, width: number, height: 
       mark.setAttribute("width", cell === 4 ? "24" : "18");
       mark.setAttribute("height", cell === 4 ? "24" : "18");
       mark.setAttribute("pointer-events", "none");
-      if (hollow) mark.dataset.hollowRelief = kind;
-      else mark.dataset.seafloorRelief = String(cell);
+      mark.dataset.hollowRelief = kind;
       mark.dataset.spaceLayer = "toggleRelief";
       group.append(mark);
       continue;
@@ -112,7 +110,7 @@ export function subsurfaceScenery(data: WorldSpacesData, width: number, height: 
     const choices: SubsurfaceAssetId[] = hollow ? ["ur01", "ur06"] : pool;
     const id = choices[Math.floor(rng() * choices.length)],
       mark = document.createElementNS(NS, "g");
-    mark.dataset.spaceLayer = /^(sr|ur)/.test(id) ? "toggleGoods" : "toggleRelief";
+    mark.dataset.spaceLayer = /^(sr|ur)/.test(id) ? "toggleGoods" : "depths" in map ? "toggleBiomes" : "toggleRelief";
     mark.dataset.sceneryCell = String(i);
     mark.dataset.sceneryAsset = id;
     mark.dataset.spaceX = String(x);

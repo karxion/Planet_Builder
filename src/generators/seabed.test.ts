@@ -13,6 +13,28 @@ const surface = () => ({
 const index = (f: { x: number; y: number }) => Math.floor(f.y * 64) * 96 + Math.floor(f.x * 96);
 
 describe("seafloor morphology", () => {
+  it("generates shallow sand-wave fields deterministically and preserves legacy morphology versions", () => {
+    const data = generateUnderwater(emptyWorldSpaces(), "sea-test", surface());
+    const map = data.underwater!;
+    expect(map.geologyVersion).toBe(4);
+    expect(map.terrain).toContain(16);
+    for (const [i, kind] of map.terrain.entries())
+      if (kind === 16) {
+        expect(map.depths[i]).toBeGreaterThan(0);
+        expect(map.depths[i]).toBeLessThanOrEqual(200);
+      }
+    expect(data).toEqual(generateUnderwater(emptyWorldSpaces(), "sea-test", surface()));
+    expect(isWorldSpaces(data)).toBe(true);
+    for (const version of [2, 3] as const) {
+      map.geologyVersion = version;
+      expect(isWorldSpaces(data)).toBe(false);
+      const old = structuredClone(data);
+      old.underwater!.terrain = old.underwater!.terrain.map(t => (t === 16 ? 1 : t));
+      const store = new WorldSpaceStore();
+      store.restore(old);
+      expect(store.snapshot()).toEqual(old);
+    }
+  });
   it("separates shelf, steep slope, sedimentary rise, abyss and hadal depressions", () => {
     const map = generateSeabed("sea-test", surface());
     for (const [i, kind] of map.terrain.entries()) {

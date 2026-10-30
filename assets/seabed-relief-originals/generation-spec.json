@@ -1,0 +1,85 @@
+{
+  "tool": "built-in image_gen",
+  "assets": [
+    {
+      "id": "shelf",
+      "kind": 1,
+      "prompt": "Use case: stylized-concept. Asset type: individual PNG bathymetric terrain map icon for a Korean fantasy atlas. ONE isolated terrain landform, no other asset types. Three-quarter isometric view from upper-right, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32 px, restrained warm sandstone and slate blue-grey with teal edge accents, soft upper-left light, crisp dark edges. Depict a small exposed patch of seabed with readable relief, a cutaway landform miniature rather than water surface. No enclosing square tile, no ocean plane, no backdrop, no frame, no numbers, no letters, no legend, no compass, no people, no buildings, no fish, no bubbles, no cast shadow outside the subject. Genuine transparent alpha background. Centered subject occupying 75% of canvas with clean padding. Not photorealistic, not UI line art. A broad nearly flat SHALLOW CONTINENTAL SHELF platform with low, gentle relief and one clearly visible softly rounded drop-off edge. Light sandy stone. NOT mountains or a steep slope."
+    },
+    {
+      "id": "slope",
+      "kind": 2,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. CONTINENTAL SLOPE: broad steep diagonal descent from a high shallow ledge to deep floor; three descending contour shelves revealing the gradient. No mountain peaks."
+    },
+    {
+      "id": "plain",
+      "kind": 3,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. ABYSSAL PLAIN: broad flat smooth deep sediment patch with only subtle low ripples and a softly scalloped outline. No hills or steep edge."
+    },
+    {
+      "id": "trench",
+      "kind": 4,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. OCEAN TRENCH: long narrow V-shaped dark trough with high opposing rocky walls; a diagonal continuous deep groove. Not a cave."
+    },
+    {
+      "id": "ridge",
+      "kind": 5,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. MID-OCEAN RIDGE: continuous diagonal chain of THREE CONNECTED rugged submarine mountain peaks with broad uplifted shoulders. Grey basalt, no snow."
+    },
+    {
+      "id": "reef",
+      "kind": 6,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. CORAL REEF: low pale limestone platform with a compact branching warm muted coral colony. A terrain formation, not a building."
+    },
+    {
+      "id": "rise",
+      "kind": 7,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. CONTINENTAL RISE: broad low gently curved sediment apron at the foot of a SHORT steep slope; smooth spreading layered deposits, lower and gentler than a continental slope."
+    },
+    {
+      "id": "canyon",
+      "kind": 8,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. SUBMARINE CANYON: a distinct branching Y-shaped erosional ravine incised in a sloping seabed patch; two tributaries joining a central gorge. Not a straight trench."
+    },
+    {
+      "id": "rift",
+      "kind": 9,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. AXIAL RIFT VALLEY: two raised parallel mountain shoulders separated by a narrow depressed central valley with broken basalt; uplifted flanks distinguish it from a trench."
+    },
+    {
+      "id": "seamount",
+      "kind": 10,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. SEAMOUNT: ONE isolated conical submarine volcanic mountain with pointed summit and broad rocky base. No snow, fire or water surface."
+    },
+    {
+      "id": "guyot",
+      "kind": 11,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. GUYOT: ONE isolated steep-sided submarine mountain with a VERY BROAD FLAT summit, truncated cone plateau. Pale worn summit, no pointed peak."
+    },
+    {
+      "id": "fan",
+      "kind": 12,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. SUBMARINE FAN: broad fan-shaped sandy sediment deposit spreading from a single narrow incoming channel into four radial shallow channels and a scalloped outer edge."
+    },
+    {
+      "id": "hills",
+      "kind": 13,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. ABYSSAL HILLS: five rounded SMALL LOW hills on a gently ridged seabed patch. No sharp peaks or tall mountains."
+    },
+    {
+      "id": "deep",
+      "kind": 14,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. TRENCH DEEP: compact exceptionally deep dark OVAL PIT with steep enclosing walls and descending inner shelves. A localized depression, not a long trench or cave."
+    },
+    {
+      "id": "fracture",
+      "kind": 15,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. OCEANIC FRACTURE ZONE: low long STRAIGHT fault scarp cutting and laterally offsetting a flat seabed patch; two visibly offset blocks and thin parallel linear scars. No tall mountains."
+    },
+    {
+      "id": "dunes",
+      "kind": 16,
+      "prompt": "Use case: stylized-concept. Individual PNG bathymetric terrain icon for fantasy atlas. ONE isolated landform, hand-painted naturalistic cartographic miniature, bold readable silhouette at 32px. Three-quarter isometric view from upper-right; warm sandstone, slate blue-grey, restrained teal edges; upper-left light, crisp dark edges. Exposed miniature seabed relief, not a water scene. Centered landform fills 75% of canvas with padding. No enclosing square tile, ocean plane, backdrop, frame, text, numbers, bubbles, animals, buildings, people, or cast shadow outside subject. Genuine transparent alpha background. One subject only, not an atlas sheet. SUBMARINE SAND WAVES / DUNES: FOUR distinct parallel low asymmetrical crescent-like sandy ridges with clearly rippled sandy bed. Pale gold sand, flowing diagonal rows; no rocks or peaks."
+    }
+  ]
+}

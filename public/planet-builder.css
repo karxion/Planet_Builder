@@ -939,6 +939,21 @@ body[data-world-space] #map #viewbox > :not(#fpb-world-spaces),
 body[data-world-space] #map #viewbox > :not(#fpb-world-spaces) * { visibility: hidden !important; pointer-events: none !important; }
 body[data-world-space] #mapLayers > [data-space-unavailable] { opacity: .35; cursor: not-allowed; }
 #fpb-space-layer-hint { font-size: .85em; line-height: 1.5; color: #d9ca8b; }
+#fpb-seabed-depth-key { position: fixed; z-index: 950; left: 14px; bottom: 14px; max-width: calc(100vw - 28px); padding: 10px 12px; border: 1px solid #72745b; border-radius: 6px; background: #1c292aee; color: #eee8d7; font: 12px/1.5 Arial, "Malgun Gothic", sans-serif; box-shadow: 0 3px 12px #0004; }
+#fpb-seabed-depth-key summary { cursor: pointer; color: #dcc68f; font-weight: 700; }
+#fpb-seabed-depth-key ol { list-style: none; padding: 0; margin: 8px 0; }
+#fpb-seabed-depth-key li { display: flex; gap: 7px; align-items: center; margin: 4px 0; }
+#fpb-seabed-depth-key b { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 3px; color: #102332; }
+#fpb-seabed-depth-key button { margin: 2px 0 0; width: 100%; min-height: 30px; }
+#fpb-space-panel .fpb-sea-legend .fpb-seabed-relief-row { display: flex; gap: 10px; align-items: center; min-height: 52px; padding: 5px 0; border-bottom: 1px solid #4b5144; }
+#fpb-space-panel .fpb-seabed-relief-row img { flex: 0 0 48px; object-fit: contain; }
+#fpb-space-panel .fpb-sea-legend { grid-template-columns: minmax(0, 1fr); gap: 0; }
+#fpb-space-panel .fpb-seabed-relief-row span { background: none; display: grid; gap: 3px; width: auto; height: auto; flex: 1 1 0; min-width: 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
+#fpb-space-panel .fpb-seabed-relief-row small { color: #b9bdae; font-size: 11px; }
+.fpb-seabed-depth-bands { padding-left: 0; list-style: none; font-size: 12px; line-height: 1.8; color: #d1d8cf; }
+@media (max-width: 1180px) { #fpb-seabed-depth-key { bottom: 58px; } }
+body:has(#options[style*="display: block"]) #fpb-seabed-depth-key,
+body:has(#fpb-space-panel:not([hidden])) #fpb-seabed-depth-key { display: none; }
 #fpb-space-panel input, #fpb-space-panel select { min-height: 36px; height: 36px; line-height: 1.4; }
 #fpb-space-panel[data-placing="true"] > p:first-of-type,
 #fpb-space-panel[data-placing="true"] > nav,

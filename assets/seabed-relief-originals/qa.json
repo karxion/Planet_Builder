@@ -1,0 +1,162 @@
+[
+  {
+    "id": "shelf",
+    "transparentFraction": 0.4852,
+    "solidBBox": [
+      65,
+      91,
+      1506,
+      964
+    ]
+  },
+  {
+    "id": "slope",
+    "transparentFraction": 0.4797,
+    "solidBBox": [
+      68,
+      64,
+      1507,
+      971
+    ]
+  },
+  {
+    "id": "plain",
+    "transparentFraction": 0.4186,
+    "solidBBox": [
+      32,
+      76,
+      1511,
+      981
+    ]
+  },
+  {
+    "id": "trench",
+    "transparentFraction": 0.5934,
+    "solidBBox": [
+      76,
+      5,
+      1464,
+      1020
+    ]
+  },
+  {
+    "id": "ridge",
+    "transparentFraction": 0.6233,
+    "solidBBox": [
+      38,
+      70,
+      1512,
+      970
+    ]
+  },
+  {
+    "id": "reef",
+    "transparentFraction": 0.4624,
+    "solidBBox": [
+      37,
+      52,
+      1217,
+      1201
+    ]
+  },
+  {
+    "id": "rise",
+    "transparentFraction": 0.4343,
+    "solidBBox": [
+      18,
+      38,
+      1524,
+      987
+    ]
+  },
+  {
+    "id": "canyon",
+    "transparentFraction": 0.4849,
+    "solidBBox": [
+      75,
+      64,
+      1475,
+      999
+    ]
+  },
+  {
+    "id": "rift",
+    "transparentFraction": 0.4605,
+    "solidBBox": [
+      25,
+      37,
+      1515,
+      989
+    ]
+  },
+  {
+    "id": "seamount",
+    "transparentFraction": 0.5063,
+    "solidBBox": [
+      26,
+      66,
+      1353,
+      1096
+    ]
+  },
+  {
+    "id": "guyot",
+    "transparentFraction": 0.4479,
+    "solidBBox": [
+      52,
+      96,
+      1496,
+      968
+    ]
+  },
+  {
+    "id": "fan",
+    "transparentFraction": 0.5093,
+    "solidBBox": [
+      111,
+      13,
+      1435,
+      992
+    ]
+  },
+  {
+    "id": "hills",
+    "transparentFraction": 0.47,
+    "solidBBox": [
+      26,
+      73,
+      1509,
+      969
+    ]
+  },
+  {
+    "id": "deep",
+    "transparentFraction": 0.3924,
+    "solidBBox": [
+      68,
+      16,
+      1491,
+      1009
+    ]
+  },
+  {
+    "id": "fracture",
+    "transparentFraction": 0.4963,
+    "solidBBox": [
+      23,
+      88,
+      1509,
+      985
+    ]
+  },
+  {
+    "id": "dunes",
+    "transparentFraction": 0.4704,
+    "solidBBox": [
+      48,
+      58,
+      1501,
+      977
+    ]
+  }
+]

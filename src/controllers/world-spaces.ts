@@ -12,6 +12,8 @@ import { openSpaceContent } from "./space-content";
 import { subsurfaceAssetName, type SubsurfaceAssetId } from "@/renderers/subsurface-assets";
 import { spaceLocation } from "@/services/world-spaces/location";
 import { initSpaceLayerControls } from "./space-layers";
+import { depthBand, seabedReliefDetails, seabedReliefName } from "@/data/seabed-relief";
+import { refreshSeabedKey } from "./seabed-key";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -26,7 +28,7 @@ let tab = "sites";
 let switchView: (space: WorldSpace) => Promise<void>;
 let currentData = "";
 let activeSpace: WorldSpace = "surface";
-let scenery: { asset: SubsurfaceAssetId; x: number; y: number } | undefined;
+let scenery: (({ asset: SubsurfaceAssetId } | { cell: number }) & { x: number; y: number }) | undefined;
 let syncLayerControls: (() => void) | undefined;
 
 declare global {
@@ -58,6 +60,11 @@ export function refreshWorldSpaces(): void {
   if (!panel) return;
   syncLayerControls?.();
   const data = WorldSpaces.snapshot();
+  refreshSeabedKey(data, () => {
+    tab = "seabed";
+    panel.hidden = false;
+    renderPanel();
+  });
   if (activeSpace !== data.activeSpace) {
     activeSpace = data.activeSpace;
     placement = undefined;
@@ -158,7 +165,10 @@ function renderPanel(): void {
   });
   const content = panel.querySelector<HTMLElement>("[data-content]")!;
   if (tab === "object" && scenery) {
-    content.innerHTML = `<h4>${esc(subsurfaceAssetName(scenery.asset))}</h4><p>${esc(spaceLocation(data, scenery.x, scenery.y) || "")}</p>`;
+    const name =
+      "asset" in scenery ? subsurfaceAssetName(scenery.asset) : seabedReliefName(data.underwater!, scenery.cell);
+    const description = "cell" in scenery ? seabedReliefDetails(data.underwater!, scenery.cell) : "";
+    content.innerHTML = `<h4>${esc(name)}</h4><p>${esc(description)}</p><p>${esc(spaceLocation(data, scenery.x, scenery.y) || "")}</p>`;
     return;
   } else if (tab === "seabed" && data.activeSpace === "underwater") {
     mountUnderwaterTools(content, {
@@ -412,6 +422,13 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
     const mark = target.closest<SVGElement>("[data-space-site]");
     const site = data.sites.find(s => s.id === mark?.dataset.spaceSite && siteInActiveLevel(s, data));
     const object = target.closest<SVGElement>("[data-scenery-asset]");
+    const relief = target.closest<SVGElement>("[data-seabed-relief-cell]");
+    if (relief && data.underwater) {
+      const cell = Number(relief.dataset.seabedReliefCell);
+      return esc(
+        `${seabedReliefName(data.underwater, cell)} · ${text("수심 단계", "Depth band")} ${depthBand(data.underwater.depths[cell])}`
+      );
+    }
     const name = site?.name || (object ? subsurfaceAssetName(object.dataset.sceneryAsset as SubsurfaceAssetId) : "");
     // The legacy tooltip accepts HTML. Escape saved names before crossing that boundary.
     return esc([name, location].filter(Boolean).join(" · "));
@@ -474,15 +491,18 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
     const portal = target.closest<SVGElement>("[data-space-travel]");
     const mark = target.closest<SVGElement>("[data-space-site]");
     const object = target.closest<SVGElement>("[data-scenery-asset]");
-    if (!placement && (portal || mark || object)) {
+    const relief = target.closest<SVGElement>("[data-seabed-relief-cell]");
+    if (!placement && (portal || mark || object || relief)) {
       event.preventDefault();
       event.stopImmediatePropagation();
       if (portal) void travel(portal.dataset.spaceTravel!);
-      else if (object) {
+      else if (object || relief) {
         scenery = {
-          asset: object.dataset.sceneryAsset as SubsurfaceAssetId,
-          x: Number(object.dataset.spaceX),
-          y: Number(object.dataset.spaceY)
+          ...(relief
+            ? { cell: Number(relief.dataset.seabedReliefCell) }
+            : { asset: object!.dataset.sceneryAsset as SubsurfaceAssetId }),
+          x: Number((relief || object)!.dataset.spaceX),
+          y: Number((relief || object)!.dataset.spaceY)
         };
         tab = "object";
         panel.hidden = false;

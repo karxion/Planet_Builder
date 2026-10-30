@@ -1,12 +1,8 @@
-import {
-  SEA_RELATIONS,
-  SEABED_COLORS,
-  SEABED_DETAILS_EN,
-  SEABED_GEOLOGY_VERSION,
-  SEABED_TERRAINS
-} from "@/data/underwater";
+import { SEA_RELATIONS, SEABED_DETAILS_EN, SEABED_GEOLOGY_VERSION, SEABED_TERRAINS } from "@/data/underwater";
 import { generateUnderwater, type SeaSurface } from "@/generators/underwater";
-import { scenePng } from "@/renderers/scene-assets";
+import { scenePng, inlineSceneImages } from "@/renderers/scene-assets";
+import { DEPTH_BANDS, seabedReliefId, seabedReliefUrl } from "@/data/seabed-relief";
+import { drawSeabedDepthKey } from "@/renderers/seabed-relief";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
@@ -117,16 +113,40 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
     const legend = node("ul");
     legend.className = "fpb-sea-legend";
     for (const [code, feature] of SEABED_TERRAINS.entries()) {
-      if (!map.terrain.includes(code as import("@/types/underwater").SeabedTerrain)) continue;
+      if (!code) continue;
       const name = text(feature.ko, feature.en);
       const item = node("li"),
-        swatch = node("span");
-      swatch.style.background = SEABED_COLORS[code];
-      swatch.setAttribute("aria-hidden", "true");
+        image = node("img"),
+        caption = node("span"),
+        title = node("strong", name);
+      item.className = "fpb-seabed-relief-row";
+      image.src = seabedReliefUrl(seabedReliefId(code));
+      image.alt = "";
+      image.width = 48;
+      image.height = 38;
+      image.loading = "lazy";
+      const depths = map.depths.filter((_, i) => map.terrain[i] === code);
+      const range = node(
+        "small",
+        depths.length
+          ? `${text("현재 지도", "This map")} · ${Math.min(...depths).toLocaleString()}–${Math.max(...depths).toLocaleString()} m`
+          : text("현재 지도에 없음", "Not present on this map")
+      );
+      caption.append(title, range);
       item.title = text(feature.description, SEABED_DETAILS_EN[code]);
-      item.append(swatch, name);
+      item.append(image, caption);
       legend.append(item);
     }
+    const depthGuide = node(
+      "p",
+      text(
+        "그림은 지형 종류, 아이콘 옆 숫자 1–4는 실제 수심대입니다. 해산·협곡 등은 여러 수심대에 나타날 수 있습니다. 아이콘을 선택하면 실제 생성 수심을 확인할 수 있습니다.",
+        "Pictures identify landforms; numbers 1–4 identify actual depth bands. Mountains and canyons can occur at different depths. Select an icon to inspect its generated depth."
+      )
+    );
+    const bands = node("ol");
+    bands.className = "fpb-seabed-depth-bands";
+    DEPTH_BANDS.forEach((band, i) => bands.append(node("li", `${i + 1} · ${text(band.ko, band.en)} · ${band.range}`)));
     const list = node("ul");
     list.className = "fpb-sea-factions";
     for (const id of map.factionIds) {
@@ -158,9 +178,13 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
           svg.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
           svg.setAttribute("font-family", "Arial, sans-serif");
           svg.append(source.cloneNode(true));
+          if (spaceLayers(WorldSpaces.snapshot()).toggleRelief) svg.append(drawSeabedDepthKey(graphHeight));
           for (const el of svg.querySelectorAll('[mask="url(#land)"]')) el.remove();
           const markup = new XMLSerializer().serializeToString(svg),
-            blob = format === "PNG" ? await scenePng(markup) : new Blob([markup], { type: "image/svg+xml" });
+            blob =
+              format === "PNG"
+                ? await scenePng(markup)
+                : new Blob([await inlineSceneImages(markup)], { type: "image/svg+xml" });
           const url = URL.createObjectURL(blob),
             link = node("a");
           link.href = url;
@@ -189,12 +213,22 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
         node(
           "p",
           text(
-            "저장된 기존 지형을 유지하고 있습니다. 주변부 폭·협곡·열곡의 보완 규칙은 다시 생성하면 적용됩니다.",
-            "Saved terrain is preserved. Regenerate to apply the revised margin widths, canyons and rifts."
+            "저장된 기존 지형을 유지하고 있습니다. 아이콘과 수심 표시는 재생성 없이 적용됩니다. 해저 사구 등 새 지형 생성 규칙은 다시 생성하면 적용됩니다.",
+            "Saved terrain is preserved. Icons and depth indicators work without regeneration. Regenerate only to apply new terrain-generation rules, including sand waves."
           )
         )
       );
-    section.append(viewLabel, legend, geology, node("h4", text("수중 세력", "Aquatic realms")), list, exports);
+    section.append(
+      viewLabel,
+      node("h4", text("지형 아이콘·수심 범례", "Terrain icons / depth key")),
+      depthGuide,
+      bands,
+      legend,
+      geology,
+      node("h4", text("수중 세력", "Aquatic realms")),
+      list,
+      exports
+    );
   }
   host.append(section);
 }

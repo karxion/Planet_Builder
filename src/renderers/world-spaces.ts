@@ -4,6 +4,7 @@ import { drawUndergroundTerrain } from "./underground-map";
 import { drawUnderwaterTerrain } from "./underwater-map";
 import { subsurfaceDefs, subsurfaceMarker, subsurfaceScenery } from "./subsurface-assets";
 import { applySpaceLayers } from "./space-layers";
+import { drawSeabedRelief, seabedReliefDefs } from "./seabed-relief";
 
 const NS = "http://www.w3.org/2000/svg";
 const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
@@ -28,6 +29,7 @@ export function drawWorldSpaces(input: {
   parent.querySelector("#fpb-world-spaces")?.remove();
   const root = element("g", { id: "fpb-world-spaces", "data-space": data.activeSpace });
   if (data.activeSpace !== "surface") root.append(subsurfaceDefs());
+  if (data.activeSpace === "underwater" && data.underwater) root.append(seabedReliefDefs());
   if (data.activeSpace !== "surface") {
     root.append(
       element("rect", {
@@ -152,6 +154,7 @@ export function drawWorldSpaces(input: {
   const priority = (site: SpaceSite) => (site.kind === "city" ? 0 : site.kind === "gateway" ? 1 : 2);
   // Keep hit areas above the territory fills and below city / gateway controls.
   if (data.activeSpace !== "surface") root.append(subsurfaceScenery(data, width, height));
+  if (underwater) root.append(drawSeabedRelief(underwater, width, height, sites));
   for (const site of [...sites].sort((a, b) => priority(a) - priority(b))) {
     if (underground && site.origin === "underground" && site.kind === "territory") continue;
     const [x, y] = point(site);

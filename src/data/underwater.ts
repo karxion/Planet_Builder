@@ -1,6 +1,6 @@
 import type { UnderwaterMap } from "@/types/underwater";
 
-export const SEABED_GEOLOGY_VERSION = 3;
+export const SEABED_GEOLOGY_VERSION = 4;
 export const SEA_RELATIONS = ["allied", "trade", "neutral", "rival", "war"] as const;
 export const SEABED_TERRAINS = [
   { ko: "육지", en: "Land", color: "#373f3d", description: "해양 지형에서 제외하는 육지" },
@@ -63,6 +63,13 @@ export const SEABED_TERRAINS = [
     en: "Fracture zone",
     color: "#767398",
     description: "해령 바깥 심해저까지 이어지는 선형 단층 지형"
+  },
+  {
+    ko: "해저 사구",
+    en: "Submarine sand waves",
+    color: "#b6aa82",
+    description:
+      "얕은 대륙붕의 모래가 해류에 의해 물결 모양으로 쌓인 지형을 모티프로 생성. 이 생성기에서는 200m 이하에 배치"
   }
 ] as const;
 export const SEABED_COLORS = SEABED_TERRAINS.map(t => t.color);
@@ -82,7 +89,8 @@ export const SEABED_DETAILS_EN = [
   "A fan-shaped sediment body beyond a canyon mouth.",
   "Low abyssal relief of a few hundred metres.",
   "A local depression within a trench.",
-  "A linear fault-related feature extending across the abyssal floor."
+  "A linear fault-related feature extending across the abyssal floor.",
+  "A sand-wave motif on shallow shelves, inspired by current-shaped sediment. This generator places it at depths up to 200 m."
 ] as const;
 export const SEA_PEOPLES = [
   {
@@ -162,7 +170,8 @@ export function isUnderwaterMap(value: unknown): value is UnderwaterMap {
   )
     return false;
   const size = m.columns * m.rows;
-  if (m.geologyVersion !== undefined && m.geologyVersion !== 2 && m.geologyVersion !== 3) return false;
+  if (m.geologyVersion !== undefined && ![2, 3, 4].includes(m.geologyVersion)) return false;
+  const terrainLimit = m.geologyVersion === undefined ? 7 : m.geologyVersion < 4 ? 16 : SEABED_TERRAINS.length;
   if (m.features !== undefined && m.geologyVersion === undefined) return false;
   if (
     m.features !== undefined &&
@@ -173,7 +182,7 @@ export function isUnderwaterMap(value: unknown): value is UnderwaterMap {
           f &&
           Number.isInteger(f.kind) &&
           f.kind > 0 &&
-          f.kind < SEABED_TERRAINS.length &&
+          f.kind < terrainLimit &&
           Number.isFinite(f.x) &&
           f.x >= 0 &&
           f.x <= 1 &&
@@ -200,7 +209,7 @@ export function isUnderwaterMap(value: unknown): value is UnderwaterMap {
       d <= 11000 &&
       Number.isInteger(m.terrain[i]) &&
       m.terrain[i] >= 0 &&
-      m.terrain[i] < (m.geologyVersion ? SEABED_TERRAINS.length : 7) &&
+      m.terrain[i] < terrainLimit &&
       Number.isInteger(m.owners[i]) &&
       m.owners[i] >= 0 &&
       m.owners[i] <= m.factionIds.length &&

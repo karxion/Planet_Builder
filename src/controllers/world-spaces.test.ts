@@ -29,6 +29,39 @@ afterEach(() => {
 });
 const surface = { columns: 32, rows: 24, heights: Array.from({ length: 768 }, (_, i) => (i % 32 < 9 ? 50 : 8)) };
 describe("World space map interaction", () => {
+  it("inspects bathymetric icons with exact saved depth by click and keyboard, without changing project data", () => {
+    const data = generateUnderwater(emptyWorldSpaces(), "depth-key", surface);
+    WorldSpaces.restore(data);
+    initWorldSpaces(vi.fn());
+    const before = WorldSpaces.snapshot();
+    const mark = document.querySelector<SVGElement>("[data-seabed-relief-cell]")!;
+    const cell = Number(mark.dataset.seabedReliefCell);
+    mark.querySelector("use")!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const panel = document.querySelector<HTMLElement>("#fpb-space-panel")!;
+    expect(panel.hidden).toBe(false);
+    expect(panel.textContent).toContain(data.underwater!.depths[cell].toLocaleString("ko-KR"));
+    expect(panel.querySelector("form")).toBeNull();
+    panel.querySelector<HTMLButtonElement>("[data-close]")!.click();
+    mark.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Enter" }));
+    expect(panel.hidden).toBe(false);
+    expect(WorldSpaces.snapshot()).toEqual(before);
+    const tip = window.worldSpaceMapTip!([Number(mark.dataset.spaceX) * 1000, Number(mark.dataset.spaceY) * 500], mark);
+    expect(tip).toContain(data.underwater!.depths[cell].toLocaleString("ko-KR"));
+    expect(document.querySelectorAll("#fpb-seabed-depth-key li")).toHaveLength(4);
+    document.querySelector<HTMLButtonElement>("#fpb-seabed-depth-key button")!.click();
+    expect(panel.textContent).toContain("지형 아이콘·수심 범례");
+    expect(panel.querySelectorAll(".fpb-seabed-relief-row img")).toHaveLength(16);
+    WorldSpaces.update(d => {
+      d.layers = { underwater: { visible: { toggleRelief: false } } };
+    });
+    refreshWorldSpaces();
+    expect(document.querySelector("#fpb-seabed-depth-key")).toBeNull();
+    WorldSpaces.update(d => {
+      d.activeSpace = "surface";
+    });
+    refreshWorldSpaces();
+    expect(document.querySelector("[data-seabed-relief-cell]")).toBeNull();
+  });
   it.each([
     "underwater",
     "underground"
