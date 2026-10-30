@@ -52,13 +52,24 @@ export function initMapNavigation(): void {
     const map = document.getElementById("map");
     const shell = document.getElementById("fpb-shell");
     if (!map || !shell) return;
+    const shellHeight = shell.getBoundingClientRect().height;
+    const layoutHeight = document.documentElement.clientHeight || innerHeight;
     const size = getMapViewport(
       document.documentElement.clientWidth || innerWidth,
-      document.documentElement.clientHeight || innerHeight,
-      shell.getBoundingClientRect().height,
+      layoutHeight,
+      shellHeight,
       window.visualViewport
     );
     const key = `${size.width}:${size.height}`;
+    navigation.dataset.compact = String(size.height < 250);
+    document.documentElement.style.setProperty(
+      "--fpb-visible-height",
+      `${Math.min(layoutHeight, size.height + shellHeight)}px`
+    );
+    document.documentElement.style.setProperty(
+      "--fpb-viewport-bottom-gap",
+      `${Math.max(0, layoutHeight - size.height - shellHeight)}px`
+    );
     if (lastMap === map && lastSize === key) return;
     lastMap = map;
     lastSize = key;

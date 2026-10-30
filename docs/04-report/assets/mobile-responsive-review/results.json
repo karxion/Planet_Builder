@@ -1,0 +1,259 @@
+{
+  "environment": "Chromium emulation; touch, DPR 3; viewport sizes are CSS pixels",
+  "layouts": [
+    {
+      "size": [
+        320,
+        568
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        568,
+        320
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        360,
+        640
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        640,
+        360
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        390,
+        844
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        844,
+        390
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        760,
+        500
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        761,
+        500
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        768,
+        1024
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        1024,
+        768
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        820,
+        1180
+      ],
+      "tabbed": true,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        1180,
+        820
+      ],
+      "tabbed": false,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    },
+    {
+      "size": [
+        1440,
+        900
+      ],
+      "tabbed": false,
+      "dialogOverflowsHorizontally": false,
+      "mapFits": true
+    }
+  ],
+  "beforeZoom": {
+    "x": 70,
+    "y": 0
+  },
+  "beforeZoomResult": {
+    "x": 0,
+    "y": 0
+  },
+  "afterZoom": {
+    "x": 70,
+    "y": 0
+  },
+  "afterZoomResult": {
+    "x": 155,
+    "y": 0
+  },
+  "entityDraftRetained": true,
+  "extraChecks": {
+    "before": {
+      "x": 0.32971014492753625,
+      "y": 0.5040257648953301,
+      "left": 180,
+      "top": 60,
+      "width": 1104,
+      "height": 621
+    },
+    "zoomed": {
+      "x": 0.3299689440993789,
+      "y": 0.5037957211870255,
+      "left": 241,
+      "top": 112,
+      "width": 1288,
+      "height": 724.5
+    },
+    "rotated": {
+      "x": 0.3298019827879359,
+      "y": 0.5044760155323552,
+      "left": 121,
+      "top": 243,
+      "width": 1194.65625,
+      "height": 671.984375
+    },
+    "shortened": {
+      "mapBottom": 400,
+      "navigation": {
+        "top": 188,
+        "bottom": 332
+      },
+      "switch": {
+        "top": 340,
+        "bottom": 388
+      },
+      "dialog": {
+        "top": 0,
+        "bottom": 400
+      },
+      "visibleHeight": 400
+    },
+    "tall": {
+      "width": 42.1875,
+      "height": 506.25,
+      "viewportWidth": 368,
+      "viewportHeight": 506
+    },
+    "png": [
+      250,
+      3000
+    ],
+    "worldUnchanged": true,
+    "errors": []
+  },
+  "languages": [
+    {
+      "language": "ko",
+      "size": [
+        320,
+        568
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "ko",
+      "size": [
+        568,
+        320
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "ko",
+      "size": [
+        390,
+        844
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "ko",
+      "size": [
+        844,
+        390
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "en",
+      "size": [
+        320,
+        568
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "en",
+      "size": [
+        568,
+        320
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "en",
+      "size": [
+        390,
+        844
+      ],
+      "allViewButtonsInBounds": true
+    },
+    {
+      "language": "en",
+      "size": [
+        844,
+        390
+      ],
+      "allViewButtonsInBounds": true
+    }
+  ]
+}

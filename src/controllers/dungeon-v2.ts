@@ -58,6 +58,59 @@ let dialog: HTMLDialogElement,
   zoom = 1;
 let pending: { d: DungeonV2; label: string; newMarker: boolean; warnings: string[] } | undefined;
 let undo: { markerId: number; d: DungeonV2 }[] = [];
+let viewportObserver: ResizeObserver | undefined;
+let viewportFrame = 0;
+let viewportSize: { map: SVGSVGElement; width: number; height: number } | undefined;
+
+/** Resize the existing SVG without replacing forms, focus or the current scroll position. */
+function fitDungeonViewport(): void {
+  viewportFrame = 0;
+  const viewport = dialog?.querySelector<HTMLElement>(".fpb-interior-scroll");
+  const content = viewport?.firstElementChild as HTMLElement | null;
+  const map = content?.querySelector<SVGSVGElement>("svg.fpb-dungeon-map");
+  if (!viewport || !content || !map || !viewport.clientWidth) return;
+  const width = Number(map.getAttribute("width")),
+    height = Number(map.getAttribute("height"));
+  const maximumHeight = Number.parseFloat(getComputedStyle(viewport).maxHeight) || innerHeight * 0.6;
+  if (!(width > 0 && height > 0 && maximumHeight > 0)) return;
+  const oldWidth = content.getBoundingClientRect().width;
+  const oldHeight = content.getBoundingClientRect().height;
+  const previousWidth = viewportSize?.map === map ? viewportSize.width : viewport.clientWidth;
+  const previousHeight = viewportSize?.map === map ? viewportSize.height : viewport.clientHeight;
+  const centerX = oldWidth
+    ? (viewport.scrollLeft + previousWidth / 2 - Math.max(0, (previousWidth - oldWidth) / 2)) / oldWidth
+    : 0.5;
+  const centerY = oldHeight ? (viewport.scrollTop + previousHeight / 2) / oldHeight : 0.5;
+  const nextWidth = Math.min(viewport.clientWidth, (maximumHeight * width) / height) * zoom;
+  content.style.minWidth = "0";
+  content.style.margin = "0 auto";
+  content.style.width = `${nextWidth}px`;
+  viewport.scrollLeft = zoom === 1 ? 0 : centerX * nextWidth - viewport.clientWidth / 2;
+  viewport.scrollTop = zoom === 1 ? 0 : (centerY * nextWidth * height) / width - viewport.clientHeight / 2;
+  viewportSize = { map, width: viewport.clientWidth, height: viewport.clientHeight };
+}
+function scheduleDungeonViewport(): void {
+  if (!dialog?.isConnected || !dialog.open || viewportFrame) return;
+  if (typeof requestAnimationFrame !== "function") {
+    fitDungeonViewport();
+    return;
+  }
+  viewportFrame = requestAnimationFrame(fitDungeonViewport);
+}
+function setDungeonZoom(value: number): void {
+  zoom = Math.max(1, Math.min(6, value));
+  fitDungeonViewport();
+  const output = dialog.querySelector(".fpb-dv2-zoom output");
+  if (output) output.textContent = `${Math.round(zoom * 100)}%`;
+  dialog.querySelector<HTMLButtonElement>("[data-zoom-out]")!.disabled = zoom <= 1;
+  dialog.querySelector<HTMLButtonElement>("[data-zoom-in]")!.disabled = zoom >= 6;
+}
+function setDungeonTab(tab: string): void {
+  dialog.dataset.tab = tab;
+  for (const button of dialog.querySelectorAll<HTMLElement>("[data-tab]"))
+    button.setAttribute("aria-pressed", String(button.dataset.tab === tab));
+  scheduleDungeonViewport();
+}
 const marker = () => window.pack?.markers.find(m => m.i === markerId);
 const saved = () => {
   const value = marker()?.interior;
@@ -114,10 +167,7 @@ function apply(): void {
   }
   pending = undefined;
   changed();
-  status = l(
-    "적용했습니다. v2 저장 파일은 구버전 앱에서 지원하지 않습니다.",
-    "Applied. Older app versions cannot read v2 dungeons."
-  );
+  status = l("적용했습니다.", "Applied.");
   render();
 }
 function settings(): DungeonFloorSettings {
@@ -240,6 +290,7 @@ function settingsMarkup(f: DungeonFloor): string {
 }
 function render(): void {
   if (!dialog) return;
+  viewportObserver?.disconnect();
   const d = current(),
     raw = marker()?.interior;
   if (!d) {
@@ -276,11 +327,11 @@ function render(): void {
   dialog.dataset.tab = dialog.dataset.tab || "map";
   dialog.innerHTML = `<header><h2>${esc(d.name)} <small>Dungeon v2</small></h2><button data-close aria-label="${l("닫기", "Close")}">×</button></header>
     <nav class="fpb-dv2-toolbar"><label><input data-gm type="checkbox" ${gm ? "checked" : ""}>GM</label><button data-view>${tactical ? l("전체도", "Full plan") : l("전투지도", "Battle frame")}</button><button data-perspective>${overview ? l("탑다운으로", "Top down") : l("조감도로", "Bird's-eye")}</button><label><input data-grid type="checkbox" ${grid ? "checked" : ""}>${l("격자", "Grid")}</label><button data-section>${l("층 연결도", "Floor diagram")}</button><details class="fpb-dv2-export"><summary>${l("내보내기", "Export")}</summary><div><button data-export-svg>SVG</button><button data-export-png>PNG ≤3000px</button><button data-export-all>${l("모든 층 PNG", "All floors PNG")}</button><button data-player-json>${l("플레이어 데이터", "Player data")}</button></div></details>${gm ? `<button data-undo ${!undo.some(u => u.markerId === markerId) || pending ? "disabled" : ""}>${l("되돌리기", "Undo")}</button><button data-round ${pending ? "disabled" : ""}>${l("다음 라운드", "Next round")} (${d.progress.round})</button>` : ""}</nav>
-    ${gm && pending ? `<section class="fpb-dv2-preview" role="status"><strong>${esc(pending.label)}</strong><p>${old ? `${old.floors.length} → ` : ""}${d.floors.length} ${l("층", "floors")} · ${d.floors.reduce((n, f) => n + f.rooms.length, 0)} ${l("방", "rooms")} · ${d.connections.length} ${l("층간 연결", "connections")}${old ? ` · ${l("변경 층", "Changed floors")}: ${d.floors.filter(f => JSON.stringify(f) !== JSON.stringify(old.floors.find(o => o.id === f.id))).length}` : ""}</p>${pending.warnings.length ? `<p>${esc(pending.warnings.join(" · "))}</p>` : ""}<button data-apply>${pending.warnings.length ? l("경고를 포함해 편집 적용", "Apply with warnings") : l("적용", "Apply")}</button><button data-cancel>${l("취소·원본 유지", "Cancel / keep source")}</button></section>` : ""}
+    ${gm && pending ? `<section class="fpb-dv2-preview" role="status"><strong>${esc(pending.label)}</strong>${marker()?.interior?.version !== 2 ? `<p>${l("v2 저장 파일은 구버전 앱에서 지원하지 않습니다.", "Older app versions cannot read v2 dungeons.")}</p>` : ""}<p>${old ? `${old.floors.length} → ` : ""}${d.floors.length} ${l("층", "floors")} · ${d.floors.reduce((n, f) => n + f.rooms.length, 0)} ${l("방", "rooms")} · ${d.connections.length} ${l("층간 연결", "connections")}${old ? ` · ${l("변경 층", "Changed floors")}: ${d.floors.filter(f => JSON.stringify(f) !== JSON.stringify(old.floors.find(o => o.id === f.id))).length}` : ""}</p>${pending.warnings.length ? `<p>${esc(pending.warnings.join(" · "))}</p>` : ""}<button data-apply>${pending.warnings.length ? l("경고를 포함해 편집 적용", "Apply with warnings") : l("적용", "Apply")}</button><button data-cancel>${l("취소·원본 유지", "Cancel / keep source")}</button></section>` : ""}
     <p role="status">${gm ? esc(status) : l("플레이어 보기", "Player view")}</p>${issues.length ? `<details class="fpb-dv2-warning"><summary>${l("경로/참조 경고", "Path / reference warnings")} (${issues.length})</summary>${issues.map(e => `<p>${esc(e)}</p>`).join("")}</details>` : ""}
     <nav class="fpb-dv2-mobile-tabs">${["floors", "map", "properties"].map((tab, i) => `<button data-tab="${tab}" aria-pressed="${dialog.dataset.tab === tab}">${[l("층 목록", "Floors"), l("지도", "Map"), l("속성", "Properties")][i]}</button>`).join("")}</nav>
-    ${gm ? `<details class="fpb-dv2-global-tools"><summary>${l("신규 생성·복제", "Create / duplicate")}</summary><fieldset class="fpb-dv2-global" ${pending ? "disabled" : ""}><label>${l("층 수 (신규 생성)", "Floors (new dungeon)")}<input data-count type="number" min="1" max="100" value="3"></label>${[1, 3, 5, 10].map(n => `<button data-count-preset="${n}">${n}</button>`).join("")}<button data-new>${l("새 거점에 신규 던전", "New dungeon at new marker")}</button><label><input data-include-progress type="checkbox">${l("복제 시 진행 포함", "Copy progress")}</label><button data-clone>${l("복제해서 새 던전", "Duplicate to new marker")}</button></fieldset></details>` : ""}
-    <div class="fpb-dv2-workspace"><aside class="fpb-dv2-floors"><select data-floor-select aria-label="${l("층 선택", "Select floor")}">${ids
+
+    <div class="fpb-dv2-workspace"><aside class="fpb-dv2-floors">${gm ? `<details class="fpb-dv2-global-tools"><summary>${l("신규 생성·복제", "Create / duplicate")}</summary><fieldset class="fpb-dv2-global" ${pending ? "disabled" : ""}><label>${l("층 수 (신규 생성)", "Floors (new dungeon)")}<input data-count type="number" min="1" max="100" value="3"></label>${[1, 3, 5, 10].map(n => `<button data-count-preset="${n}">${n}</button>`).join("")}<button data-new>${l("새 거점에 신규 던전", "New dungeon at new marker")}</button><label><input data-include-progress type="checkbox">${l("복제 시 진행 포함", "Copy progress")}</label><button data-clone>${l("복제해서 새 던전", "Duplicate to new marker")}</button></fieldset></details>` : ""}<select data-floor-select aria-label="${l("층 선택", "Select floor")}">${ids
       .map(id => {
         const floor = d.floors.find(f => f.id === id)!;
         return `<option value="${esc(id)}" ${id === floorId ? "selected" : ""}>${esc(floor.name)} · ${floor.elevationFt}ft${gm && floor.locked ? " 🔒" : ""}</option>`;
@@ -297,7 +348,13 @@ function render(): void {
       gm && f
         ? `<fieldset ${pending ? "disabled" : ""}><details><summary>${l("층 설정", "Floor settings")}</summary>${settingsMarkup(f)}</details><label>${l("방", "Room")}<select data-room-select>${rooms.map((r, i) => `<option value="${esc(r.id)}" ${r.id === roomId ? "selected" : ""}>${i + 1} · ${r.role}</option>`).join("")}</select></label>
       ${room ? `<form data-room-properties><label><input name="roomEdited" type="checkbox" ${room.edited ? "checked" : ""}>${l("수동 편집 보호", "Protect manual edits")}</label><label>${l("GM 방 메모", "GM room notes")}<textarea name="roomNote" maxlength="10000">${esc(room.note)}</textarea></label><label><input name="roomLocked" type="checkbox" ${room.locked ? "checked" : ""}>${l("방 잠금", "Lock room")}</label><label><input name="roomRevealed" type="checkbox" ${room.revealed ? "checked" : ""}>${l("방 공개", "Reveal room")}</label><label><input name="roomSecret" type="checkbox" ${room.secret ? "checked" : ""}>${l("비밀방", "Secret room")}</label><button type="button" data-room-apply>${l("방 속성 적용 미리보기", "Preview room properties")}</button><button type="button" data-room-regenerate>${l("방 내부 지형 재생성", "Regenerate room interior")}</button><button type="button" data-entrance>${l("던전 입구로", "Set entrance")}</button><select data-objective-kind>${["boss", "rescue", "escape", "relic", "ritual"].map(kind => `<option ${d.objective.kind === kind ? "selected" : ""}>${kind}</option>`).join("")}</select><button type="button" data-objective>${l("던전 목표로", "Set objective")}</button></form>` : ""}
-      ${entity ? entityMarkup(d, f, entity.id) : ""}
+      <label>${l("부품·장치 선택", "Select component / device")}<select data-entity-select><option value="">${l("선택하세요", "Select")}</option>${f.entities
+        .filter(e => e.roomId === roomId)
+        .map(
+          (e, i) =>
+            `<option value="${esc(e.id)}" ${e.id === entityId ? "selected" : ""}>${i + 1}. ${esc(e.assetId)} · ${esc(e.device ? DUNGEON_DEVICE_BY_ID.get(e.device.templateId)!.name[getUiLanguage()] : e.feature?.kind || l("부품", "Component"))}</option>`
+        )
+        .join("")}</select></label>${entity ? entityMarkup(d, f, entity.id) : ""}
       <details><summary>${l("32종 개별 에셋 배치", "Place individual assets (32)")}</summary><div class="fpb-dv2-palette">${DUNGEON_ASSETS.map(a => `<button data-palette="${a.id}" title="${esc(a.name)}"><img src="${dungeonAssetUrl(a.id)}" alt="" loading="lazy"><span>${a.id} ${esc(a.name)}</span></button>`).join("")}</div>
       <form data-placement><select name="assetId">${DUNGEON_ASSETS.map(a => `<option value="${a.id}">${a.id} · ${esc(a.name)}</option>`).join("")}</select><label>X<input name="x" type="number" min="1" value="${room?.x || 1}"></label><label>Y<input name="y" type="number" min="1" value="${room?.y || 1}"></label><label>${l("회전", "Rotation")}<select name="rotation"><option>0</option><option>90</option><option>180</option><option>270</option></select></label><button type="button" data-place>${l("배치 미리보기", "Preview placement")}</button><label>${l("기믹으로 전환", "Device template")}<select name="templateId"><option value="">${l("장식", "Prop")}</option>${DUNGEON_DEVICE_TEMPLATES.map(t => `<option value="${t.id}">${esc(t.name[getUiLanguage()])}</option>`).join("")}</select></label></form></details>
       <details><summary>${l("빈 구역 추가", "Add empty region")}</summary><form data-region>${["x", "y", "width", "height"].map(n => `<label>${n}<input name="${n}" type="number" min="1" value="${n === "width" || n === "height" ? 5 : 1}"></label>`).join("")}<button type="button" data-add-region>${l("현재 방에서 연결해 추가", "Add and connect to this room")}</button></form></details>
@@ -344,18 +401,9 @@ function render(): void {
         preview(draft, l("전투 프레임 변경", "Battle frame changed"), false, true);
       })
     );
-  bind("[data-zoom-in]", () => {
-    zoom = Math.min(6, zoom + 0.5);
-    render();
-  });
-  bind("[data-zoom-out]", () => {
-    zoom = Math.max(1, zoom - 0.5);
-    render();
-  });
-  bind("[data-fit]", () => {
-    zoom = 1;
-    render();
-  });
+  bind("[data-zoom-in]", () => setDungeonZoom(zoom + 0.5));
+  bind("[data-zoom-out]", () => setDungeonZoom(zoom - 0.5));
+  bind("[data-fit]", () => setDungeonZoom(1));
   bind("[data-export-svg]", () => {
     void exportFloors("svg");
   });
@@ -371,11 +419,7 @@ function render(): void {
       "dungeon-player.json"
     )
   );
-  for (const b of dialog.querySelectorAll<HTMLElement>("[data-tab]"))
-    b.onclick = () => {
-      dialog.dataset.tab = b.dataset.tab!;
-      render();
-    };
+  for (const b of dialog.querySelectorAll<HTMLElement>("[data-tab]")) b.onclick = () => setDungeonTab(b.dataset.tab!);
   const selectFloor = (id: string) => {
     floorId = id;
     roomId = "";
@@ -390,6 +434,13 @@ function render(): void {
     roomSelect.onchange = event => {
       roomId = (event.target as HTMLSelectElement).value;
       entityId = "";
+      render();
+    };
+  const entitySelect = dialog.querySelector<HTMLSelectElement>("[data-entity-select]");
+  if (entitySelect)
+    entitySelect.onchange = () => {
+      entityId = entitySelect.value;
+      dialog.dataset.tab = "properties";
       render();
     };
   for (const b of dialog.querySelectorAll<HTMLElement>("[data-floor]")) b.onclick = () => selectFloor(b.dataset.floor!);
@@ -432,6 +483,9 @@ function render(): void {
       );
       if (c) selectFloor(c.from.floorId === floorId ? c.to.floorId : c.from.floorId);
     };
+  const mapPane = dialog.querySelector(".fpb-dv2-map");
+  if (mapPane) viewportObserver?.observe(mapPane);
+  scheduleDungeonViewport();
   if (!gm || !f) return;
   wireEditing(d, f);
 }
@@ -902,6 +956,7 @@ export function openDungeonV2(markerIndex: number): boolean {
   }
   render();
   if (!dialog.open) dialog.showModal();
+  scheduleDungeonViewport();
   return true;
 }
 export function initDungeonV2(): void {
@@ -911,7 +966,20 @@ export function initDungeonV2(): void {
   dialog.dataset.i18nSkip = "";
   dialog.setAttribute("aria-label", "Dungeon v2");
   document.body.append(dialog);
+  if (typeof ResizeObserver !== "undefined") viewportObserver = new ResizeObserver(scheduleDungeonViewport);
+  window.addEventListener("resize", scheduleDungeonViewport);
+  window.visualViewport?.addEventListener("resize", scheduleDungeonViewport);
+  dialog.addEventListener("focusin", event => {
+    const target = event.target as Element;
+    if (target.closest(".fpb-dv2-properties")) setDungeonTab("properties");
+    else if (target.closest(".fpb-dv2-floors")) setDungeonTab("floors");
+    else if (target.closest(".fpb-dv2-map")) setDungeonTab("map");
+  });
   dialog.addEventListener("close", () => {
+    viewportObserver?.disconnect();
+    if (viewportFrame) cancelAnimationFrame(viewportFrame);
+    viewportFrame = 0;
+    viewportSize = undefined;
     pending = undefined;
     dialog.replaceChildren();
   });

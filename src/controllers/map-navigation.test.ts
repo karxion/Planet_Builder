@@ -24,6 +24,8 @@ beforeEach(() => {
 afterEach(() => {
   for (const [name, handler, options] of events.mock.calls) window.removeEventListener(name, handler, options);
   delete window.scheduleMapViewportFit;
+  document.documentElement.style.removeProperty("--fpb-viewport-bottom-gap");
+  document.documentElement.style.removeProperty("--fpb-visible-height");
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -60,4 +62,26 @@ it("coalesces browser-chrome resize events, skips unchanged size and fits a repl
   window.dispatchEvent(new Event("map:loaded"));
   await vi.advanceTimersByTimeAsync(16);
   expect(refit).toHaveBeenCalledTimes(3);
+});
+
+it("keeps controls above a shortened visible viewport and uses a compact row for short maps", async () => {
+  initMapNavigation();
+  await vi.advanceTimersByTimeAsync(16);
+  viewport.height = 300;
+  window.dispatchEvent(new Event("resize"));
+  await vi.advanceTimersByTimeAsync(16);
+  expect(document.querySelector<HTMLElement>("#fpb-map-navigation")!.dataset.compact).toBe("true");
+  expect(document.documentElement.style.getPropertyValue("--fpb-visible-height")).toBe("300px");
+  expect(document.documentElement.style.getPropertyValue("--fpb-viewport-bottom-gap")).toBe(`${innerHeight - 300}px`);
+  const calls = refit.mock.calls.length;
+  vi.stubGlobal("innerHeight", innerHeight + 100);
+  window.dispatchEvent(new Event("resize"));
+  await vi.advanceTimersByTimeAsync(16);
+  expect(document.documentElement.style.getPropertyValue("--fpb-viewport-bottom-gap")).toBe(`${innerHeight - 300}px`);
+  expect(refit).toHaveBeenCalledTimes(calls);
+  viewport.height = 744;
+  viewport.scale = 2;
+  window.dispatchEvent(new Event("resize"));
+  await vi.advanceTimersByTimeAsync(16);
+  expect(document.documentElement.style.getPropertyValue("--fpb-viewport-bottom-gap")).toBe("0px");
 });

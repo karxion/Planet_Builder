@@ -68,6 +68,16 @@ describe("Dungeon assets and public rendering", () => {
     expect(renderDungeonSection(d, false)).not.toContain(hidden.name);
     expect(renderDungeonV2(d, f.id, { gm: true })).toContain('id="dv2-D11"');
   });
+  it("gives GM components a full-footprint hit area and omits interaction targets from player exports", () => {
+    const d = createDungeonV2("touch-targets", "touch-targets"),
+      f = d.floors[0];
+    const gm = renderDungeonV2(d, f.id, { gm: true });
+    const doc = new DOMParser().parseFromString(gm, "image/svg+xml");
+    expect(doc.querySelector("parsererror")).toBeNull();
+    expect(doc.querySelectorAll("[data-entity-hit]")).toHaveLength(f.entities.length);
+    expect(doc.querySelector("[data-entity-hit]")!.getAttribute("pointer-events")).toBe("all");
+    expect(renderDungeonV2(d, f.id, { gm: false })).not.toContain("data-entity-hit");
+  });
   it("keeps battle framing separate from floor geometry, and exports only the selected floor", () => {
     const d = createDungeonV2("framing", "framing"),
       before = JSON.stringify(d),

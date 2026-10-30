@@ -51,6 +51,42 @@ describe("Dungeon v2 draft editor", () => {
     click("[data-undo]");
     expect(data()).toEqual(d);
   });
+  it("preserves map nodes, unapplied form input and focus while zooming or changing panes", async () => {
+    const { openDungeonV2 } = await import("./dungeon-v2");
+    openDungeonV2(1);
+    click("[data-apply]");
+    const map = document.querySelector(".fpb-dungeon-map"),
+      form = document.querySelector<HTMLFormElement>("[data-floor-settings]")!;
+    const concept = form.querySelector<HTMLInputElement>('[name="concept"]')!;
+    concept.value = "Unapplied mobile concept";
+    concept.dispatchEvent(new Event("input", { bubbles: true }));
+    click('button[data-tab="map"]');
+    click("[data-zoom-in]");
+    click("[data-zoom-in]");
+    click('button[data-tab="properties"]');
+    expect(document.querySelector(".fpb-dungeon-map")).toBe(map);
+    expect(document.querySelector("[data-floor-settings]")).toBe(form);
+    expect(concept.value).toBe("Unapplied mobile concept");
+    expect(data().floors[0].settings.concept).not.toBe(concept.value);
+    expect(document.querySelector(".fpb-dv2-zoom output")!.textContent).toBe("200%");
+    expect(document.querySelector('button[data-tab="properties"]')!.getAttribute("aria-pressed")).toBe("true");
+    concept.focus();
+    expect(document.querySelector<HTMLElement>("#fpb-dungeon-v2")!.dataset.tab).toBe("properties");
+    click("[data-fit]");
+    expect(document.activeElement).toBe(concept);
+    expect(document.querySelector(".fpb-dv2-zoom output")!.textContent).toBe("100%");
+  });
+  it("selects small map components from an accessible list without changing world data", async () => {
+    const { openDungeonV2 } = await import("./dungeon-v2");
+    openDungeonV2(1);
+    click("[data-apply]");
+    const before = JSON.stringify(data());
+    const select = document.querySelector<HTMLSelectElement>("[data-entity-select]")!;
+    select.value = data().floors[0].entities.find(e => e.roomId === data().floors[0].rooms[0].id)!.id;
+    select.dispatchEvent(new Event("change"));
+    expect(document.querySelector("[data-entity-properties]")).not.toBeNull();
+    expect(JSON.stringify(data())).toBe(before);
+  });
   it("converts v1 only after Apply and preserves geometry and encounter values", async () => {
     const v1 = generateDungeonInterior("legacy-ui", "wizard-tower", "mage", "hell");
     pack.markers[0].interior = v1;
