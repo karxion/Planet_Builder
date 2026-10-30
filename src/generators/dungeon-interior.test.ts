@@ -116,12 +116,12 @@ describe("Dungeon interiors", () => {
   it.each([NaN, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])("rejects invalid generation %s", generation => {
     expect(() => generateDungeonInterior("x", "wizard-tower", "mage", "normal", generation)).toThrow();
   });
-  it("rejects unknown sources and preserves site metadata when removing invalid interiors", () => {
+  it("rejects unknown sources and preserves future interiors and site metadata", () => {
     expect(() => generateDungeonInterior("x", "wizard-tower", "lich")).toThrow();
     const adventure = { themeId: "wizard-tower" };
     const marker = { interior: { version: 9 }, adventure };
     cleanDungeonInterior(marker);
-    expect(marker).not.toHaveProperty("interior");
+    expect(marker.interior).toEqual({ version: 9 });
     expect(marker.adventure).toBe(adventure);
   });
   it("treats non-string difficulty objects as corrupt instead of throwing during map load", () => {
@@ -175,10 +175,11 @@ describe("Dungeon interiors", () => {
 });
 
 it("accepts and roundtrips a custom battle viewport without changing dungeon geometry", async () => {
- const dungeon=generateDungeonInterior("battle-save","wizard-tower","mage");
- dungeon.battleMap={columns:96,rows:54,cellPixels:48};
- expect(isDungeonInterior(JSON.parse(JSON.stringify(dungeon)))).toBe(true);
- const copy=structuredClone(dungeon);copy.battleMap!.cellPixels=128;
- expect(isDungeonInterior(copy)).toBe(false);
- expect(isDungeonInterior({...dungeon,battleMap:undefined})).toBe(true);
+  const dungeon = generateDungeonInterior("battle-save", "wizard-tower", "mage");
+  dungeon.battleMap = { columns: 96, rows: 54, cellPixels: 48 };
+  expect(isDungeonInterior(JSON.parse(JSON.stringify(dungeon)))).toBe(true);
+  const copy = structuredClone(dungeon);
+  copy.battleMap!.cellPixels = 128;
+  expect(isDungeonInterior(copy)).toBe(false);
+  expect(isDungeonInterior({ ...dungeon, battleMap: undefined })).toBe(true);
 });

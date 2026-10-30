@@ -1014,3 +1014,60 @@ body.fpb-map-interacting #map :is(#oceanLayers, #oceanPattern, #coastline, #land
 body.fpb-ready #map, body.fpb-ready #canvas3d { height: var(--fpb-map-viewport-height, calc(100dvh - var(--fpb-header-height))); }
 /* A stale SVG/canvas width must not enlarge the mobile layout viewport after rotation. */
 body.fpb-ready #map, body.fpb-ready #canvas3d { width: 100%; max-width: 100%; }
+
+/* Dungeon v2: render one floor; narrow screens expose one editing pane at a time. */
+#fpb-dungeon-v2 { width:min(1500px,96vw); max-width:96vw; height:92dvh; max-height:92dvh; box-sizing:border-box; background:#202923; color:#e7e0c9; border:1px solid #8e8355; padding:12px; overflow:auto; }
+#fpb-dungeon-v2 header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+#fpb-dungeon-v2 h2 { margin:4px 0 12px; font-size:20px; }
+#fpb-dungeon-v2 button { min-height:36px; }
+#fpb-dungeon-v2 input,#fpb-dungeon-v2 select,#fpb-dungeon-v2 textarea { max-width:100%; box-sizing:border-box; }
+#fpb-dungeon-v2 label { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.fpb-dv2-toolbar,.fpb-dv2-global,.fpb-dv2-presets,.fpb-dv2-zoom { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px; }
+.fpb-dv2-global input[type=number] { width:70px; }
+.fpb-dv2-workspace { display:grid; grid-template-columns:180px minmax(0,1fr) 290px; gap:10px; align-items:start; }
+.fpb-dv2-workspace aside { min-width:0; max-height:65dvh; overflow:auto; }
+.fpb-dv2-floors ol { padding-left:24px; }
+.fpb-dv2-floors li { margin:6px 0; }
+.fpb-dv2-floors small { display:block; }
+.fpb-dv2-floors button[aria-current=true] { outline:2px solid #d4b568; }
+.fpb-dv2-workspace fieldset { border:0; padding:0; margin:0; min-width:0; }
+.fpb-dv2-workspace fieldset>button { margin:3px 0; }
+.fpb-dv2-properties details { margin:8px 0; border-bottom:1px solid #5f6857; padding-bottom:6px; }
+.fpb-dv2-form,.fpb-dv2-properties form { display:grid; gap:6px; }
+.fpb-dv2-form label,.fpb-dv2-properties form label { align-items:start; }
+.fpb-dv2-form label input,.fpb-dv2-form label select { width:100%; }
+.fpb-dv2-map { min-width:0; }
+.fpb-dv2-map .fpb-interior-scroll { max-height:60dvh; overflow:auto; touch-action:pan-x pan-y; background:#182125; }
+.fpb-dv2-map svg { display:block; width:100%; height:auto; }
+.fpb-dv2-preview,.fpb-dv2-warning { border:1px solid #c4a04f; background:#4b4326; padding:10px; margin:8px 0; }
+.fpb-dv2-preview p { margin:5px 0; }
+.fpb-dv2-mobile-tabs { display:none; }
+.fpb-dv2-palette { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; max-height:300px; overflow:auto; }
+.fpb-dv2-palette button { padding:2px; font-size:10px; }
+.fpb-dv2-palette img { display:block; width:100%; height:55px; object-fit:contain; }
+.fpb-dv2-section { padding:12px; }
+.fpb-dv2-section>div { border:1px solid #9a926e; padding:8px; margin:8px 0; }
+#fpb-dungeon-v2 :focus-visible { outline:2px solid #f0d585; outline-offset:2px; }
+@media(max-width:760px) {
+  #fpb-dungeon-v2 { width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; margin:0; padding:10px max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left)); }
+  #fpb-dungeon-v2 button { min-height:44px; min-width:44px; }
+  #fpb-dungeon-v2 input,#fpb-dungeon-v2 select,#fpb-dungeon-v2 textarea { font-size:16px; }
+  .fpb-dv2-workspace { display:block; }
+  .fpb-dv2-workspace aside { max-height:none; }
+  .fpb-dv2-mobile-tabs { display:flex; gap:8px; margin:8px 0; }
+  #fpb-dungeon-v2[data-tab=map] .fpb-dv2-floors,#fpb-dungeon-v2[data-tab=map] .fpb-dv2-properties,
+  #fpb-dungeon-v2[data-tab=floors] .fpb-dv2-map,#fpb-dungeon-v2[data-tab=floors] .fpb-dv2-properties,
+  #fpb-dungeon-v2[data-tab=properties] .fpb-dv2-map,#fpb-dungeon-v2[data-tab=properties] .fpb-dv2-floors { display:none; }
+}
+#fpb-dungeon-v2 button { background:#35452e; color:#f0e5c5; border:1px solid #8c8656; border-radius:3px; padding:6px 10px; cursor:pointer; }
+#fpb-dungeon-v2 button:hover { background:#4b6040; }
+#fpb-dungeon-v2 button:disabled { opacity:.5; cursor:default; }
+#fpb-dungeon-v2 :is(input,select,textarea) { background:#141c16; color:#f0e5c5; border:1px solid #657154; padding:5px; border-radius:2px; }
+#fpb-dungeon-v2 input[type=checkbox] { display:inline-block; appearance:auto; opacity:1; position:static; width:18px; height:18px; min-width:18px; margin:0 4px 0 0; accent-color:#d9bf75; }
+#fpb-dungeon-v2 label:has(input[type=checkbox]) { min-height:36px; cursor:pointer; align-items:center; }
+#fpb-dungeon-v2 { overflow-wrap:anywhere; }
+@media(max-width:760px) { #fpb-dungeon-v2 label:has(input[type=checkbox]) { min-height:44px; } }
+.fpb-dv2-export>summary,.fpb-dv2-global-tools>summary { cursor:pointer; border:1px solid #8c8656; padding:8px 10px; border-radius:3px; }
+.fpb-dv2-export>div { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.fpb-dv2-global-tools { margin-bottom:8px; }
+@media(max-width:760px) { .fpb-dv2-export>summary,.fpb-dv2-global-tools>summary { min-height:44px; box-sizing:border-box; display:flex; align-items:center; } }

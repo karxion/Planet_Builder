@@ -1,6 +1,6 @@
 import type { DungeonPoint, DungeonRoom } from "@/types/dungeon-interior";
 
-export const dungeonRoomCenter = (room: DungeonRoom): DungeonPoint => ({
+export const dungeonRoomCenter = (room: Pick<DungeonRoom, "x" | "y" | "width" | "height">): DungeonPoint => ({
   x: Math.floor(room.x + room.width / 2),
   y: Math.floor(room.y + room.height / 2)
 });

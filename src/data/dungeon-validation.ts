@@ -1,15 +1,17 @@
-import { isBattleMapSettings } from "./battle-map";
 import type { DungeonInterior } from "@/types/dungeon-interior";
+import type { DungeonV2 } from "@/types/dungeon-v2";
 import { dungeonDistances, dungeonRoomCenter, hiddenDungeonTiles } from "@/utils/dungeon-grid";
 import { ADVENTURE_MONSTER_BY_ID, ADVENTURE_THEME_BY_ID } from "./adventure-sites";
+import { isBattleMapSettings } from "./battle-map";
 import { CR_XP, DUNGEON_GIMMICKS, DUNGEON_TRAPS, numericCr } from "./dungeon-content";
+import { isDungeonV2 } from "./dungeon-v2-validation";
 import { ALL_REFERENCE_OPTIONS, MAGIC_ITEM_BY_ID } from "./magic-item-references";
 
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 const integer = (value: unknown, min: number, max: number): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value >= min && value <= max;
-export function isDungeonInterior(value: unknown): value is DungeonInterior {
+export function isDungeonInteriorV1(value: unknown): value is DungeonInterior {
   if (
     !record(value) ||
     value.version !== 1 ||
@@ -182,6 +184,12 @@ export function isDungeonInterior(value: unknown): value is DungeonInterior {
   return bosses.length === 1 && bosses[0].roomId === boss.id;
 }
 
+export function isDungeonInterior(value: unknown): value is DungeonInterior | DungeonV2 {
+  return isDungeonInteriorV1(value) || isDungeonV2(value);
+}
+
 export function cleanDungeonInterior(marker: { interior?: unknown }): void {
+  // Preserve unsupported versions and damaged v2 records for explicit recovery/export.
+  if (record(marker.interior) && typeof marker.interior.version === "number" && marker.interior.version >= 2) return;
   if (marker.interior !== undefined && !isDungeonInterior(marker.interior)) delete marker.interior;
 }

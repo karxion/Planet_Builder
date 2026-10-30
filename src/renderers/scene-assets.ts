@@ -1,6 +1,8 @@
 import { scenePngSize } from "@/data/battle-map";
+import { DUNGEON_ASSET_BY_ID, dungeonAssetUrl } from "@/data/dungeon-assets";
 import manifest from "@/data/scene-image-manifest.json";
-import { SUBSURFACE_ASSET_IDS, subsurfaceAssetUrl, type SubsurfaceAssetId } from "./subsurface-assets";
+import type { DungeonAssetId } from "@/types/dungeon-v2";
+import { SUBSURFACE_ASSET_IDS, type SubsurfaceAssetId, subsurfaceAssetUrl } from "./subsurface-assets";
 
 export type SceneAssetView = "overview" | "battle";
 export type SceneAssetId = "house" | "keep" | "wall" | "gate" | "well" | "barn" | "paving" | "tree";
@@ -36,38 +38,50 @@ export async function inlineSceneImages(markup: string): Promise<string> {
   const root = new DOMParser().parseFromString(markup, "image/svg+xml");
   if (root.querySelector("parsererror")) throw new Error("Invalid scene SVG");
   await Promise.all(
-    [...root.querySelectorAll<SVGImageElement>("image[data-generated-module], image[data-subsurface-module]")].map(
-      async image => {
-        const id = image.dataset.generatedModule as SceneAssetId;
-        const sub = image.dataset.subsurfaceModule as SubsurfaceAssetId | undefined;
-        if (sub ? !SUBSURFACE_ASSET_IDS.includes(sub) : !SCENE_ASSET_IDS.includes(id))
-          throw new Error("Unknown scene module");
-        const url = new URL(sub ? subsurfaceAssetUrl(sub) : sceneAssetUrl(id), location.href);
-        const key = sub ? `subsurface:${sub}` : id;
-        if (url.origin !== location.origin) throw new Error("Scene assets must be local");
-        if (!embedded.has(key))
-          embedded.set(
-            key,
-            (async () => {
-              const response = await fetch(url.href);
-              if (!response.ok) throw new Error(`Scene image unavailable (${response.status})`);
-              const blob = await response.blob();
-              if (blob.size > 16 * 1024 * 1024 || !blob.type.startsWith("image/png"))
-                throw new Error("Invalid scene image");
-              return new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(String(reader.result));
-                reader.onerror = () => reject(new Error("Scene image read failed"));
-                reader.readAsDataURL(blob);
-              });
-            })().catch(error => {
-              embedded.delete(key);
-              throw error;
-            })
-          );
-        image.setAttribute("href", await embedded.get(key)!);
-      }
-    )
+    [
+      ...root.querySelectorAll<SVGImageElement>(
+        "image[data-generated-module], image[data-subsurface-module], image[data-dungeon-module]"
+      )
+    ].map(async image => {
+      const dungeon = image.dataset.dungeonModule as DungeonAssetId | undefined;
+      const id = image.dataset.generatedModule as SceneAssetId;
+      const sub = image.dataset.subsurfaceModule as SubsurfaceAssetId | undefined;
+      if (
+        dungeon
+          ? !DUNGEON_ASSET_BY_ID.has(dungeon)
+          : sub
+            ? !SUBSURFACE_ASSET_IDS.includes(sub)
+            : !SCENE_ASSET_IDS.includes(id)
+      )
+        throw new Error("Unknown scene module");
+      const url = new URL(
+        dungeon ? dungeonAssetUrl(dungeon) : sub ? subsurfaceAssetUrl(sub) : sceneAssetUrl(id),
+        location.href
+      );
+      const key = dungeon ? `dungeon:${dungeon}` : sub ? `subsurface:${sub}` : id;
+      if (url.origin !== location.origin) throw new Error("Scene assets must be local");
+      if (!embedded.has(key))
+        embedded.set(
+          key,
+          (async () => {
+            const response = await fetch(url.href);
+            if (!response.ok) throw new Error(`Scene image unavailable (${response.status})`);
+            const blob = await response.blob();
+            if (blob.size > 16 * 1024 * 1024 || !blob.type.startsWith("image/png"))
+              throw new Error("Invalid scene image");
+            return new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result));
+              reader.onerror = () => reject(new Error("Scene image read failed"));
+              reader.readAsDataURL(blob);
+            });
+          })().catch(error => {
+            embedded.delete(key);
+            throw error;
+          })
+        );
+      image.setAttribute("href", await embedded.get(key)!);
+    })
   );
   return new XMLSerializer().serializeToString(root.documentElement);
 }

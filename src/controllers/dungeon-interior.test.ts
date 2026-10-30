@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Marker } from "@/generators/markers-generator";
+import type { DungeonInterior } from "@/types/dungeon-interior";
 import editorCode from "../../public/modules/ui/editors.js?raw";
 
 describe("Dungeon interior interactions", () => {
@@ -39,6 +40,8 @@ describe("Dungeon interior interactions", () => {
     );
     const { initDungeonInterior } = await import("./dungeon-interior");
     initDungeonInterior();
+    const { generateDungeonInterior } = await import("@/generators/dungeon-interior");
+    pack.markers[0].interior = generateDungeonInterior("interior-ui:marker:7:cell:3", "wizard-tower", "mage");
     const dialog = document.querySelector<HTMLDialogElement>("dialog")!;
     dialog.showModal = () => {
       dialog.open = true;
@@ -51,13 +54,13 @@ describe("Dungeon interior interactions", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
-  const marker = () => pack.markers[0] as Marker;
+  const marker = () => pack.markers[0] as Omit<Marker, "interior"> & { interior?: DungeonInterior };
   const change = (selector: string, value: string) => {
     const select = document.querySelector<HTMLSelectElement>(selector)!;
     select.value = value;
     select.dispatchEvent(new Event("change"));
   };
-  it("opens from the actual legacy map click dispatcher and persists generated data only once", () => {
+  it("opens saved v1 from the actual map dispatcher without rerolling", () => {
     const changed = vi.fn();
     window.addEventListener("project:changed", changed);
     try {
@@ -70,19 +73,20 @@ describe("Dungeon interior interactions", () => {
       expect(document.querySelector<HTMLDialogElement>("#fpb-dungeon-interior")!.open).toBe(true);
       expect(marker().interior).toBeDefined();
       expect(editMarker).not.toHaveBeenCalled();
-      expect(changed).toHaveBeenCalledTimes(1);
+      expect(changed).toHaveBeenCalledTimes(0);
       const dungeon = marker().interior;
       openDungeonInterior(7);
       expect(marker().interior).toBe(dungeon);
-      expect(changed).toHaveBeenCalledTimes(1);
+      expect(changed).toHaveBeenCalledTimes(0);
       expect(document.querySelector("h2")!.textContent).toContain("<img");
       expect(document.querySelector("h2 img")).toBeNull();
-      expect(marker().lock).toBe(true);
+      expect(marker().lock).toBeUndefined();
     } finally {
       window.removeEventListener("project:changed", changed);
     }
   });
   it("preserves non-dungeon marker editing", () => {
+    delete marker().interior;
     marker().type = "battlefields";
     marker().icon = "battle";
     delete marker().adventure;
@@ -124,7 +128,7 @@ describe("Dungeon interior interactions", () => {
     });
     document.querySelector<HTMLButtonElement>("[data-regenerate]")!.click();
     expect(marker().interior).toBe(original);
-    expect(document.querySelector('.fpb-interior-status')!.textContent).toContain("보존");
+    expect(document.querySelector(".fpb-interior-status")!.textContent).toContain("보존");
     document.querySelector<HTMLButtonElement>("[data-regenerate]")!.click();
     expect(marker().interior!.generation).toBe(1);
     expect(marker().interior!.tiles).not.toBe(original!.tiles);
@@ -171,16 +175,22 @@ describe("Dungeon interior interactions", () => {
     const revokeObjectURL = vi.fn();
     vi.stubGlobal("URL", Object.assign(class extends URL {}, { createObjectURL, revokeObjectURL }));
     vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    vi.stubGlobal("fetch", vi.fn(async()=>({ok:true,blob:async()=>new window.Blob([new Uint8Array([137,80,78,71])],{type:"image/png"})})));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        blob: async () => new window.Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" })
+      }))
+    );
     try {
       document.querySelector<HTMLButtonElement>("[data-export]")!.click();
-      await vi.waitFor(()=>expect(createObjectURL).toHaveBeenCalledOnce());
+      await vi.waitFor(() => expect(createObjectURL).toHaveBeenCalledOnce());
       const svg = await output!.text();
       expect(svg).not.toContain("data-feature");
       expect(svg).not.toContain("보스");
       for (const room of marker().interior!.rooms.filter(room => room.secret))
         expect(svg).not.toContain(`data-room="${room.id}"`);
-      await vi.waitFor(()=>expect(revokeObjectURL).toHaveBeenCalledWith("blob:test-export"),{timeout:2000});
+      await vi.waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith("blob:test-export"), { timeout: 2000 });
     } finally {
       vi.useRealTimers();
     }

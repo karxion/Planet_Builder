@@ -1,10 +1,11 @@
 import { mean } from "d3";
 import { getDungeonUrl } from "@/data/dungeon-locations";
 import { createLocalEncounterNote } from "@/data/local-encounter";
-import { INSCRIPTION_DESCRIPTION, generatedMarkerNote } from "@/data/marker-localization";
+import { generatedMarkerNote, INSCRIPTION_DESCRIPTION } from "@/data/marker-localization";
 import { migrateMarkerIcon } from "@/data/rpg-map-assets";
 import type { AdventureSite } from "@/types/adventure-site";
 import type { DungeonInterior } from "@/types/dungeon-interior";
+import type { DungeonV2 } from "@/types/dungeon-v2";
 import type { PackedGraph } from "@/types/PackedGraph";
 import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rn, rw } from "../utils";
 import { ADMINISTRATIVE_ONLY } from "./administration-policy";
@@ -16,7 +17,7 @@ declare global {
 
 export interface Marker {
   adventure?: AdventureSite;
-  interior?: DungeonInterior;
+  interior?: DungeonInterior | DungeonV2 | { version: number };
   i: number;
   type: string;
   icon: string;

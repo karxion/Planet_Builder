@@ -1,21 +1,22 @@
-import { inlineSceneImages, scenePng } from "@/renderers/scene-assets";
-import { battleMapControls } from "./battle-map-settings";
-import { battlePreset, battleTravel } from "@/data/battle-map";
 import {
   ADVENTURE_MONSTER_BY_ID,
   ADVENTURE_THEME_BY_ID,
   ADVENTURE_THEMES,
   isAdventureSite
 } from "@/data/adventure-sites";
+import { battlePreset, battleTravel } from "@/data/battle-map";
 import { DUNGEON_DIFFICULTIES } from "@/data/dungeon-content";
 import { isDungeonLocation } from "@/data/dungeon-locations";
-import { isDungeonInterior } from "@/data/dungeon-validation";
+import { isDungeonInteriorV1 } from "@/data/dungeon-validation";
 import { generateDungeonInterior } from "@/generators/dungeon-interior";
 import { renderDungeonMap, renderDungeonRoom, roomName as renderRoomName } from "@/renderers/dungeon-interior";
 import { escapeAttribute as esc, rpgIconPreview } from "@/renderers/rpg-asset-renderer";
+import { inlineSceneImages, scenePng } from "@/renderers/scene-assets";
 import { getUiLanguage } from "@/services/ui-language";
-import { generatedText as gt } from "@/utils/generation-text";
 import type { DungeonDifficulty, DungeonInterior, DungeonRoom } from "@/types/dungeon-interior";
+import { generatedText as gt } from "@/utils/generation-text";
+import { battleMapControls } from "./battle-map-settings";
+import { openDungeonV2 } from "./dungeon-v2";
 
 declare global {
   var openDungeonInterior: (markerId: number) => boolean;
@@ -53,7 +54,7 @@ function render(): void {
     dialog.close();
     return;
   }
-  const dungeon = isDungeonInterior(marker.interior) ? marker.interior : undefined;
+  const dungeon = isDungeonInteriorV1(marker.interior) ? marker.interior : undefined;
   const battleSettings = dungeon?.battleMap || battlePreset("small");
   const renderBattle = tactical ? { ...battleSettings, focusRoomId: selectedRoom } : undefined;
   const travel = battleTravel(battleSettings);
@@ -82,7 +83,7 @@ function render(): void {
         : ""
     }
     <label class="fpb-interior-toggle"><input data-gm type="checkbox" ${gm ? "checked" : ""}>${text("GM 보기", "GM view")}</label><button data-regenerate type="button" class="icon-cw" title="${text("내부 지도 재생성", "Regenerate floor plan")}" aria-label="${text("내부 지도 재생성", "Regenerate floor plan")}"></button><button data-export type="button" class="icon-download" title="${text("현재 보기 SVG 출력", "Export current view as SVG")}" aria-label="${text("현재 보기 SVG 출력", "Export current view as SVG")}" ${dungeon ? "" : "disabled"}></button><button data-export-png type="button" aria-label="PNG" ${dungeon ? "" : "disabled"}>PNG</button><button data-edit-marker type="button" class="icon-pencil" title="${text("세계 지도 표식 편집", "Edit world marker")}" aria-label="${text("세계 지도 표식 편집", "Edit world marker")}"></button></div>
-    <div data-battle-sizing></div>
+    <button type="button" data-v2>다층 던전 v2 · 기믹/개별 에셋 편집</button><div data-battle-sizing></div>
     <div class="fpb-interior-summary">${dungeon ? `<span>${tactical ? `${battleSettings.columns} × ${battleSettings.rows} · ${text("일반 이동", "Walk")} ${travel.walk} / ${text("전력 질주", "Dash")} ${travel.dash} ${text("턴 (30ft, 양 끝 칸 중심 기준)", "turns (30ft speed, end-square centers)")}` : ""}</span><span>${text("원본 CR", "Source CR")} ${dungeon.baseCr} → ${text("목표 CR", "Target CR")} ${dungeon.targetCr}</span><span>${visibleRooms.length} ${text("방", "rooms")} · ${text("한 칸", "Square")} 5 ft</span>${gm ? `<span>${text("함정", "Traps")} ${dungeon.features.filter(feature => feature.kind === "trap").length} · ${text("비밀방", "Secret rooms")} ${dungeon.rooms.filter(room => room.secret).length}</span>` : `<span>${text("플레이어 보기", "Player view")}</span>`}<span>${text("창작 조우 · GM 조정 필요", "Homebrew encounter · GM tuning required")}${dungeon.baseCr === 30 && dungeon.difficulty !== "normal" ? text(" · CR 상한 30", " · CR cap 30") : ""}</span>` : ""}</div>
     <p class="fpb-interior-status" role="status">${esc(status)}</p>
     ${
@@ -98,6 +99,10 @@ function render(): void {
             )}</select></label><div class="fpb-interior-detail">${renderDungeonRoom(dungeon, selectedRoom, getUiLanguage(), gm)}</div></aside></div>`
         : `<div class="fpb-interior-empty">${text("내부 지도를 생성하지 못했습니다. 재생성으로 다시 시도할 수 있습니다.", "The floor plan could not be generated. Retry with regenerate.")}</div>`
     }`;
+  dialog.querySelector<HTMLButtonElement>("[data-v2]")!.onclick = () => {
+    dialog.close();
+    openDungeonV2(marker.i);
+  };
   const sizing = dialog.querySelector<HTMLElement>("[data-battle-sizing]")!;
   sizing.hidden = !tactical;
   sizing.append(
@@ -224,13 +229,13 @@ function commit(themeId: string, monsterId: string, difficulty: DungeonDifficult
   const marker = activeMarker();
   if (!marker) return;
   try {
-    const interiorSeed = isDungeonInterior(marker.interior)
+    const interiorSeed = isDungeonInteriorV1(marker.interior)
       ? marker.interior.seed
       : `${String(seed).slice(0, 400)}:marker:${marker.i}:cell:${marker.cell}`;
     const draft = generateDungeonInterior(interiorSeed, themeId, monsterId, difficulty, generation);
-    if (isDungeonInterior(marker.interior) && marker.interior.battleMap)
+    if (isDungeonInteriorV1(marker.interior) && marker.interior.battleMap)
       draft.battleMap = { ...marker.interior.battleMap };
-    if (!isDungeonInterior(draft)) throw new Error("Invalid generated dungeon");
+    if (!isDungeonInteriorV1(draft)) throw new Error("Invalid generated dungeon");
     marker.interior = draft;
     marker.lock = true;
     selectedRoom = draft.entranceRoomId;
@@ -256,13 +261,14 @@ function regenerate(generation: number): void {
 export function openDungeonInteriorMap(markerId: number): boolean {
   const marker = window.pack?.markers?.find(marker => marker.i === markerId);
   if (!marker || !isDungeonLocation(marker)) return false;
+  if (!marker.interior || marker.interior.version !== 1) return openDungeonV2(markerId);
   initDungeonInterior();
   activeId = markerId;
   gm = true;
   tactical = false;
   zoom = 1;
   status = "";
-  if (!isDungeonInterior(marker.interior)) {
+  if (!isDungeonInteriorV1(marker.interior)) {
     const site = isAdventureSite(marker.adventure) ? marker.adventure : undefined;
     commit(site?.themeId || "goblin-stockade", site?.monsterId || "goblin-2014", "normal", 0);
   } else {
