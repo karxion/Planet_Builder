@@ -3,6 +3,7 @@ import { isUnderwaterMap, SEA_RELATIONS, seabedIndex } from "@/data/underwater";
 import { SITE_KINDS, SPACE_IDS, type SpaceSite, TERRAIN_KINDS, type WorldSpacesData } from "@/types/world-spaces";
 import { spaceCityName, synchronizeSpaceContent } from "@/generators/space-content";
 import { isNpcProgression } from "@/data/campaign-validation";
+import { isSpaceLayers } from "@/data/space-layers";
 
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
@@ -31,6 +32,7 @@ export function isWorldSpaces(value: unknown): value is WorldSpacesData {
     return false;
   if (value.underground !== undefined && !isUndergroundMap(value.underground)) return false;
   if (value.underwater !== undefined && !isUnderwaterMap(value.underwater)) return false;
+  if (value.layers !== undefined && !isSpaceLayers(value.layers)) return false;
   if (
     !Array.from(value.factions).every(
       f =>

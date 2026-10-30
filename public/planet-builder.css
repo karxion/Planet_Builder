@@ -937,6 +937,8 @@ body[data-world-space] #map { background: #16252e; }
 }
 body[data-world-space] #map #viewbox > :not(#fpb-world-spaces),
 body[data-world-space] #map #viewbox > :not(#fpb-world-spaces) * { visibility: hidden !important; pointer-events: none !important; }
+body[data-world-space] #mapLayers > [data-space-unavailable] { opacity: .35; cursor: not-allowed; }
+#fpb-space-layer-hint { font-size: .85em; line-height: 1.5; color: #d9ca8b; }
 #fpb-space-panel input, #fpb-space-panel select { min-height: 36px; height: 36px; line-height: 1.4; }
 #fpb-space-panel[data-placing="true"] > p:first-of-type,
 #fpb-space-panel[data-placing="true"] > nav,

@@ -3,6 +3,7 @@ import type { SpaceSite, WorldSpace, WorldSpacesData } from "@/types/world-space
 import { drawUndergroundTerrain } from "./underground-map";
 import { drawUnderwaterTerrain } from "./underwater-map";
 import { subsurfaceDefs, subsurfaceMarker, subsurfaceScenery } from "./subsurface-assets";
+import { applySpaceLayers } from "./space-layers";
 
 const NS = "http://www.w3.org/2000/svg";
 const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
@@ -28,7 +29,18 @@ export function drawWorldSpaces(input: {
   const root = element("g", { id: "fpb-world-spaces", "data-space": data.activeSpace });
   if (data.activeSpace !== "surface") root.append(subsurfaceDefs());
   if (data.activeSpace !== "surface") {
-    root.append(element("rect", { width, height, fill: data.activeSpace === "underwater" ? "#102f42" : "#201d2b" }));
+    root.append(
+      element("rect", {
+        width,
+        height,
+        fill:
+          data.activeSpace === "underwater"
+            ? "#315b70"
+            : data.underground?.mode === "hollow" && data.underground.illumination !== "dark"
+              ? "#ded7bd"
+              : "#201d2b"
+      })
+    );
     if (input.landMask)
       root.append(
         element("rect", { width, height, fill: "#a8adac", opacity: 0.15, mask: "url(#land)", "pointer-events": "none" })
@@ -56,23 +68,29 @@ export function drawWorldSpaces(input: {
       lake: "#23596a",
       rock: "#39333d"
     };
-    root.append(
-      element("ellipse", {
-        cx,
-        cy,
-        rx: site.radius * width,
-        ry: site.radius * height,
-        fill: site.kind === "terrain" ? fills[site.terrain] : color(site),
-        "fill-opacity": site.kind === "terrain" ? 0.7 : 0.2,
-        stroke: selected === site.id ? "#fff" : color(site),
-        "stroke-width": 1.5,
-        "stroke-dasharray": site.kind === "territory" ? "5 3" : "none",
-        "vector-effect": "non-scaling-stroke",
-        "data-space-site": site.id,
-        ...(underground && site.kind === "territory" ? { "clip-path": "url(#fpb-underground-floor)" } : {}),
-        ...(underwater && site.kind === "territory" ? { "clip-path": "url(#fpb-sea-water)" } : {})
-      })
-    );
+    const area = element("ellipse", {
+      cx,
+      cy,
+      rx: site.radius * width,
+      ry: site.radius * height,
+      fill: site.kind === "terrain" ? fills[site.terrain] : color(site),
+      "fill-opacity": site.kind === "terrain" ? 0.7 : 0.2,
+      stroke: "none",
+      "stroke-width": 1.5,
+      "stroke-dasharray": site.kind === "territory" ? "5 3" : "none",
+      "vector-effect": "non-scaling-stroke",
+      "data-space-site": site.id,
+      "data-space-layer":
+        site.kind === "terrain" ? "toggleBiomes" : site.factionId ? "toggleStates" : "toggleProvinces",
+      ...(underground && site.kind === "territory" ? { "clip-path": "url(#fpb-underground-floor)" } : {}),
+      ...(underwater && site.kind === "territory" ? { "clip-path": "url(#fpb-sea-water)" } : {})
+    });
+    root.append(area);
+    const border = area.cloneNode() as SVGElement;
+    border.setAttribute("fill", "none");
+    border.setAttribute("stroke", selected === site.id ? "#fff" : color(site));
+    border.setAttribute("data-space-layer", "toggleBorders");
+    root.append(border);
   }
   for (const link of data.links) {
     const from = byId.get(link.from)!;
@@ -91,6 +109,7 @@ export function drawWorldSpaces(input: {
         y2,
         stroke: link.transport === "water" ? "#9edcd9" : "#bca874",
         "stroke-width": 2,
+        "data-space-layer": "toggleRoutes",
         "stroke-dasharray": link.transport === "land" ? "none" : "6 4",
         ...(underground?.mode === "hollow" && link.origin === "underground" ? { "data-inner-route": link.id } : {}),
         "vector-effect": "non-scaling-stroke",
@@ -114,6 +133,7 @@ export function drawWorldSpaces(input: {
           "font-size": 11,
           cursor: "pointer",
           "data-space-travel": target.id,
+          "data-space-layer": "toggleMarkers",
           role: "button",
           tabindex: 0
         },
@@ -137,6 +157,8 @@ export function drawWorldSpaces(input: {
     const [x, y] = point(site);
     const group = element("g", {
       "data-space-site": site.id,
+      "data-space-layer":
+        site.kind === "city" ? "toggleBurgIcons" : site.kind === "gateway" ? "toggleMarkers" : "toggleLabels",
       role: "button",
       tabindex: 0,
       cursor: "pointer",
@@ -196,28 +218,37 @@ export function drawWorldSpaces(input: {
     );
     if (!((site.kind === "terrain" || site.kind === "territory") && overlaps)) {
       labelBounds.push(bounds);
-      group.append(
-        element(
-          "text",
-          {
-            x: site.kind === "city" ? x : x + 7,
-            y: labelY,
-            "text-anchor": site.kind === "city" ? "middle" : "start",
-            "data-space-city-label": site.kind === "city" ? site.id : "",
-            "font-family": "Arial, Malgun Gothic, sans-serif",
-            "font-weight": site.kind === "city" ? 700 : 400,
-            fill: "#f8edca",
-            stroke: "#18201e",
-            "stroke-width": 3,
-            "paint-order": "stroke",
-            "font-size": 11
-          },
-          site.name
-        )
+      const name = element(
+        "text",
+        {
+          x: site.kind === "city" ? x : x + 7,
+          y: labelY,
+          "text-anchor": site.kind === "city" ? "middle" : "start",
+          "data-space-city-label": site.kind === "city" ? site.id : "",
+          "font-family": "Arial, Malgun Gothic, sans-serif",
+          "font-weight": site.kind === "city" ? 700 : 400,
+          fill: "#f8edca",
+          stroke: "#18201e",
+          "stroke-width": 3,
+          "paint-order": "stroke",
+          "font-size": 11
+        },
+        site.name
       );
+      const labelGroup = element("g", {
+        "data-space-layer": "toggleLabels",
+        "data-space-site": site.id,
+        role: "button",
+        tabindex: 0,
+        cursor: "pointer",
+        "aria-label": site.name
+      });
+      labelGroup.append(name);
+      root.append(labelGroup);
     } else group.append(element("circle", { cx: x, cy: y, r: 5, fill: "transparent" }));
     group.append(element("title", {}, `${site.name} · ${site.depth} m${site.residents ? ` · ${site.residents}` : ""}`));
     root.append(group);
   }
+  applySpaceLayers(root, data, width, height);
   parent.append(root);
 }

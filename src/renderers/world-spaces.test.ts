@@ -82,7 +82,9 @@ describe("space visibility", () => {
     expect(data).toEqual(original);
     data.underwater!.view = "terrain";
     drawWorldSpaces({ parent, data, width: 1000, height: 500, selected: "", labels });
-    expect(parent.querySelector("[data-sea-owner]")).toBeNull();
+    expect(parent.querySelector("[data-sea-owner]")?.closest("[data-space-layer-group]")?.getAttribute("display")).toBe(
+      "none"
+    );
     expect(parent.querySelectorAll("#fpb-sea-water")).toHaveLength(1);
   });
   it("renders only the selected underground depth with terrain contours and working depth passages", () => {

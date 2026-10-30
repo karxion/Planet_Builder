@@ -6,7 +6,8 @@ import { getUiLanguage } from "@/services/ui-language";
 export type SubsurfaceAssetId = keyof typeof manifest;
 const NS = "http://www.w3.org/2000/svg";
 export const SUBSURFACE_ASSET_IDS = Object.keys(manifest) as SubsurfaceAssetId[];
-export const subsurfaceAssetName = (id: SubsurfaceAssetId): string => manifest[id][getUiLanguage() === "ko" ? "ko" : "en"];
+export const subsurfaceAssetName = (id: SubsurfaceAssetId): string =>
+  manifest[id][getUiLanguage() === "ko" ? "ko" : "en"];
 export function subsurfaceAssetUrl(id: SubsurfaceAssetId): string {
   return `${import.meta.env.BASE_URL || "/"}assets/subsurface/${manifest[id].file}?v=${manifest[id].sha256.slice(0, 12)}`;
 }
@@ -25,6 +26,15 @@ export function subsurfaceDefs(): SVGDefsElement {
     image.setAttribute("width", String(asset.width));
     image.setAttribute("height", String(asset.height));
     symbol.append(image);
+    defs.append(symbol);
+  }
+  // Reuse the surface relief artwork, copying definitions for independent SVG/PNG export.
+  for (const kind of ["mount", "deciduous", "grass"]) {
+    const original = document.getElementById(`relief-${kind}-2`);
+    if (!original) continue;
+    const symbol = original.cloneNode(true) as SVGElement;
+    symbol.id = `fpb-hollow-${kind}`;
+    if (kind !== "mount") symbol.setAttribute("viewBox", kind === "deciduous" ? "-3 -3 25 25" : "-3 -3 35 35");
     defs.append(symbol);
   }
   return defs;
@@ -53,10 +63,12 @@ export function subsurfaceScenery(data: WorldSpacesData, width: number, height: 
   const rng = Alea(`${map.seed}:subsurface-scenery:${"activeLevel" in map ? map.activeLevel : "sea"}`);
   const cells = "depths" in map ? map.terrain : map.levels.find(level => level.id === map.activeLevel)!.cells;
   const used = new Set<number>();
-  for (let tries = 0; tries < 700 && used.size < 64; tries++) {
+  const hollow = "activeLevel" in map && map.mode === "hollow";
+  for (let tries = 0; tries < 1400 && used.size < (hollow ? 180 : 96); tries++) {
     const i = Math.floor(rng() * cells.length),
       cell = cells[i];
     if (used.has(i) || ("depths" in map ? !map.depths[i] : cell === 0)) continue;
+    if (hollow && cell === 2) continue;
     const pool: SubsurfaceAssetId[] =
       "depths" in map
         ? cell === 6
@@ -81,7 +93,26 @@ export function subsurfaceScenery(data: WorldSpacesData, width: number, height: 
       )
     )
       continue;
-    const id = pool[Math.floor(rng() * pool.length)], mark = document.createElementNS(NS, "g");
+    const seaMountain = "depths" in map && [5, 9, 10, 11].includes(cell);
+    if ((hollow && cell !== 3 && rng() > 0.18) || seaMountain) {
+      const kind = seaMountain || cell === 4 ? "mount" : cell === 5 ? "deciduous" : "grass";
+      const mark = document.createElementNS(NS, "use");
+      mark.setAttribute("href", `#fpb-hollow-${kind}`);
+      mark.setAttribute("x", String(x * width - 9));
+      mark.setAttribute("y", String(y * height - 12));
+      mark.setAttribute("width", cell === 4 ? "24" : "18");
+      mark.setAttribute("height", cell === 4 ? "24" : "18");
+      mark.setAttribute("pointer-events", "none");
+      if (hollow) mark.dataset.hollowRelief = kind;
+      else mark.dataset.seafloorRelief = String(cell);
+      mark.dataset.spaceLayer = "toggleRelief";
+      group.append(mark);
+      continue;
+    }
+    const choices: SubsurfaceAssetId[] = hollow ? ["ur01", "ur06"] : pool;
+    const id = choices[Math.floor(rng() * choices.length)],
+      mark = document.createElementNS(NS, "g");
+    mark.dataset.spaceLayer = /^(sr|ur)/.test(id) ? "toggleGoods" : "toggleRelief";
     mark.dataset.sceneryCell = String(i);
     mark.dataset.sceneryAsset = id;
     mark.dataset.spaceX = String(x);

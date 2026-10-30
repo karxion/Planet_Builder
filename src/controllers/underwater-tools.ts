@@ -12,6 +12,7 @@ import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
 import type { SeaRelationStatus, UnderwaterMap } from "@/types/underwater";
 import { sampleSurfaceGrid } from "./surface-snapshot";
+import { spaceLayers } from "@/data/space-layers";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, value = "") => {
@@ -97,11 +98,19 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
       ["political", text("세력권", "Political")]
     ])
       view.add(new Option(name, value));
-    view.value = map.view;
+    const visible = spaceLayers(data);
+    view.value = visible.toggleStates ? (visible.toggleBiomes ? "combined" : "political") : "terrain";
     viewLabel.append(view);
     view.onchange = () => {
       WorldSpaces.update(d => {
         d.underwater!.view = view.value as UnderwaterMap["view"];
+        d.layers ||= {};
+        const prefs = (d.layers.underwater ||= {});
+        Object.assign((prefs.visible ||= {}), {
+          toggleStates: view.value !== "terrain",
+          toggleBiomes: view.value !== "political",
+          toggleHeight: view.value !== "political"
+        });
       });
       context.changed();
     };

@@ -1,6 +1,7 @@
 import type { UndergroundMap } from "./underground";
 import type { SeaRelation, UnderwaterMap } from "./underwater";
 import type { NpcProgression } from "./campaign-world";
+import type { SpaceLayerPreferences } from "@/data/space-layers";
 
 export const SPACE_IDS = ["surface", "underwater", "underground"] as const;
 export type WorldSpace = (typeof SPACE_IDS)[number];
@@ -59,6 +60,8 @@ export interface WorldSpacesData {
   underwater?: UnderwaterMap;
   relations?: SeaRelation[];
   content?: SpaceContent;
+  /** Display preferences are independent of surface layers and never alter generated geography. */
+  layers?: Partial<Record<"underwater" | "underground", SpaceLayerPreferences>>;
 }
 
 export interface SpaceNpc {

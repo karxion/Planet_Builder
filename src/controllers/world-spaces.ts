@@ -11,6 +11,7 @@ import { mountSeaDiplomacy, mountUnderwaterTools } from "./underwater-tools";
 import { openSpaceContent } from "./space-content";
 import { subsurfaceAssetName, type SubsurfaceAssetId } from "@/renderers/subsurface-assets";
 import { spaceLocation } from "@/services/world-spaces/location";
+import { initSpaceLayerControls } from "./space-layers";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -26,6 +27,7 @@ let switchView: (space: WorldSpace) => Promise<void>;
 let currentData = "";
 let activeSpace: WorldSpace = "surface";
 let scenery: { asset: SubsurfaceAssetId; x: number; y: number } | undefined;
+let syncLayerControls: (() => void) | undefined;
 
 declare global {
   interface Window {
@@ -54,6 +56,7 @@ const terrains = () => ({
 
 export function refreshWorldSpaces(): void {
   if (!panel) return;
+  syncLayerControls?.();
   const data = WorldSpaces.snapshot();
   if (activeSpace !== data.activeSpace) {
     activeSpace = data.activeSpace;
@@ -400,6 +403,7 @@ async function travel(id: string): Promise<void> {
 }
 
 export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>): void {
+  syncLayerControls = initSpaceLayerControls(refreshWorldSpaces);
   switchView = onSwitch;
   window.worldSpaceMapTip = (point, target) => {
     const data = WorldSpaces.snapshot();

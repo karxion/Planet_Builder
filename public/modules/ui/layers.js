@@ -1049,6 +1049,7 @@ function turnButtonOn(el) {
 // move layers on mapLayers dragging (jquery sortable)
 $("#mapLayers").sortable({ items: "li:not(.solid)", containment: "parent", cancel: ".solid", update: moveLayer });
 function moveLayer(event, ui) {
+  if (window.worldSpaceLayerOrder?.()) return;
   const el = getLayer(ui.item.attr("id"));
   if (!el) return;
   const prev = getLayer(ui.item.prev().attr("id"));

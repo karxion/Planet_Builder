@@ -28,7 +28,7 @@ export function drawUndergroundTerrain(map: UndergroundMap, width: number, heigh
   defs.append(clip);
   root.append(defs);
   for (const [d, fill, stroke] of [
-    [floor, hollow ? (dark ? "#414b46" : "#65775b") : "#4a4456", hollow ? "#a6b895" : "#a296a7"],
+    [floor, hollow ? (dark ? "#414b46" : "#ded7bd") : "#4a4456", hollow ? "#a6b895" : "#a296a7"],
     [path(cell => cell === 2), "#245f79", "#6da3b4"],
     [path(cell => cell === 3), "#a54b34", "#e7a061"],
     ...(hollow
@@ -50,6 +50,8 @@ export function drawUndergroundTerrain(map: UndergroundMap, width: number, heigh
     }))
       shape.setAttribute(key, value);
     root.append(shape);
+    if (fill === "#245f79" || fill === "#a54b34") shape.setAttribute("data-space-layer", "toggleLakes");
+    else if (d !== floor) shape.setAttribute("data-space-layer", "toggleBiomes");
   }
   if (layer.elevations)
     for (const contour of contours()
@@ -65,7 +67,8 @@ export function drawUndergroundTerrain(map: UndergroundMap, width: number, heigh
         "vector-effect": "non-scaling-stroke",
         transform,
         "clip-path": "url(#fpb-underground-floor)",
-        "pointer-events": "none"
+        "pointer-events": "none",
+        "data-space-layer": "toggleHeight"
       }))
         line.setAttribute(key, value);
       root.append(line);

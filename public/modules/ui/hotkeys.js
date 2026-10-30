@@ -17,6 +17,7 @@ function handleKeyup(event) {
   if (!allowHotkeys()) return; // in some cases (e.g. in a textarea) hotkeys are not allowed
 
   event.stopPropagation();
+  if (window.worldSpaceLayerKey?.(event)) return;
 
   const { code, key, ctrlKey, metaKey, shiftKey, altKey } = event;
   const ctrl = ctrlKey || metaKey || key === "Control";

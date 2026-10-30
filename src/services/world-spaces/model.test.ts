@@ -26,6 +26,27 @@ const project = () =>
   });
 
 describe("shared-coordinate world spaces", () => {
+  it("roundtrips independent layer visibility and order without changing geography", async () => {
+    const { store } = populated(),
+      p = project();
+    const before = store.snapshot();
+    store.update(d => {
+      d.layers = {
+        underwater: { visible: { toggleRelief: false, toggleStates: true }, order: ["toggleLabels", "toggleRelief"] },
+        underground: { visible: { toggleHeight: true, toggleLabels: false } }
+      };
+    });
+    p.worldSpaces = store.snapshot();
+    expect((await decodePlanetProject(await encodePlanetProject(p))).worldSpaces).toEqual(p.worldSpaces);
+    expect(p.worldSpaces.sites).toEqual(before.sites);
+    for (const invalid of [
+      { surface: {} },
+      { underwater: { visible: { toggleRelief: "yes" } } },
+      { underwater: { order: ["toggleLabels", "toggleLabels"] } },
+      { underwater: { visible: { unknown: true } } }
+    ])
+      expect(isWorldSpaces({ ...p.worldSpaces, layers: invalid })).toBe(false);
+  });
   it("marks old-file content backfill dirty so recovery never reuses the pre-migration blob", () => {
     const legacy = populated().store.snapshot();
     delete legacy.content;

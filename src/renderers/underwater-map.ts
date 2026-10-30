@@ -35,37 +35,46 @@ export function drawUnderwaterTerrain(
   root.append(defs);
   // Land remains opaque so seabed and politics are visually distinct from the surface.
   shape(path(map.depths.map(d => Number(d === 0))), SEABED_COLORS[0], { "data-sea-terrain": "0" });
+  shape(path(map.depths.map(d => Number(d > 0))), "#315b70", { "data-space-layer": "toggleLakes" });
   for (let code = 1; code < SEABED_TERRAINS.length; code++)
-    shape(path(map.terrain.map(t => Number(t === code))), map.view === "political" ? "#1c4a62" : SEABED_COLORS[code], {
+    shape(path(map.terrain.map(t => Number(t === code))), SEABED_COLORS[code], {
+      "data-space-layer": "toggleBiomes",
       "data-sea-terrain": String(code),
       stroke: "#97c6cb",
       "stroke-opacity": "0.25",
       "stroke-width": "0.6"
     });
-  if (map.view !== "terrain")
-    for (const [index, id] of map.factionIds.entries()) {
-      const color = factions.find(f => f.id === id)?.color || "#d9ca8b";
-      shape(path(map.owners.map(owner => Number(owner === index + 1))), color, {
-        "data-sea-owner": id,
-        "fill-opacity": map.view === "political" ? "0.65" : "0.24",
-        stroke: color,
-        "stroke-width": "1.4",
-        "clip-path": "url(#fpb-sea-water)"
-      });
-    }
-  if (map.view !== "political") {
-    for (const contour of contours().size([map.columns, map.rows]).thresholds([200, 1000, 3200, 6000])(map.depths)) {
-      const line = shape(geoPath()(contour) || "", "none", {
-        stroke: "#b9d8dd",
-        "stroke-opacity": "0.28",
-        "stroke-width": "0.6",
-        "data-sea-isobath": String(contour.value),
-        "pointer-events": "none"
-      });
-      const title = document.createElementNS(NS, "title");
-      title.textContent = `${contour.value} m`;
-      line.append(title);
-    }
+  for (const [index, id] of map.factionIds.entries()) {
+    const color = factions.find(f => f.id === id)?.color || "#d9ca8b";
+    const d = path(map.owners.map(owner => Number(owner === index + 1)));
+    shape(d, color, {
+      "data-space-layer": "toggleStates",
+      "data-sea-owner": id,
+      "fill-opacity": map.view === "political" ? "0.65" : "0.24",
+      stroke: "none",
+      "stroke-width": "1.4",
+      "clip-path": "url(#fpb-sea-water)"
+    });
+    shape(d, "none", {
+      "data-space-layer": "toggleBorders",
+      stroke: color,
+      "stroke-width": "1.4",
+      "clip-path": "url(#fpb-sea-water)",
+      "pointer-events": "none"
+    });
+  }
+  for (const contour of contours().size([map.columns, map.rows]).thresholds([200, 1000, 3200, 6000])(map.depths)) {
+    const line = shape(geoPath()(contour) || "", "none", {
+      stroke: "#b9d8dd",
+      "stroke-opacity": "0.28",
+      "stroke-width": "0.6",
+      "data-sea-isobath": String(contour.value),
+      "data-space-layer": "toggleHeight",
+      "pointer-events": "none"
+    });
+    const title = document.createElementNS(NS, "title");
+    title.textContent = `${contour.value} m`;
+    line.append(title);
   }
   const relevant = map.features?.filter(f => [5, 8, 10, 11, 14].includes(f.kind)) || [];
   for (const feature of relevant) {
@@ -76,6 +85,7 @@ export function drawUnderwaterTerrain(
     mark.setAttribute("fill", SEABED_COLORS[feature.kind]);
     mark.setAttribute("stroke", "#d4d5be");
     mark.setAttribute("data-seabed-feature", String(feature.kind));
+    mark.setAttribute("data-space-layer", "toggleRelief");
     const title = document.createElementNS(NS, "title");
     title.textContent = `${getUiLanguage() === "ko" ? SEABED_TERRAINS[feature.kind].ko : SEABED_TERRAINS[feature.kind].en}${feature.relief === undefined ? "" : ` · ${getUiLanguage() === "ko" ? "주변 해저 대비" : "relief"} ${feature.relief} m`}`;
     if (feature.margin)
