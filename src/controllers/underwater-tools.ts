@@ -82,8 +82,8 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
     node(
       "p",
       text(
-        "현재 지상의 해안·높이에서 해저 지형을 생성합니다. 수심은 이 세계의 생성값입니다. 종족 구성과 외교 관계는 세계관 설정으로 편집할 수 있습니다.",
-        "Bathymetry is generated from this world's coastline and heights. Depths are generated setting data. Peoples and diplomatic relations are editable."
+        "현재 지상의 해안·높이에서 해저 지형을 생성합니다. 자동 도시는 지도 사방 8%의 가장자리를 제외한 바닷속에 배치합니다. 기존 지도에는 다시 생성하면 적용되며, 수동·직접 편집한 장소는 보존됩니다.",
+        "Bathymetry follows this world's coastline and heights. Automatic cities use water inside an 8% margin on all sides. Regenerate an existing map to apply; manual and edited places are retained."
       )
     )
   );

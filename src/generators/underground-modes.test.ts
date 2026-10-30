@@ -70,12 +70,16 @@ describe("underground world structures", () => {
     expect(data.underground!.levels).toHaveLength(3);
     expect(isWorldSpaces(data)).toBe(true);
   });
-  it("uses weighted connected routes and preserves exact surface entrance coordinates", () => {
+  it("places independent gateways away from cities and keeps both ends at the same world coordinate", () => {
     const data = hollow(),
       map = data.underground!;
     const entry = data.sites.find(s => s.space === "surface")!;
-    expect(entry.x).toBe(0.4112);
-    expect(entry.y).toBe(0.4353);
+    expect(Math.hypot(entry.x - 0.4112, entry.y - 0.4353)).toBeGreaterThanOrEqual(0.03);
+    expect(Math.hypot(entry.x - 0.4112, entry.y - 0.4353)).toBeLessThanOrEqual(0.18);
+    const link = data.links.find(l => l.from === entry.id)!;
+    expect(data.sites.find(s => s.id === link.to)).toMatchObject({ x: entry.x, y: entry.y, kind: "gateway" });
+    for (const city of data.sites.filter(s => s.kind === "city"))
+      expect(Math.hypot(entry.x - city.x, entry.y - city.y)).toBeGreaterThanOrEqual(0.03);
     expect(data.links.some(l => l.transport === "water")).toBe(true);
     for (const route of data.links.filter(l => l.path))
       for (let i = 1; i < route.path!.length; i++) {
@@ -89,6 +93,24 @@ describe("underground world structures", () => {
     expect(route[0]).toBe(2);
     expect(route.at(-1)).toBe(22);
     expect(route.length).toBeGreaterThan(5);
+  });
+  it("avoids every surface settlement, including nearby smaller towns, without moving them", () => {
+    const towns = Array.from({ length: 15 }, (_, n) => ({
+      name: `Town ${n}`,
+      x: 0.3 + (n % 5) * 0.035,
+      y: 0.4 + Math.floor(n / 5) * 0.04
+    }));
+    const before = structuredClone(towns);
+    const options = { seed: "outside-towns", chambers: 24, mode: "hollow" as const, surface: surface() };
+    const data = generateUnderground(emptyWorldSpaces(), options, towns);
+    const gates = data.sites.filter(s => s.kind === "gateway" && s.space === "surface");
+    expect(gates.length).toBeGreaterThan(0);
+    for (const gate of gates)
+      for (const town of [...towns, ...data.sites.filter(s => s.kind === "city")])
+        expect(Math.hypot(gate.x - town.x, gate.y - town.y)).toBeGreaterThanOrEqual(0.03);
+    expect(towns).toEqual(before);
+    expect(data).toEqual(generateUnderground(emptyWorldSpaces(), options, towns));
+    expect(isWorldSpaces(data)).toBe(true);
   });
   it("keeps manual/edited places and unrelated space data when switching structures", () => {
     const first = hollow(),

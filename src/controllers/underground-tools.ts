@@ -74,7 +74,7 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
   const entranceLabel = node("label", text("출입구 배치", "Entrance placement")),
     entranceStyle = node("select");
   entranceStyle.name = "entranceStyle";
-  entranceStyle.add(new Option(text("지상 도시 주변", "Near surface settlements"), "settlements"));
+  entranceStyle.add(new Option(text("도시 밖 독립 출입구", "Separate gateways outside settlements"), "settlements"));
   const polarOption = new Option(text("극지권 관문", "Polar gateways"), "polar");
   const latitudeBounds =
     typeof mapCoordinates !== "undefined" &&
@@ -92,8 +92,8 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
     node(
       "p",
       text(
-        "광원은 내부 지형의 색조에 반영합니다. 극지 관문은 현재 지도에 북위 85° 또는 남위 85°가 포함될 때 선택할 수 있습니다. 생성 버튼을 누르면 적용됩니다.",
-        "Illumination changes the terrain palette. Polar gateways require 85° N or 85° S within this map. Apply by generating the map."
+        "출입구는 도시와 떨어진 별도 위치에 생성됩니다. 극지 관문은 현재 지도에 북위 85° 또는 남위 85°가 포함될 때 선택할 수 있습니다. 기존 지도에는 다시 생성하면 적용됩니다.",
+        "Gateways are generated at separate sites outside settlements. Polar gateways require 85° N or 85° S within this map. Regenerate an existing map to apply."
       )
     )
   );

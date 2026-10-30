@@ -98,7 +98,9 @@ export function generateHollowWorld(
       Math.floor(i / columns) >= 4 &&
       Math.floor(i / columns) < rows - 4
   );
-  const dry = interior.length >= Math.round(options.chambers / 3) ? interior : allDry;
+  const dry = (interior.length >= Math.round(options.chambers / 3) ? interior : allDry).filter(
+    i => entranceStyle !== "polar" || candidates.every(p => Math.hypot(point(i).x - p.x, point(i).y - p.y) >= 0.03)
+  );
   const centers: number[] = [],
     settlements: SpaceSite[] = [];
   for (let n = 0; n < Math.round(options.chambers / 3) && centers.length < dry.length; n++) {
@@ -180,17 +182,42 @@ export function generateHollowWorld(
     reached.add(b);
   }
   const chosen: UndergroundEntrance[] = [];
-  for (const entry of candidates) {
+  const cities = [...entrances, ...data.sites.filter(s => s.kind === "city" && s.space !== "underwater")].filter(
+    p => Number.isFinite(p.x) && Number.isFinite(p.y)
+  );
+  const gatewayRng = Alea(`${options.seed.trim()}:hollow-gateways`);
+  for (const source of candidates) {
     if (
-      !Number.isFinite(entry.x) ||
-      !Number.isFinite(entry.y) ||
-      entry.x < 0 ||
-      entry.x > 1 ||
-      entry.y < 0 ||
-      entry.y > 1
+      !Number.isFinite(source.x) ||
+      !Number.isFinite(source.y) ||
+      source.x < 0 ||
+      source.x > 1 ||
+      source.y < 0 ||
+      source.y > 1
     )
       continue;
-    if (chosen.some(e => Math.hypot(e.x - entry.x, e.y - entry.y) < 0.14)) continue;
+    let entry: UndergroundEntrance | undefined;
+    let best = Infinity;
+    // Select a separate geographic site, never an icon offset from a settlement.
+    // Polar gates keep their latitude; ordinary gates prefer nearby surface land.
+    const positions = entranceStyle === "polar"
+      ? [source, ...Array.from({ length: columns }, (_, x) => ({ x: (x + 0.5) / columns, y: source.y }))]
+      : cells.map((_, i) => point(i));
+    for (const p of positions) {
+      const distance = Math.hypot(p.x - source.x, p.y - source.y);
+      if (distance > 0.18 || p.x < 0.04 || p.x > 0.96) continue;
+      if (entranceStyle !== "polar" && (p.y < 0.04 || p.y > 0.96)) continue;
+      if (cities.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 0.03)) continue;
+      if (chosen.some(e => Math.hypot(e.x - p.x, e.y - p.y) < 0.14)) continue;
+      const score = entranceStyle === "polar"
+        ? distance
+        : Math.abs(distance - 0.055) + (cells[cell(p)] === 2 ? 0 : 0.07) + gatewayRng() * 0.002;
+      if (score < best) {
+        best = score;
+        entry = { ...p, name: source.name };
+      }
+    }
+    if (!entry) continue;
     chosen.push(entry);
     if (chosen.length === 4) break;
   }

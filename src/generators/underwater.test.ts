@@ -21,6 +21,46 @@ function surface(): SeaSurface {
 const generate = () => generateUnderwater(emptyWorldSpaces(), "sea-test", surface());
 
 describe("seabed and aquatic realms", () => {
+  it.each(["sea-test", "outer-ocean", "coastal-towns"])("keeps all automatic cities inside the safe map area: %s", seed => {
+    const data = generateUnderwater(emptyWorldSpaces(), seed, surface());
+    const cities = data.sites.filter(s => s.kind === "city");
+    expect(cities.length).toBeGreaterThan(6);
+    for (const city of cities) {
+      expect(city.x).toBeGreaterThanOrEqual(0.08);
+      expect(city.x).toBeLessThanOrEqual(0.92);
+      expect(city.y).toBeGreaterThanOrEqual(0.08);
+      expect(city.y).toBeLessThanOrEqual(0.92);
+      expect(data.underwater!.depths[seabedIndex(data.underwater!, city.x, city.y)]).toBeGreaterThan(0);
+    }
+    expect(isWorldSpaces(data)).toBe(true);
+  });
+  it("does not fall back to inaccessible rim water when the interior is land", () => {
+    const input = surface();
+    input.heights = input.heights.map((_, i) => {
+      const x = ((i % input.columns) + 0.5) / input.columns;
+      const y = (Math.floor(i / input.columns) + 0.5) / input.rows;
+      return x < 0.07 || x > 0.93 || y < 0.07 || y > 0.93 ? 5 : 60;
+    });
+    const data = generateUnderwater(emptyWorldSpaces(), "rim-only", input);
+    expect(data.underwater!.depths.some(d => d > 0)).toBe(true);
+    expect(data.sites).toHaveLength(0);
+    expect(data.links).toHaveLength(0);
+    expect(isWorldSpaces(data)).toBe(true);
+  });
+  it("preserves an authored rim city and its edited residents when regenerating", () => {
+    const data = generate();
+    const city = data.sites[0];
+    city.x = 0.005;
+    city.y = 0.005;
+    city.depth = data.underwater!.depths[0];
+    const resident = data.content!.npcs.find(n => n.siteId === city.id)!;
+    resident.name = "직접 쓴 주민";
+    resident.edited = true;
+    const regenerated = generateUnderwater(data, "preserved-rim", surface());
+    expect(regenerated.sites.find(s => s.id === city.id)).toMatchObject({ x: city.x, y: city.y, edited: true });
+    expect(regenerated.content!.npcs.find(n => n.id === resident.id)).toEqual(resident);
+    expect(isWorldSpaces(regenerated)).toBe(true);
+  });
   it("reproduces terrain/realms without mutating the source, and keeps land dry/unclaimed", () => {
     const source = emptyWorldSpaces(),
       input = surface(),

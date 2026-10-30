@@ -61,13 +61,20 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
     .map((d, i) => ({ d, i }))
     .filter(p => p.d > 0)
     .map(p => p.i);
+  // Reserve room for the city asset, label and pointer on all four sides of the map.
+  // Water at the rim still participates in territory growth and route finding.
+  const cityCells = seaCells.filter(i => {
+    const x = ((i % columns) + 0.5) / columns,
+      y = (Math.floor(i / columns) + 0.5) / rows;
+    return x >= 0.08 && x <= 0.92 && y >= 0.08 && y <= 0.92;
+  });
   const capitals: number[] = [];
   const planarDistance = (a: number, b: number) =>
     Math.hypot(((a % columns) - (b % columns)) / columns, (Math.floor(a / columns) - Math.floor(b / columns)) / rows);
   for (const profile of SEA_PEOPLES) {
     let best = -Infinity,
-      selected = seaCells[0];
-    for (const i of seaCells) {
+      selected = -1;
+    for (const i of cityCells) {
       if (capitals.includes(i)) continue;
       const separation = capitals.length ? Math.min(...capitals.map(c => planarDistance(i, c))) : 0;
       const score =
@@ -77,6 +84,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
         best = score;
       }
     }
+    if (selected < 0) break;
     capitals.push(selected);
   }
   // Multi-source flood fill forms connected influence areas through water, never across land.
@@ -132,7 +140,7 @@ export function generateUnderwater(existing: WorldSpacesData, seed: string, surf
   };
   for (const [n, start] of capitals.entries()) {
     const a = city(start, n, true);
-    const owned = seaCells.filter(i => owners[i] === n + 1 && steps[i] >= 3 && steps[i] <= 28);
+    const owned = cityCells.filter(i => owners[i] === n + 1 && steps[i] >= 3 && steps[i] <= 28);
     if (!owned.length) continue;
     const end = owned.reduce((a, b) => (steps[a] > steps[b] ? a : b)),
       b = city(end, n, false);
