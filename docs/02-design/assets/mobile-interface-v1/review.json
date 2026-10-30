@@ -1,0 +1,49 @@
+{
+  "sizes": [
+    {
+      "size": "portrait",
+      "width": 390,
+      "height": 844,
+      "scroll": 388,
+      "headerScroll": 388,
+      "headerWidth": 388,
+      "sheetInside": true
+    },
+    {
+      "size": "small",
+      "width": 320,
+      "height": 568,
+      "scroll": 318,
+      "headerScroll": 318,
+      "headerWidth": 318,
+      "sheetInside": true
+    },
+    {
+      "size": "landscape",
+      "width": 844,
+      "height": 390,
+      "scroll": 842,
+      "headerScroll": 842,
+      "headerWidth": 842,
+      "sheetInside": true
+    },
+    {
+      "size": "tablet",
+      "width": 820,
+      "height": 1040,
+      "scroll": 818,
+      "headerScroll": 818,
+      "headerWidth": 818,
+      "sheetInside": true
+    }
+  ],
+  "errors": [],
+  "flows": [
+    "create-presets",
+    "manual-ratio",
+    "edit-cursor-apply",
+    "select-headquarters",
+    "layout-switch",
+    "dungeon-player-mode"
+  ]
+}
