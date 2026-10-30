@@ -3,7 +3,8 @@
 
 window.addEventListener("resize", function (e) {
   if (document.getElementById("fpb-shell")) {
-    fitMapToScreen();
+    if (window.scheduleMapViewportFit) window.scheduleMapViewportFit();
+    else fitMapToScreen();
     return;
   }
   if (stored("mapWidth") && stored("mapHeight")) return;
@@ -82,7 +83,7 @@ function showElementLockTip(event) {
 
 const onMouseMove = debounce(handleMouseMove, 100);
 function handleMouseMove() {
-  if (!this) return;
+  if (!this || document.body.classList.contains("fpb-map-interacting")) return;
   const point = d3.mouse(this);
   const spaceTip = window.worldSpaceMapTip?.(point, d3.event.target);
   if (spaceTip !== undefined) {

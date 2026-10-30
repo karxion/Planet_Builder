@@ -61,7 +61,9 @@ function refresh(): void {
   if (borders)
     geometryObserver.observe(borders, { subtree: true, childList: true, attributes: true, attributeFilter: ["d"] });
   zoomObserver?.disconnect();
-  zoomObserver = new MutationObserver(() => scaleBorderTokens(parent));
+  zoomObserver = new MutationObserver(() => {
+    if (!document.body.classList.contains("fpb-map-interacting")) scaleBorderTokens(parent);
+  });
   zoomObserver.observe(parent, { attributes: true, attributeFilter: ["transform"] });
 }
 
@@ -175,6 +177,10 @@ export function initBorderDiplomacy(): void {
     if (dialog?.open && selected) openBorderRelation(selected);
   });
   window.addEventListener("resize", schedule);
+  window.addEventListener("map:interaction-end", () => {
+    const view = document.querySelector<SVGGElement>("#map #viewbox");
+    if (view) scaleBorderTokens(view);
+  });
   document.addEventListener("change", event => {
     if ((event.target as Element).closest?.("#statesEditor, #diplomacyEditor")) schedule();
   });

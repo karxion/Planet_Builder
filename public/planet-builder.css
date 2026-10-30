@@ -995,3 +995,22 @@ body[data-world-space] #map #viewbox > :not(#fpb-world-spaces) * { visibility: h
   #fpb-shell > .fpb-view-switch { position: fixed; left: 50%; bottom: 16px; height: 36px; transform: translateX(-50%); background: #171e18; box-shadow: 0 4px 18px #0006; }
   #fpb-shell .fpb-extra-view[open] > button { top: auto; bottom: 100%; }
 }
+
+/* Viewport controls stay independent of icon fonts and the pannable SVG. */
+#fpb-map-navigation { position: fixed; z-index: 900; right: max(12px, env(safe-area-inset-right)); bottom: calc(68px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 6px; }
+#fpb-map-navigation[hidden] { display: none; }
+#fpb-map-navigation button { width: 44px; height: 44px; padding: 9px; display: grid; place-items: center; color: #eee4c8; background: #202a24; border: 1px solid #9c8557; border-radius: 5px; touch-action: manipulation; cursor: pointer; }
+#fpb-map-navigation button:focus-visible { outline: 3px solid #66e7ed; outline-offset: 2px; }
+body.fpb-ready #map { touch-action: none; overscroll-behavior: none; -webkit-user-select: none; }
+body.fpb-map-interacting #map :is(#oceanLayers, #oceanPattern, #coastline, #landmass, #terrain) { filter: none !important; }
+@media (max-width: 760px) {
+  :root { --fpb-header-height: calc(100px + env(safe-area-inset-top)); }
+  #fpb-shell { padding-top: env(safe-area-inset-top); padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+  #fpb-shell .fpb-actions button { flex: 0 0 44px; width: 44px; min-height: 44px !important; }
+  body.fpb-ready { -webkit-text-size-adjust: 100%; }
+  body.fpb-ready :is(input, select, textarea) { font-size: 16px; }
+  .fpb-view-switch { bottom: calc(12px + env(safe-area-inset-bottom)); }
+}
+body.fpb-ready #map, body.fpb-ready #canvas3d { height: var(--fpb-map-viewport-height, calc(100dvh - var(--fpb-header-height))); }
+/* A stale SVG/canvas width must not enlarge the mobile layout viewport after rotation. */
+body.fpb-ready #map, body.fpb-ready #canvas3d { width: 100%; max-width: 100%; }

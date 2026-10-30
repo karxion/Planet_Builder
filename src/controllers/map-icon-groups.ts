@@ -1,13 +1,13 @@
+import { isDungeonLocation } from "@/data/dungeon-locations";
+import type { Marker } from "@/generators/markers-generator";
+import { clearAnchoredMapObjects, drawAnchoredMapObjects } from "@/renderers/anchored-map-objects";
 import { applyIndividualMapIcons, restoreIndividualMapIcons } from "@/renderers/individual-map-icons";
 import { clearMapIconGroups } from "@/renderers/map-icon-groups";
 import { applyMapLabelHalos } from "@/renderers/map-label-halo";
 import { restoreResourceIconSpacing } from "@/renderers/resource-icon-spacing";
-import { clearAnchoredMapObjects, drawAnchoredMapObjects } from "@/renderers/anchored-map-objects";
 import { localizedMapNote } from "@/services/marker-notes";
 import { getUiLanguage } from "@/services/ui-language";
-import type { Marker } from "@/generators/markers-generator";
 import type { AnchoredObjectGroup } from "@/utils/anchoredMapObjects";
-import { isDungeonLocation } from "@/data/dungeon-locations";
 import { openDungeonInteriorMap } from "./dungeon-interior";
 
 declare global {
@@ -78,6 +78,7 @@ function openObjects(group: AnchoredObjectGroup): void {
 
 function refresh(): void {
   timer = 0;
+  if (document.body.classList.contains("fpb-map-interacting")) return;
   observer.disconnect();
   const map = document.getElementById("map");
   const view = map?.querySelector<SVGGElement>("#viewbox");
@@ -93,7 +94,7 @@ function refresh(): void {
       drawAnchoredMapObjects(
         view,
         group =>
-          `${group.burgId ? pack.burgs[group.burgId].name + " · " : ""}${text("오브젝트", "Objects")} ${group.markers.length}: ${group.markers.map(markerName).join(", ")}`,
+          `${group.burgId ? `${pack.burgs[group.burgId].name} · ` : ""}${text("오브젝트", "Objects")} ${group.markers.length}: ${group.markers.map(markerName).join(", ")}`,
         openObjects
       );
     } else restoreIndividualMapIcons(view);
@@ -122,7 +123,7 @@ function refresh(): void {
 }
 
 function schedule(): void {
-  if (timer) return;
+  if (timer || document.body.classList.contains("fpb-map-interacting")) return;
   timer = window.setTimeout(refresh, 120);
 }
 
@@ -130,7 +131,20 @@ function schedule(): void {
 export function initMapIconGroups(): void {
   if (observer) return;
   document.getElementById("fpb-icon-group-popup")?.remove();
-  observer = new MutationObserver(schedule);
+  observer = new MutationObserver(records => {
+    // Panning changes the parent transform, not any object's real position/style.
+    if (
+      records.some(
+        record => record.target !== document.querySelector("#map #viewbox") || record.attributeName !== "transform"
+      )
+    )
+      schedule();
+  });
+  window.addEventListener("map:interaction-start", () => {
+    clearTimeout(timer);
+    timer = 0;
+  });
+  window.addEventListener("map:interaction-end", schedule);
   window.addEventListener("resize", schedule);
   for (const event of ["map:loaded", "map:generated", "project:changed", "ui:language-changed"]) {
     window.addEventListener(event, schedule);

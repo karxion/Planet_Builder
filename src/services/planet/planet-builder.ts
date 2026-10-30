@@ -1,25 +1,26 @@
-import { initWorldSpaces, refreshWorldSpaces, renderSpacePanel } from "@/controllers/world-spaces";
-import { WorldSpaces } from "@/services/world-spaces/state";
-import type { WorldSpace } from "@/types/world-spaces";
-import { renderDrivePanel } from "@/controllers/google-drive-panel";
 import { Controllers } from "@/controllers";
-import { Campaign } from "@/controllers/campaign-world";
 import { initBorderDiplomacy } from "@/controllers/border-diplomacy";
-import { initItemLibrary } from "@/controllers/item-library-button";
+import { Campaign } from "@/controllers/campaign-world";
 import { initDungeonLocations } from "@/controllers/dungeon-locations";
+import { renderDrivePanel } from "@/controllers/google-drive-panel";
+import { initItemLibrary } from "@/controllers/item-library-button";
 import { initLocalEncounters } from "@/controllers/local-encounters";
 import { initMapIconGroups } from "@/controllers/map-icon-groups";
+import { initMapNavigation } from "@/controllers/map-navigation";
 import { initMapTransportStyle } from "@/controllers/map-transport-style";
 import { initRpgMapAssets } from "@/controllers/rpg-map-assets";
 import { initSettlementTools } from "@/controllers/settlement-details";
+import { initWorldSpaces, refreshWorldSpaces, renderSpacePanel } from "@/controllers/world-spaces";
+import { generateRealmName, isDefaultRealmName } from "@/generators/realm-name";
 import { renderCloudProjectRow } from "@/renderers/cloud-project-row";
 import { Services } from "@/services";
-import { EditorDrafts } from "@/services/editor-drafts";
 import { BUILD_INFO } from "@/services/build-info";
+import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage, initUiLanguage, t } from "@/services/ui-language";
-import { generateRealmName, isDefaultRealmName } from "@/generators/realm-name";
+import { WorldSpaces } from "@/services/world-spaces/state";
 import type { CloudProject, PlanetProject, PlanetSettings, PlanetViewMode } from "@/types/planet-project";
 import { DEFAULT_PLANET_SETTINGS } from "@/types/planet-project";
+import type { WorldSpace } from "@/types/world-spaces";
 import { ensureEl } from "@/utils";
 import { ProjectConflictError, ProjectRepository } from "./bkend-repository";
 import { createDraftRecovery, readDraftRecovery } from "./draft-recovery";
@@ -78,6 +79,7 @@ async function init(): Promise<void> {
   initDungeonLocations();
   initWorldSpaces(switchSpace);
   bindEvents();
+  initMapNavigation();
   document.body.classList.add("fpb-ready");
   fitMapToScreen();
   updateForm();
@@ -317,6 +319,8 @@ async function switchSpace(space: WorldSpace): Promise<void> {
 
 async function setView(mode: PlanetViewMode): Promise<void> {
   viewMode = mode;
+  const navigation = document.getElementById("fpb-map-navigation");
+  if (navigation) navigation.hidden = mode !== "map";
   if (mode === "globe") {
     WorldSpaces.update(d => {
       d.activeSpace = "surface";
@@ -418,9 +422,7 @@ async function generatePlanet(event: SubmitEvent): Promise<void> {
 function repairDefaultRealmName(mapSeed?: string, savedMapName?: string): boolean {
   if (!isDefaultRealmName(settings.name)) return false;
   const hasSavedName = savedMapName !== undefined && !isDefaultRealmName(savedMapName);
-  settings.name = hasSavedName
-    ? savedMapName
-    : generateRealmName(settings.seed || mapSeed || crypto.randomUUID());
+  settings.name = hasSavedName ? savedMapName : generateRealmName(settings.seed || mapSeed || crypto.randomUUID());
   settings.nameGenerated = !hasSavedName;
   return true;
 }

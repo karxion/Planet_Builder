@@ -208,13 +208,13 @@ function fitMapToScreen(reset = false) {
   const previousHeight = svgHeight;
   const previousMin = zoom.scaleExtent()[0];
   const current = shell ? d3.zoomTransform(svg.node()) : null;
-  svgWidth = shell ? window.innerWidth : Math.min(+mapWidthInput.value, window.innerWidth);
-  svgHeight = shell
-    ? Math.max(1, window.innerHeight - shell.getBoundingClientRect().height)
-    : Math.min(+mapHeightInput.value, window.innerHeight);
+  const viewport = window.getMapViewport(document.documentElement.clientWidth || window.innerWidth, document.documentElement.clientHeight || window.innerHeight, shell?.getBoundingClientRect().height || 0, window.visualViewport);
+  svgWidth = shell ? viewport.width : Math.min(+mapWidthInput.value, window.innerWidth);
+  svgHeight = shell ? viewport.height : Math.min(+mapHeightInput.value, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
+  if (shell) document.documentElement.style.setProperty("--fpb-map-viewport-height", `${svgHeight}px`);
 
-  const fit = window.getMapFitTransform(graphWidth, graphHeight, svgWidth, svgHeight);
+  const fit = window.getMapFitTransform(graphWidth, graphHeight, svgWidth, svgHeight, shell && (svgWidth <= 760 || window.matchMedia("(pointer: coarse)").matches) ? "contain" : "cover");
   const zoomMin = shell ? fit.k : rn(fit.k, 3);
   zoomExtentMin.value = zoomMin;
   const zoomMax = Math.max(zoomMin, +zoomExtentMax.value);

@@ -101,12 +101,16 @@ export function drawReligionHeadquarters(world?: CampaignWorld, dimensions?: { w
   view.append(layer);
 
   const map = view.ownerSVGElement!;
+  let previous = "";
   const syncZoom = () => {
     const matrix = view.getCTM?.();
     const scale = matrix ? Math.hypot(matrix.a, matrix.b) : 1;
     const viewport = map.getBoundingClientRect();
     const width = dimensions?.width ?? Number(map.getAttribute("width"));
     const height = dimensions?.height ?? Number(map.getAttribute("height"));
+    const key = `${scale}:${viewport.width}:${viewport.height}:${width}:${height}`;
+    if (key === previous) return;
+    previous = key;
     const fit =
       viewport.width && viewport.height && width && height
         ? Math.min(viewport.width / width, viewport.height / height)

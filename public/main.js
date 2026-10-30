@@ -184,8 +184,6 @@ let viewX = 0;
 let viewY = 0;
 
 let rafId = null;
-let pendingScaleChange = false;
-let pendingPositionChange = false;
 function zoomRaf() {
   const { k, x, y } = d3.event.transform;
 
@@ -198,27 +196,12 @@ function zoomRaf() {
   viewY = y;
 
   // Coalesce multiple zoom events into one paint.
-  // While a RAF is pending, keep updating latest transform state and OR-change flags.
-  // The scheduled RAF consumes these accumulated flags and then resets them.
-  pendingScaleChange = pendingScaleChange || isScaleChanged;
-  pendingPositionChange = pendingPositionChange || isPositionChanged;
-
   if (rafId) return;
   rafId = requestAnimationFrame(() => {
     rafId = null;
 
-    // Safely clears these flags for future renders
-    const didScaleChange = pendingScaleChange;
-    const didPositionChange = pendingPositionChange;
-    pendingScaleChange = false;
-    pendingPositionChange = false;
-
     // Uses global values, so each frame always draws using the latest positioning values
     viewbox.attr("transform", `translate(${viewX} ${viewY}) scale(${scale})`);
-
-    if (didPositionChange) {
-      if (layerIsOn("toggleCoordinates")) drawCoordinates();
-    }
 
     if (customization === 1) {
       const canvas = ensureEl("canvas");
@@ -233,19 +216,36 @@ function zoomRaf() {
       }
     }
 
-    if (didScaleChange) {
-      invokeActiveZooming();
-      drawScaleBar(scaleBar, scale);
-      fitScaleBar(scaleBar, svgWidth, svgHeight);
-    }
-
-    if (didPositionChange || didScaleChange) {
-      window.updateMinimap && updateMinimap();
-    }
+    // Labels, marker sizes and overview decorations settle once the gesture ends.
+    // Keep the interaction frame to the map transform and an active editor canvas.
   });
 }
 
-const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf);
+let mapZoomActive = false;
+let mapZoomEndFrame = 0;
+const zoom = d3.zoom().scaleExtent([1, 20]).on("zoom", zoomRaf)
+  .on("start.fpb", () => {
+    if (mapZoomEndFrame) cancelAnimationFrame(mapZoomEndFrame);
+    mapZoomEndFrame = 0;
+    mapZoomActive = true;
+    document.body.classList.add("fpb-map-interacting");
+    window.dispatchEvent(new Event("map:interaction-start"));
+  })
+  .on("end.fpb", () => {
+    mapZoomActive = false;
+    if (mapZoomEndFrame) return;
+    mapZoomEndFrame = requestAnimationFrame(() => {
+      mapZoomEndFrame = 0;
+      if (mapZoomActive) return;
+      document.body.classList.remove("fpb-map-interacting");
+      invokeActiveZooming();
+      if (layerIsOn("toggleCoordinates")) drawCoordinates();
+      drawScaleBar(scaleBar, scale);
+      fitScaleBar(scaleBar, svgWidth, svgHeight);
+      window.updateMinimap && updateMinimap();
+      window.dispatchEvent(new Event("map:interaction-end"));
+    });
+  });
 
 var mapCoordinates = {}; // map coordinates on globe
 let populationRate = +ensureEl("populationRateInput").value;
@@ -305,9 +305,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function hideLoading() {
-  d3.select("#loading").transition().duration(3000).style("opacity", 0);
-  d3.select("#optionsContainer").transition().duration(2000).style("opacity", 1);
-  d3.select("#tooltip").transition().duration(3000).style("opacity", 1);
+  const quick = window.matchMedia("(pointer: coarse), (prefers-reduced-motion: reduce)").matches;
+  d3.select("#loading").transition().duration(quick ? 150 : 3000).style("opacity", 0);
+  d3.select("#optionsContainer").transition().duration(quick ? 150 : 2000).style("opacity", 1);
+  d3.select("#tooltip").transition().duration(quick ? 150 : 3000).style("opacity", 1);
 }
 
 function showLoading() {
@@ -520,7 +521,7 @@ function zoomTo(x, y, z = 8, d = 2000) {
 function resetZoom(d = 1000) {
   let transform = d3.zoomIdentity;
   if (document.getElementById("fpb-shell")) {
-    const fit = window.getMapFitTransform(graphWidth, graphHeight, svgWidth, svgHeight);
+    const fit = window.getMapFitTransform(graphWidth, graphHeight, svgWidth, svgHeight, svgWidth <= 760 || window.matchMedia("(pointer: coarse)").matches ? "contain" : "cover");
     transform = transform.translate(fit.x, fit.y).scale(fit.k);
   }
   svg.interrupt().transition().duration(d).call(zoom.transform, transform);

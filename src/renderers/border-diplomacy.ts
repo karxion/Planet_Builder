@@ -3,7 +3,7 @@ import { t } from "@/services/ui-language";
 import type { BorderAnchor, DiplomaticState } from "@/types/border-diplomacy";
 
 const NS = "http://www.w3.org/2000/svg";
-const spacingCache = new WeakMap<Element, { count: number; distances: number[] }>();
+const spacingCache = new WeakMap<Element, { count: number; distances: number[]; scale?: number }>();
 export function renderBorderDiplomacy(
   parent: SVGGElement,
   anchors: BorderAnchor[],
@@ -87,6 +87,8 @@ export function scaleBorderTokens(parent: SVGGElement): void {
     spacing = { count: tokens.length, distances };
     spacingCache.set(layer, spacing);
   }
+  if (spacing.scale === zoom) return;
+  spacing.scale = zoom;
   for (let i = 0; i < tokens.length; i++) {
     const separation = spacing.distances[i] / inverse;
     // Preserve the exact border midpoint; reduce crowded tokens instead of moving or grouping them.

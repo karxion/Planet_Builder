@@ -1,5 +1,6 @@
 import { timeOfDayPresets } from "@/data/view-3d-options";
 import { ensureEl } from "@/utils";
+import { getMapViewport } from "@/utils/mapViewport";
 
 // View3d controller: enters/exits the 3D view and owns the 3D settings dialog.
 // Configuration lives on the global `options.threeD` (not in this controller);
@@ -55,6 +56,7 @@ function enqueueTransition(task: () => Promise<void>): Promise<void> {
 
 function teardown(): void {
   window.removeEventListener("resize", resizeViewport);
+  window.removeEventListener("map:viewport-resized", resizeViewport);
   if (!document.getElementById("canvas3d") && !options.threeD.isOn) return;
   renderer?.stop();
   document.getElementById("canvas3d")?.remove();
@@ -115,9 +117,15 @@ async function openView(type: string, generation: number): Promise<void> {
     canvas.height = canvas.width / (graphWidth / graphHeight);
     canvas.style.display = "block";
   } else {
-    canvas.width = window.innerWidth;
     const shellHeight = document.getElementById("fpb-shell")?.getBoundingClientRect().height ?? 0;
-    canvas.height = Math.max(1, window.innerHeight - shellHeight);
+    const size = getMapViewport(
+      document.documentElement?.clientWidth || window.innerWidth,
+      document.documentElement?.clientHeight || window.innerHeight,
+      shellHeight,
+      window.visualViewport
+    );
+    canvas.width = size.width;
+    canvas.height = size.height;
     canvas.style.position = "absolute";
     canvas.style.display = "none";
   }
@@ -151,6 +159,7 @@ async function openView(type: string, generation: number): Promise<void> {
   } else {
     document.body.insertBefore(canvas, ensureEl("optionsContainer"));
     window.addEventListener("resize", resizeViewport);
+    window.addEventListener("map:viewport-resized", resizeViewport);
   }
 
   toggleOptions();
@@ -158,7 +167,13 @@ async function openView(type: string, generation: number): Promise<void> {
 
 function resizeViewport(): void {
   const shellHeight = document.getElementById("fpb-shell")?.getBoundingClientRect().height ?? 0;
-  renderer?.resize(window.innerWidth, Math.max(1, window.innerHeight - shellHeight));
+  const size = getMapViewport(
+    document.documentElement?.clientWidth || window.innerWidth,
+    document.documentElement?.clientHeight || window.innerHeight,
+    shellHeight,
+    window.visualViewport
+  );
+  renderer?.resize(size.width, size.height);
 }
 
 function resize3d(): void {

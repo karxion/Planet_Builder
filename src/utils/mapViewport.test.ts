@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getMapFitTransform } from "./mapViewport";
+import { getMapFitTransform, getMapViewport } from "./mapViewport";
 
 describe("map viewport fit", () => {
   it.each([
@@ -24,5 +24,17 @@ describe("map viewport fit", () => {
     expect(fit.k).toBeCloseTo(1440 / 719);
     expect(fit.x).toBe(0);
     expect(fit.y).toBeLessThan(0);
+  });
+  it("shows the entire landscape on a portrait phone without changing its world size", () => {
+    const fit = getMapFitTransform(960, 480, 390, 744, "contain");
+    expect(fit.k).toBeCloseTo(390 / 960);
+    expect(fit.x).toBe(0);
+    expect(fit.y).toBeGreaterThan(0);
+    expect(fit.k * 480 + fit.y).toBeLessThanOrEqual(744);
+  });
+  it("uses the visible viewport for browser chrome/keyboard but preserves browser page zoom", () => {
+    expect(getMapViewport(390, 844, 100, { width: 390, height: 620, scale: 1 })).toEqual({ width: 390, height: 520 });
+    expect(getMapViewport(390, 844, 100, { width: 195, height: 422, scale: 2 })).toEqual({ width: 390, height: 744 });
+    expect(getMapViewport(390, 844, 100, { width: 390, height: 80, scale: 1 }).height).toBe(1);
   });
 });
