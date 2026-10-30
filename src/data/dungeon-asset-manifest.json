@@ -1,0 +1,1186 @@
+{
+  "D01": {
+    "width": 836,
+    "height": 836,
+    "sha256": "5e78f6dfa84dc59d76de28c1d4330e352d10da777c3505f292ce73939f36c3c5",
+    "original": {
+      "path": "assets/dungeon-originals/D01.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "fbc808388a875d32d893a273f9608ba49fc5285432a044a9f8b6e3843eafdc63"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D02": {
+    "width": 836,
+    "height": 836,
+    "sha256": "72424d0b33620e87c872e402f4bccd41ab647d56cc48e18f36009547c6ea15c7",
+    "original": {
+      "path": "assets/dungeon-originals/D02.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "34f79a194701f4b25274a9bf189bd0f607373081734389916678dc6fede38e53"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D03": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "75cf3a04d9a94e52f89d0fa06a32cddf67260da566e44b1efdb357ad57eeff27",
+    "original": {
+      "path": "assets/dungeon-originals/D03.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "32b37152dfcade03795045032ee82e8e729f7f6e2f76ffb076a13303894bbbb9"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          691,
+          48,
+          140,
+          587
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          172,
+          27,
+          196,
+          614
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D04": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "9463aa445ee2b1415e4c797cf65ce4b9c21ba8820a1f672865f128936707e754",
+    "original": {
+      "path": "assets/dungeon-originals/D04.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "b382b0f2ea8f87c84458b5a35ae8dd7eb0bbfd0f4b2e29034d61db5903ae7ccc"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          156,
+          470,
+          398
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          39,
+          106,
+          473,
+          415
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D05": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "fe238677e4d2f03d39250ce82bc94bfbfa85f4e32d9d64be3450d87cc7a7d9f6",
+    "original": {
+      "path": "assets/dungeon-originals/D05.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "1bf9b811c3c4d262216b266cbf09e7f1636b0deb8837f79da7eaec246ee80619"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          581,
+          140,
+          417,
+          396
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          20,
+          92,
+          482,
+          509
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D06": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "df375635eaeb5a9d5ee652b178a0d7249f19655dab833fe8638a345e01523d0d",
+    "original": {
+      "path": "assets/dungeon-originals/D06.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "2c14f495830393848fc16c61deae6a7244887ccee37b9972d4cbe7ac2866c8e3"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          521,
+          272,
+          490,
+          117
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          70,
+          12,
+          367,
+          639
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D07": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "1d73fa6e267c6fd6337a2f4544d6aff6b6b8817994d1ce8d83a31a4296e9456e",
+    "original": {
+      "path": "assets/dungeon-originals/D07.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "3ee4c8ef706915f99f142a91a24b3bd4b86537a1499e2ee24a66596720ff3fb5"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          528,
+          295,
+          465,
+          101
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          44,
+          93,
+          454,
+          477
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D08": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "818a3f121bd4b68d813f7dacaf135ab41aaf372267e928d1ba571d23dcfd6e4d",
+    "original": {
+      "path": "assets/dungeon-originals/D08.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "019b54fbfa46d1f280dd755da1d4f8c995983dc6ec114dfd979b160db37549c9"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          608,
+          205,
+          320,
+          325
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          104,
+          22,
+          343,
+          628
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D09": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "f71db4abcadcf2189ecf746be8ea170d6986773cdd8d72fb3f086a2f5c1763b4",
+    "original": {
+      "path": "assets/dungeon-originals/D09.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "c13e24192129c3ac9fc8c321b08827ca8b5d48396a7334ed16c4411dd74c1e0b"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          657,
+          26,
+          270,
+          629
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          53,
+          6,
+          457,
+          634
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D10": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "7c5825233f337aefc74dbac7ec953059d84c3a75534d1e49de97de9b5035c2ea",
+    "original": {
+      "path": "assets/dungeon-originals/D10.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "ee967de3ac2a397c8a4af9990e890687ed19d787174577a3fd99da3d73f8fb7f"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          49,
+          449,
+          581
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          42,
+          16,
+          470,
+          630
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D11": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "4c492170d4cac302d682405676bf89ce8d4d5f833a3d724d4dee5355d9d3c9a9",
+    "original": {
+      "path": "assets/dungeon-originals/D11.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "6edec0346fa1f7ca5b277249d50db23f3728201d948a4a9f0806677622b7ed44"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          558,
+          198,
+          435,
+          314
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          49,
+          102,
+          457,
+          490
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D12": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "b4f1c07a3516ea0a22760153987750b8743cd8dd6d1b24194d05ebc16ecd522d",
+    "original": {
+      "path": "assets/dungeon-originals/D12.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "757ddcffeda8f8cfee642daf6698c462ba528f2a6a1c92bbc35427b259c61b23"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          43,
+          463,
+          552
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          62,
+          44,
+          450,
+          574
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D13": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "f2ca2e5da5e2a3dd0d8e0d11b71869fa9e99df02c4ca60d27c446f519ccf6e0a",
+    "original": {
+      "path": "assets/dungeon-originals/D13.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "a65116df726f3cf2fa984ed61a260e53d3fcbe7135f8b47a56cd4197d03b0398"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          205,
+          481,
+          266
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          28,
+          97,
+          484,
+          459
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D14": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "eb2e51c21f96b7b5da8cb0123f6e0e239b378253debe8602477efcdfafa30342",
+    "original": {
+      "path": "assets/dungeon-originals/D14.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "769fea034d83e0ec5d5139e2ceda5a1e7cd7eeb764a9d7920192382271fd3a59"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          54,
+          426,
+          547
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          64,
+          37,
+          448,
+          589
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D15": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "5a424622436b7f8c11175b31e55c4ec10f7e4b1e4ccda71606df707258e720b9",
+    "original": {
+      "path": "assets/dungeon-originals/D15.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "30a4c32bedc722660de5d46c92ce66705c7320e3f634dcb82a46b704b7de45df"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          28,
+          430,
+          605
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          34,
+          11,
+          478,
+          637
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D16": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "13e9d25a9e65efbb0b8d5c1792df98fa3085077317dc9646e32e29563a520674",
+    "original": {
+      "path": "assets/dungeon-originals/D16.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "edd19f966dd21d7307273d8c79f42d35031a2b4b75638f8ba3b7152be3bc58da"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          550,
+          105,
+          441,
+          442
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          52,
+          106,
+          427,
+          459
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D17": {
+    "width": 836,
+    "height": 836,
+    "sha256": "c8bccf0f7f5a8b48050fabb1af78884f0ef5701c8a3ee2f21fa2b1c124931832",
+    "original": {
+      "path": "assets/dungeon-originals/D17.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "5c843a3b90abe788e8898154410807045da818a80dadc316a09cc3e823d31d36"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          110,
+          108,
+          618,
+          614
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          110,
+          108,
+          618,
+          614
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D18": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "098ec1cd4a2a794964b4ab3021d07350591c611d453550cda11f93e9d14acddb",
+    "original": {
+      "path": "assets/dungeon-originals/D18.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "46ecc7c367c75794c3f99c8d92ee648d6791fec8a17ec4e1136b488ea6678310"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          577,
+          141,
+          397,
+          458
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          54,
+          54,
+          452,
+          557
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D19": {
+    "width": 836,
+    "height": 836,
+    "sha256": "aff1ed3491cb7cc49056c8dddeb7d70d178378ecd9a156f84b6e5eeae58c5ad8",
+    "original": {
+      "path": "assets/dungeon-originals/D19.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "cf1f864ad6626cd869cbfa4c9b8428953e9ed993582d87f2fbc52b7e66fbc5e9"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          243,
+          51,
+          350,
+          733
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          243,
+          51,
+          350,
+          733
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D20": {
+    "width": 836,
+    "height": 836,
+    "sha256": "1e4703bc83585c5bec533c4bc84a963511b8dbf5415fbee95a1f7a71903d607d",
+    "original": {
+      "path": "assets/dungeon-originals/D20.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ff6ed94d10c1c16beb7616d2123e225dcf2d5f028c02e6181118d90b34b1b9eb"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          77,
+          84,
+          682,
+          664
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          77,
+          84,
+          682,
+          664
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D21": {
+    "width": 1182,
+    "height": 591,
+    "sha256": "2d500463f2dae261ef0abe0533779b077f2756d8241349ffd65e52327e7848e6",
+    "original": {
+      "path": "assets/dungeon-originals/D21.png",
+      "width": 1774,
+      "height": 887,
+      "sha256": "95129ffca4a8747cff1d38d58f9eb4e1fced6134b891561d068326811c65f698"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          692,
+          9,
+          390,
+          504
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          75,
+          5,
+          498,
+          541
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D22": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "68a8ecb5c0ad6193e4b4feb73bee2412dcc6a4e540ea3980401701293c630ef7",
+    "original": {
+      "path": "assets/dungeon-originals/D22.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "402f2ed02be0fa36e05cfb4bfa307aaea1a20cae31ceddffb0ce934a63c5f104"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          558,
+          114,
+          430,
+          434
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          42,
+          136,
+          466,
+          403
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D23": {
+    "width": 836,
+    "height": 836,
+    "sha256": "06e83ca94ec7e25269a2464bf0d7f1845d0834df06332f8ff2b4451af3dd9088",
+    "original": {
+      "path": "assets/dungeon-originals/D23.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4eba2f098f62687520f08667cc83647be62b3903393c151c72eb1451b3a6da76"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          48,
+          56,
+          741,
+          727
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          48,
+          56,
+          741,
+          727
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D24": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "9c8fca2497f5916cd7068a48562b7b92e5e70524c229cb0f9e91c12cc5ba6ab3",
+    "original": {
+      "path": "assets/dungeon-originals/D24.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "d8723b9d47ae15dfef547d8cf7a2741f5c5ae3c3c1e0306e542116059a0ead9b"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          556,
+          180,
+          421,
+          358
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          133,
+          68,
+          290,
+          516
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D25": {
+    "width": 836,
+    "height": 836,
+    "sha256": "6fdab8feedd858d6b7789f4e775f73fbeaac909d9777373c4407f3ebf1c57818",
+    "original": {
+      "path": "assets/dungeon-originals/D25.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4dd82808daff03137119b1a710b3cfd744237fc113ba2a811992d4a21dbca033"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          52,
+          59,
+          738,
+          719
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          52,
+          59,
+          738,
+          719
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D26": {
+    "width": 836,
+    "height": 836,
+    "sha256": "d1fff6b334007d6013b6b4f26e0b0003a6087f4cb70c7c165d2882d5f2ff3772",
+    "original": {
+      "path": "assets/dungeon-originals/D26.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7c079a6dc5ec50ed0d826737a47b18e3827f35f061ce7c5daf400d3725c3b403"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          301,
+          56,
+          234,
+          722
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          301,
+          56,
+          234,
+          722
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D27": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "9de5e24c18f8a0ae0b012f0a016601706fb78f221e83d35646d148c1683745bf",
+    "original": {
+      "path": "assets/dungeon-originals/D27.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "2664ee7db52bfe3c178e880ac5fe2f611bc77e7738e0dcde1a1d02b3b5a0ce8a"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          157,
+          470,
+          407
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          42,
+          68,
+          470,
+          561
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D28": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "0286fe9c8428b2636cfcceb8ad919b825472690bd6570b0a461986103755526a",
+    "original": {
+      "path": "assets/dungeon-originals/D28.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "e120d2c9aa106702686f8dc18dc3537e7dd2794bd8ab78e546e2b8a6958f87e3"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          542,
+          262,
+          449,
+          223
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          45,
+          45,
+          456,
+          582
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D29": {
+    "width": 836,
+    "height": 836,
+    "sha256": "c08ef98d799e03de18d8a4a01d416824586a38e66835247dff2a5fe9a8417559",
+    "original": {
+      "path": "assets/dungeon-originals/D29.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "df4278dfc7cdfa7d8b0fc0081c3230bf6ca741181c26d941a932a5202638ba20"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D30": {
+    "width": 836,
+    "height": 836,
+    "sha256": "3dd8f699c285008207c2cef331b2c848146574900677477275aaa691d1a68533",
+    "original": {
+      "path": "assets/dungeon-originals/D30.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "b05f0f555ec21eb9dd622b8c536a21e6c8ff79d154180058e524ccf9b7f21a40"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          0,
+          0,
+          836,
+          836
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D31": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "b55846d847dc0a2bc9ef2fe26db524e0b3966d16d06ec8cf26f30a34b1fe5adf",
+    "original": {
+      "path": "assets/dungeon-originals/D31.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "c43d3ea998cc8e1ea2bc3e7ea73594f378bd6eaa41537a35ecdce40cb2be689c"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          28,
+          445,
+          626
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          71,
+          16,
+          441,
+          649
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  },
+  "D32": {
+    "width": 1024,
+    "height": 683,
+    "sha256": "f62c4030d697baf8df76a61817c94c0b6596e742a574254af4b79e3a1bcb0747",
+    "original": {
+      "path": "assets/dungeon-originals/D32.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "9446a318b13a3b29043a5c82dfeb00b3aa604f41d8fc28e1d8f4b0cfb5d64257"
+    },
+    "views": {
+      "battle": {
+        "crop": [
+          512,
+          16,
+          448,
+          597
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      },
+      "overview": {
+        "crop": [
+          29,
+          4,
+          483,
+          632
+        ],
+        "anchor": [
+          0.5,
+          0.5
+        ]
+      }
+    }
+  }
+}
