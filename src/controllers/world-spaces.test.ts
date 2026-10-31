@@ -29,6 +29,12 @@ afterEach(() => {
 });
 const surface = { columns: 32, rows: 24, heights: Array.from({ length: 768 }, (_, i) => (i % 32 < 9 ? 50 : 8)) };
 describe("World space map interaction", () => {
+  it("initializes before the legacy map has created its marker array", () => {
+    vi.stubGlobal("pack", {});
+    WorldSpaces.restore();
+    expect(() => initWorldSpaces(vi.fn())).not.toThrow();
+    expect(document.querySelector("#fpb-space-panel")).not.toBeNull();
+  });
   it("inspects bathymetric icons with exact saved depth by click and keyboard, without changing project data", () => {
     const data = generateUnderwater(emptyWorldSpaces(), "depth-key", surface);
     WorldSpaces.restore(data);

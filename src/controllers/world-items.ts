@@ -7,6 +7,7 @@ import {
   referenceSourceUrl
 } from "@/data/magic-item-references";
 import { isDungeonLocation } from "@/data/dungeon-locations";
+import { markerSpace } from "@/data/dungeon-spaces";
 import { isWorldMagicItem } from "@/data/world-item-validation";
 import {
   UNIQUE_ITEM_POLICY,
@@ -50,7 +51,11 @@ const changed = () => window.dispatchEvent(new Event("project:changed"));
 
 function dungeonChoices(): ItemDungeonChoice[] {
   return (typeof pack === "undefined" ? [] : pack.markers || [])
-    .filter(marker => isDungeonLocation(marker) || marker.type === "hostile-settlements" || marker.type === "caves")
+    .filter(
+      marker =>
+        markerSpace(marker) === "surface" &&
+        (isDungeonLocation(marker) || marker.type === "hostile-settlements" || marker.type === "caves")
+    )
     .map(marker => ({
       markerId: marker.i,
       cell: marker.cell,

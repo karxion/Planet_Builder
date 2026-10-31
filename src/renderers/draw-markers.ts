@@ -3,6 +3,7 @@ import { rn } from "../utils";
 import { escapeAttribute, installRpgAssetDefinitions } from "./rpg-asset-renderer";
 
 interface Marker {
+  space?: string;
   i: number;
   icon: string;
   x: number;
@@ -98,7 +99,9 @@ const markersRenderer = (): void => {
   const markersData: Marker[] = pinned
     ? (pack.markers || []).filter((marker: Marker) => marker.pinned)
     : pack.markers || [];
-  const html = markersData.filter(marker => !marker.hidden).map(marker => markerRenderer(marker, rescale));
+  const html = markersData
+    .filter(marker => !marker.hidden && (!marker.space || marker.space === "surface"))
+    .map(marker => markerRenderer(marker, rescale));
   markers.html(html.join(""));
 
   TIME && console.timeEnd("drawMarkers");

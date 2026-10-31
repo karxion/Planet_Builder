@@ -48,6 +48,28 @@ describe("Wilderness adventure controls", () => {
   });
   const generate = () =>
     document.querySelector(".fpb-dungeon-settings")!.dispatchEvent(new Event("submit", { cancelable: true }));
+  it("lists only the active world and regenerates it without deleting other worlds", async () => {
+    generate();
+    const surface = structuredClone(pack.markers);
+    const { WorldSpaces } = await import("@/services/world-spaces/state");
+    const { generateUnderwater } = await import("@/generators/underwater");
+    const { emptyWorldSpaces } = await import("@/services/world-spaces/model");
+    WorldSpaces.restore(
+      generateUnderwater(emptyWorldSpaces(), "sea-ui", {
+        columns: 48,
+        rows: 32,
+        heights: Array(1536).fill(8)
+      })
+    );
+    document.getElementById("fpb-dungeons-button")!.click();
+    const dialog = document.querySelector<HTMLDialogElement>("#fpb-dungeons-dialog")!;
+    expect(dialog.querySelectorAll(".fpb-dungeon-row")).toHaveLength(0);
+    expect(dialog.querySelector("h2")!.textContent).toContain("해저");
+    generate();
+    expect(pack.markers.some(m => m.space === "underwater")).toBe(true);
+    document.querySelector<HTMLButtonElement>("[data-regenerate]")!.click();
+    expect(pack.markers.filter(m => !m.space)).toEqual(surface);
+  });
   it("generates mapped sites, shows theme/CR/source details and avoids duplicate fills", () => {
     generate();
     expect(pack.markers.length).toBeGreaterThan(0);

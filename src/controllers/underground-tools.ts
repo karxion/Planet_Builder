@@ -14,6 +14,7 @@ import {
   type UndergroundMode
 } from "@/types/underground";
 import { sampleSurfaceGrid } from "./surface-snapshot";
+import { prepareSpaceDungeons } from "./space-dungeons";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, value = "") => {
@@ -173,7 +174,9 @@ export function mountUndergroundTools(host: HTMLElement, context: ToolContext): 
         },
         surfaceEntrances()
       );
+      const commitDungeons = prepareSpaceDungeons(result);
       WorldSpaces.update(draft => Object.assign(draft, result));
+      commitDungeons();
       context.changed();
       document.querySelector<HTMLSelectElement>("#fpb-space-panel select[data-underground-level]")?.focus();
     } catch (error) {

@@ -25,6 +25,17 @@ describe("Dungeon v2 draft editor", () => {
   });
   const click = (selector: string) => document.querySelector<HTMLButtonElement>(selector)!.click();
   const data = () => pack.markers[0].interior as DungeonV2;
+  it("starts new seabed interiors flooded and retains their world scope through cloning", async () => {
+    pack.markers[0].space = "underwater";
+    const { openDungeonV2 } = await import("./dungeon-v2");
+    openDungeonV2(1);
+    click("[data-apply]");
+    expect(data().floors.every(f => f.settings.environment === "flooded")).toBe(true);
+    expect(pack.markers[0].space).toBe("underwater");
+    click("[data-clone]");
+    click("[data-apply]");
+    expect(pack.markers.at(-1)?.space).toBe("underwater");
+  });
   it("previews without writing, cancels safely, applies and opens saved v2 without rerolling", async () => {
     const { openDungeonV2 } = await import("./dungeon-v2");
     openDungeonV2(1);

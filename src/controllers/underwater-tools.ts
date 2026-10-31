@@ -9,6 +9,7 @@ import { WorldSpaces } from "@/services/world-spaces/state";
 import type { SeaRelationStatus, UnderwaterMap } from "@/types/underwater";
 import { sampleSurfaceGrid } from "./surface-snapshot";
 import { spaceLayers } from "@/data/space-layers";
+import { prepareSpaceDungeons } from "./space-dungeons";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, value = "") => {
@@ -68,7 +69,9 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
       for (const site of existing.sites)
         if (site.origin === "underwater" && drafts.has(`space-site:${site.id}`)) site.edited = true;
       const result = generateUnderwater(existing, input.value.trim(), sampleSeaSurface());
+      const commitDungeons = prepareSpaceDungeons(result);
       WorldSpaces.update(d => Object.assign(d, result));
+      commitDungeons();
       context.changed();
     } catch (error) {
       context.error(error);

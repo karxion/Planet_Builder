@@ -13,6 +13,7 @@ import { subsurfaceAssetName, type SubsurfaceAssetId } from "@/renderers/subsurf
 import { spaceLocation } from "@/services/world-spaces/location";
 import { initSpaceLayerControls } from "./space-layers";
 import { depthBand, seabedReliefDetails, seabedReliefName } from "@/data/seabed-relief";
+import { openDungeonInteriorMap } from "./dungeon-interior";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -87,7 +88,14 @@ export function refreshWorldSpaces(): void {
       height: graphHeight,
       selected,
       labels: spaceLabels(),
-      landMask: Boolean(document.querySelector("#land"))
+      landMask: Boolean(document.querySelector("#land")),
+      dungeons:
+        typeof pack === "undefined"
+          ? []
+          : (pack.markers || []).map(marker => ({
+              ...marker,
+              name: typeof notes === "undefined" ? undefined : notes.find(n => n.id === `marker${marker.i}`)?.name
+            }))
     });
 }
 
@@ -158,6 +166,11 @@ function renderPanel(): void {
     };
   });
   const content = panel.querySelector<HTMLElement>("[data-content]")!;
+  const dungeons = document.createElement("button");
+  dungeons.type = "button";
+  dungeons.textContent = text("던전 위치", "Dungeons");
+  dungeons.onclick = () => window.dispatchEvent(new Event("dungeons:open"));
+  panel.querySelector("nav")!.append(dungeons);
   if (tab === "object" && scenery) {
     const name =
       "asset" in scenery ? subsurfaceAssetName(scenery.asset) : seabedReliefName(data.underwater!, scenery.cell);
@@ -413,6 +426,9 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
     const data = WorldSpaces.snapshot();
     const location = spaceLocation(data, point[0] / graphWidth, point[1] / graphHeight);
     if (location === undefined) return;
+    const dungeon = target.closest<SVGElement>("[data-space-dungeon]");
+    if (dungeon)
+      return esc(`${dungeon.getAttribute("aria-label")} · ${text("던전 내부 지도", "Dungeon map")} · ${location}`);
     const mark = target.closest<SVGElement>("[data-space-site]");
     const site = data.sites.find(s => s.id === mark?.dataset.spaceSite && siteInActiveLevel(s, data));
     const object = target.closest<SVGElement>("[data-scenery-asset]");
@@ -465,6 +481,7 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
   window.addEventListener("map:generated", redraw);
   window.addEventListener("map:loaded", redraw);
   window.addEventListener("world-spaces:restored", redraw);
+  window.addEventListener("dungeons:changed", refreshWorldSpaces);
   window.addEventListener("ui:language-changed", () => {
     button.innerHTML = '<span class="icon-map-o" aria-hidden="true"></span><span data-space-tool-label></span>';
     button.querySelector("[data-space-tool-label]")!.textContent = text("공간 편집", "Edit spaces");
@@ -482,6 +499,13 @@ export function initWorldSpaces(onSwitch: (space: WorldSpace) => Promise<void>):
   const activate = (event: Event) => {
     const target = event.target as Element;
     if (event instanceof KeyboardEvent && !["Enter", " "].includes(event.key)) return;
+    const dungeon = target.closest<SVGElement>("[data-space-dungeon]");
+    if (!placement && dungeon) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openDungeonInteriorMap(Number(dungeon.dataset.spaceDungeon));
+      return;
+    }
     const portal = target.closest<SVGElement>("[data-space-travel]");
     const mark = target.closest<SVGElement>("[data-space-site]");
     const object = target.closest<SVGElement>("[data-scenery-asset]");

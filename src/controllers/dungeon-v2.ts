@@ -118,7 +118,10 @@ const saved = () => {
 };
 const current = () => pending?.d || saved();
 const uid = () => crypto.randomUUID();
-const changed = () => window.dispatchEvent(new Event("project:changed"));
+const changed = () => {
+  window.dispatchEvent(new Event("project:changed"));
+  window.dispatchEvent(new Event("dungeons:changed"));
+};
 const bindElement = (element: HTMLElement | null, action: () => void) =>
   element?.addEventListener("click", () => {
     try {
@@ -942,6 +945,7 @@ export function openDungeonV2(markerIndex: number): boolean {
   } else if (!source.interior) {
     const settings = {
       ...DEFAULT_DUNGEON_SETTINGS,
+      ...(source.space === "underwater" ? { environment: "flooded" as const } : {}),
       ...(isAdventureSite(source.adventure)
         ? { themeId: source.adventure.themeId, monsterId: source.adventure.monsterId }
         : {})

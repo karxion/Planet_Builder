@@ -7,6 +7,8 @@ import type { AdventureSite } from "@/types/adventure-site";
 import type { DungeonInterior } from "@/types/dungeon-interior";
 import type { DungeonV2 } from "@/types/dungeon-v2";
 import type { PackedGraph } from "@/types/PackedGraph";
+import type { WorldSpace } from "@/types/world-spaces";
+import type { UndergroundLevelId } from "@/types/underground";
 import { capitalize, convertTemperature, gauss, generateDate, getAdjective, last, P, ra, rn, rw } from "../utils";
 import { ADMINISTRATIVE_ONLY } from "./administration-policy";
 import { populateAdventureMarkers } from "./adventure-site-markers";
@@ -16,6 +18,9 @@ declare global {
 }
 
 export interface Marker {
+  /** Missing on existing markers means surface. cell remains a surface-pack cell for legacy editors. */
+  space?: WorldSpace;
+  levelId?: UndergroundLevelId;
   adventure?: AdventureSite;
   interior?: DungeonInterior | DungeonV2 | { version: number };
   i: number;
@@ -71,7 +76,8 @@ class MarkersModule {
   }
 
   regenerate() {
-    pack.markers = pack.markers.filter(({ i, lock, cell }) => {
+    pack.markers = pack.markers.filter(({ i, lock, cell, space }) => {
+      if (space && space !== "surface") return true;
       if (lock) {
         this.occupied[cell] = true;
         return true;

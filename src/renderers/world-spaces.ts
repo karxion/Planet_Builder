@@ -5,6 +5,10 @@ import { drawUnderwaterTerrain } from "./underwater-map";
 import { subsurfaceDefs, subsurfaceMarker, subsurfaceScenery } from "./subsurface-assets";
 import { applySpaceLayers } from "./space-layers";
 import { drawSeabedRelief, seabedReliefDefs } from "./seabed-relief";
+import type { Marker } from "@/generators/markers-generator";
+import { dungeonInSpace } from "@/data/dungeon-spaces";
+import { isDungeonLocation } from "@/data/dungeon-locations";
+import { getRpgAsset } from "@/data/rpg-map-assets";
 
 const NS = "http://www.w3.org/2000/svg";
 const element = (name: string, attrs: Record<string, string | number> = {}, text?: string) => {
@@ -24,6 +28,7 @@ export function drawWorldSpaces(input: {
   labels: Record<WorldSpace, string>;
   landPath?: string;
   landMask?: boolean;
+  dungeons?: (Marker & { name?: string })[];
 }): void {
   const { parent, data, width, height, selected, labels } = input;
   parent.querySelector("#fpb-world-spaces")?.remove();
@@ -252,6 +257,28 @@ export function drawWorldSpaces(input: {
     group.append(element("title", {}, `${site.name} · ${site.depth} m${site.residents ? ` · ${site.residents}` : ""}`));
     root.append(group);
   }
+  if (data.activeSpace !== "surface")
+    for (const marker of input.dungeons || []) {
+      if (!dungeonInSpace(marker, data) || !isDungeonLocation(marker)) continue;
+      const asset = getRpgAsset(marker.icon) || getRpgAsset("#rpg-dungeon")!;
+      const icon = element("svg", {
+        id: `marker${marker.i}`,
+        viewBox: asset.viewBox || "0 0 64 64",
+        x: marker.x - 12,
+        y: marker.y - 12,
+        width: 24,
+        height: 24,
+        "data-space-dungeon": marker.i,
+        "data-space-layer": "toggleMarkers",
+        role: "button",
+        tabindex: 0,
+        cursor: "pointer",
+        "aria-label": marker.name || `Dungeon #${marker.i}`
+      });
+      icon.innerHTML = asset.body;
+      icon.append(element("title", {}, marker.name || `Dungeon #${marker.i}`));
+      root.append(icon);
+    }
   applySpaceLayers(root, data, width, height);
   parent.append(root);
 }
