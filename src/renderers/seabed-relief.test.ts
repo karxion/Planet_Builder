@@ -8,7 +8,7 @@ import { DEPTH_BANDS, SEABED_RELIEF_IDS, depthBand, seabedReliefId } from "@/dat
 import { emptyWorldSpaces } from "@/services/world-spaces/model";
 import type { UnderwaterMap, SeabedTerrain } from "@/types/underwater";
 import { drawWorldSpaces } from "./world-spaces";
-import { drawSeabedDepthKey, sampleSeabedRelief } from "./seabed-relief";
+import { sampleSeabedRelief } from "./seabed-relief";
 
 const labels = { surface: "Surface", underwater: "Sea", underground: "Underground" };
 const fixture = (): UnderwaterMap => {
@@ -56,7 +56,8 @@ describe("bathymetric terrain icons", () => {
       before = structuredClone(map);
     const cells = sampleSeabedRelief(map, 1920, 1280, []);
     expect(new Set(cells.map(i => map.terrain[i]))).toEqual(new Set(Array.from({ length: 16 }, (_, i) => i + 1)));
-    expect(cells.length).toBeLessThanOrEqual(180);
+    expect(cells.length).toBeGreaterThan(400);
+    expect(cells.length).toBeLessThanOrEqual(1800);
     expect(cells).toEqual(sampleSeabedRelief(map, 1920, 1280, []));
     expect(new Set(cells).size).toBe(cells.length);
     const data = { ...emptyWorldSpaces(), activeSpace: "underwater" as const, underwater: map };
@@ -75,16 +76,18 @@ describe("bathymetric terrain icons", () => {
         `#fpb-seafloor-${seabedReliefId(map.terrain[cell])}`
       );
       expect(mark.querySelector("title")!.textContent).toContain(map.depths[cell].toLocaleString("ko-KR"));
-      expect(
-        parent.querySelector(mark.querySelector("use")!.getAttribute("href")!)?.querySelector("image")
-      ).not.toBeNull();
+      const definition = parent.querySelector(mark.querySelector("use")!.getAttribute("href")!);
+      expect(definition?.querySelector("path")).not.toBeNull();
+      expect(definition?.querySelector("image")).toBeNull();
+      expect(mark.querySelector("text, rect")).toBeNull();
+      expect(Number(mark.querySelector("use")!.getAttribute("width"))).toBeLessThanOrEqual(24);
     }
     expect(map).toEqual(before);
     data.layers = { underwater: { visible: { toggleRelief: false } } };
     drawWorldSpaces({ parent, data, width: 1920, height: 1280, selected: "", labels });
     expect(parent.querySelector('[data-space-layer-group="toggleRelief"]')!.getAttribute("display")).toBe("none");
   });
-  it("keeps a landform's icon but changes its badge when the saved depth changes", () => {
+  it("keeps the terrain shape and exposes changed depths through inspection without numbered badges", () => {
     const map = fixture(),
       parent = document.querySelector<SVGGElement>("#viewbox")!;
     const cell = sampleSeabedRelief(map, 1920, 1280, []).find(i => map.terrain[i] === 10)!;
@@ -94,6 +97,8 @@ describe("bathymetric terrain icons", () => {
     const mark = parent.querySelector(`[data-seabed-relief-cell="${cell}"]`)!;
     expect(mark.getAttribute("data-depth-band")).toBe("4");
     expect(mark.querySelector("use")!.getAttribute("href")).toContain("seamount");
+    expect(mark.querySelector("text, rect")).toBeNull();
+    expect(mark.querySelector("title")!.textContent).toContain("6,800");
   });
   it("has sixteen distinct real-alpha PNG originals, 2/3 masters and small map images with recorded hashes", () => {
     expect(SEABED_RELIEF_IDS).toHaveLength(16);
@@ -119,9 +124,6 @@ describe("bathymetric terrain icons", () => {
     }
     expect(hashes.size).toBe(16);
     expect(bytes).toBeLessThan(512000);
-    const key = drawSeabedDepthKey(500);
-    expect(key.textContent).toContain("수심 단계");
-    for (const band of DEPTH_BANDS) expect(key.textContent).toContain(band.range);
   });
   it("embeds new PNG modules in portable SVG/PNG source and rejects unknown names", async () => {
     vi.resetModules();

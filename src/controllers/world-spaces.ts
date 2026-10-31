@@ -13,7 +13,6 @@ import { subsurfaceAssetName, type SubsurfaceAssetId } from "@/renderers/subsurf
 import { spaceLocation } from "@/services/world-spaces/location";
 import { initSpaceLayerControls } from "./space-layers";
 import { depthBand, seabedReliefDetails, seabedReliefName } from "@/data/seabed-relief";
-import { refreshSeabedKey } from "./seabed-key";
 
 const text = (ko: string, en: string) => (getUiLanguage() === "ko" ? ko : en);
 const esc = (value: string) =>
@@ -60,11 +59,6 @@ export function refreshWorldSpaces(): void {
   if (!panel) return;
   syncLayerControls?.();
   const data = WorldSpaces.snapshot();
-  refreshSeabedKey(data, () => {
-    tab = "seabed";
-    panel.hidden = false;
-    renderPanel();
-  });
   if (activeSpace !== data.activeSpace) {
     activeSpace = data.activeSpace;
     placement = undefined;

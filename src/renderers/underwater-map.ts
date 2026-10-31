@@ -34,7 +34,7 @@ export function drawUnderwaterTerrain(
   root.append(defs);
   // Land remains opaque so seabed and politics are visually distinct from the surface.
   shape(path(map.depths.map(d => Number(d === 0))), SEABED_COLORS[0], { "data-sea-terrain": "0" });
-  shape(path(map.depths.map(d => Number(d > 0))), "#315b70", { "data-space-layer": "toggleLakes" });
+  shape(path(map.depths.map(d => Number(d > 0))), "#a6cede", { "data-space-layer": "toggleLakes" });
   for (let code = 1; code < SEABED_TERRAINS.length; code++)
     shape(path(map.terrain.map(t => Number(t === code))), SEABED_COLORS[code], {
       "data-space-layer": "toggleBiomes",
@@ -49,7 +49,7 @@ export function drawUnderwaterTerrain(
     shape(d, color, {
       "data-space-layer": "toggleStates",
       "data-sea-owner": id,
-      "fill-opacity": map.view === "political" ? "0.65" : "0.24",
+      "fill-opacity": map.view === "political" ? "0.24" : "0.16",
       stroke: "none",
       "stroke-width": "1.4",
       "clip-path": "url(#fpb-sea-water)"

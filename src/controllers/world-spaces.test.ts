@@ -47,10 +47,10 @@ describe("World space map interaction", () => {
     expect(WorldSpaces.snapshot()).toEqual(before);
     const tip = window.worldSpaceMapTip!([Number(mark.dataset.spaceX) * 1000, Number(mark.dataset.spaceY) * 500], mark);
     expect(tip).toContain(data.underwater!.depths[cell].toLocaleString("ko-KR"));
-    expect(document.querySelectorAll("#fpb-seabed-depth-key li")).toHaveLength(4);
-    document.querySelector<HTMLButtonElement>("#fpb-seabed-depth-key button")!.click();
-    expect(panel.textContent).toContain("지형 아이콘·수심 범례");
-    expect(panel.querySelectorAll(".fpb-seabed-relief-row img")).toHaveLength(16);
+    expect(document.querySelector("#fpb-seabed-depth-key")).toBeNull();
+    panel.querySelector<HTMLButtonElement>('[data-tab="seabed"]')!.click();
+    expect(panel.textContent).toContain("해저 지형 기호");
+    expect(panel.querySelectorAll(".fpb-seabed-relief-row svg")).toHaveLength(16);
     WorldSpaces.update(d => {
       d.layers = { underwater: { visible: { toggleRelief: false } } };
     });

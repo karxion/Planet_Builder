@@ -37,7 +37,7 @@ export function drawWorldSpaces(input: {
         height,
         fill:
           data.activeSpace === "underwater"
-            ? "#315b70"
+            ? "#a6cede"
             : data.underground?.mode === "hollow" && data.underground.illumination !== "dark"
               ? "#ded7bd"
               : "#201d2b"

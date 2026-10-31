@@ -1,8 +1,8 @@
 import { SEA_RELATIONS, SEABED_DETAILS_EN, SEABED_GEOLOGY_VERSION, SEABED_TERRAINS } from "@/data/underwater";
 import { generateUnderwater, type SeaSurface } from "@/generators/underwater";
 import { scenePng, inlineSceneImages } from "@/renderers/scene-assets";
-import { DEPTH_BANDS, seabedReliefId, seabedReliefUrl } from "@/data/seabed-relief";
-import { drawSeabedDepthKey } from "@/renderers/seabed-relief";
+import { seabedReliefId } from "@/data/seabed-relief";
+import { seabedGlyphPreview } from "@/renderers/seabed-glyphs";
 import { EditorDrafts } from "@/services/editor-drafts";
 import { getUiLanguage } from "@/services/ui-language";
 import { WorldSpaces } from "@/services/world-spaces/state";
@@ -116,15 +116,10 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
       if (!code) continue;
       const name = text(feature.ko, feature.en);
       const item = node("li"),
-        image = node("img"),
+        image = seabedGlyphPreview(seabedReliefId(code)),
         caption = node("span"),
         title = node("strong", name);
       item.className = "fpb-seabed-relief-row";
-      image.src = seabedReliefUrl(seabedReliefId(code));
-      image.alt = "";
-      image.width = 48;
-      image.height = 38;
-      image.loading = "lazy";
       const depths = map.depths.filter((_, i) => map.terrain[i] === code);
       const range = node(
         "small",
@@ -140,13 +135,10 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
     const depthGuide = node(
       "p",
       text(
-        "그림은 지형 종류, 아이콘 옆 숫자 1–4는 실제 수심대입니다. 해산·협곡 등은 여러 수심대에 나타날 수 있습니다. 아이콘을 선택하면 실제 생성 수심을 확인할 수 있습니다.",
-        "Pictures identify landforms; numbers 1–4 identify actual depth bands. Mountains and canyons can occur at different depths. Select an icon to inspect its generated depth."
+        "지상의 산·숲처럼 작은 지형 기호를 해당 지역에 반복해서 표시합니다. 기호의 모양으로 해저 지형을 구분하고, 선택하면 해당 위치의 정확한 수심을 확인할 수 있습니다.",
+        "Small relief symbols repeat across their own terrain, like mountains and forests on the surface map. Their shapes identify landforms; select a symbol to inspect its exact depth."
       )
     );
-    const bands = node("ol");
-    bands.className = "fpb-seabed-depth-bands";
-    DEPTH_BANDS.forEach((band, i) => bands.append(node("li", `${i + 1} · ${text(band.ko, band.en)} · ${band.range}`)));
     const list = node("ul");
     list.className = "fpb-sea-factions";
     for (const id of map.factionIds) {
@@ -178,7 +170,6 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
           svg.setAttribute("viewBox", `0 0 ${graphWidth} ${graphHeight}`);
           svg.setAttribute("font-family", "Arial, sans-serif");
           svg.append(source.cloneNode(true));
-          if (spaceLayers(WorldSpaces.snapshot()).toggleRelief) svg.append(drawSeabedDepthKey(graphHeight));
           for (const el of svg.querySelectorAll('[mask="url(#land)"]')) el.remove();
           const markup = new XMLSerializer().serializeToString(svg),
             blob =
@@ -220,9 +211,8 @@ export function mountUnderwaterTools(host: HTMLElement, context: SeaContext): vo
       );
     section.append(
       viewLabel,
-      node("h4", text("지형 아이콘·수심 범례", "Terrain icons / depth key")),
+      node("h4", text("해저 지형 기호", "Seafloor relief symbols")),
       depthGuide,
-      bands,
       legend,
       geology,
       node("h4", text("수중 세력", "Aquatic realms")),
