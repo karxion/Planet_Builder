@@ -11,7 +11,13 @@ export function isDungeonLocation(marker: { type?: string; icon?: string; advent
   );
 }
 
-export function getDungeonUrl(worldSeed: string, cell: number): string {
+export function getDungeonUrl(
+  worldSeed: string,
+  cell: number,
+  marker?: { i: number; space?: string; levelId?: string }
+): string {
+  if (marker?.space && marker.space !== "surface")
+    worldSeed = `${worldSeed}:${marker.space}:${marker.levelId || ""}:${marker.i}`;
   let hash = 2166136261;
   for (const char of `${worldSeed}:dungeon:${cell}`) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
   const url = new URL("https://watabou.github.io/one-page-dungeon/");

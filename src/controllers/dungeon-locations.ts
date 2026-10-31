@@ -69,7 +69,7 @@ function render(): void {
         <button type="button" class="fpb-icon-button icon-location" data-focus="${marker.i}" title="${text("Locate", "위치 보기")}" aria-label="${text("Locate", "위치 보기")}"></button>
         <button type="button" class="fpb-icon-button icon-pencil" data-edit="${marker.i}" title="${text("Edit", "편집")}" aria-label="${text("Edit", "편집")}"></button>
         <button type="button" class="fpb-icon-button icon-map-o" data-interior="${marker.i}" title="${text("Open Dungeon Map", "던전 내부 지도")}" aria-label="${text("Open Dungeon Map", "던전 내부 지도")}"></button>
-        <a class="fpb-dungeon-link icon-link-ext" href="${escapeAttribute(getDungeonUrl(String(seed), marker.cell))}" target="_blank" rel="noopener noreferrer" title="${text("Open Watabou Dungeon", "Watabou 던전 열기")}" aria-label="${text("Open Watabou Dungeon", "Watabou 던전 열기")}"></a></div>`;
+        <a class="fpb-dungeon-link icon-link-ext" href="${escapeAttribute(getDungeonUrl(String(seed), marker.cell, marker))}" target="_blank" rel="noopener noreferrer" title="${text("Open Watabou Dungeon", "Watabou 던전 열기")}" aria-label="${text("Open Watabou Dungeon", "Watabou 던전 열기")}"></a></div>`;
             })
             .join("")
         : `<p class="fpb-dungeon-empty">${text("No dungeons", "등록된 던전 없음")}</p>`

@@ -28,4 +28,14 @@ describe("dungeon locations", () => {
   it("preserves numeric dungeon seeds used by existing map notes", () => {
     expect(new URL(getDungeonUrl("12345678", 123)).searchParams.get("seed")).toBe("12345678123");
   });
+  it("separates external plans at the same coordinates across worlds and cavern layers", () => {
+    const scopes = [
+      { i: 1 },
+      { i: 1, space: "underwater" },
+      { i: 1, space: "underground", levelId: "upper" },
+      { i: 1, space: "underground", levelId: "deep" }
+    ];
+    expect(new Set(scopes.map(m => getDungeonUrl("1234", 21, m))).size).toBe(4);
+    expect(getDungeonUrl("1234", 21, scopes[0])).toBe(getDungeonUrl("1234", 21));
+  });
 });

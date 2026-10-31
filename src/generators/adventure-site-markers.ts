@@ -97,7 +97,7 @@ export function populateAdventureMarkers(
           return distance(b) < distance(a) ? b : a;
         }, 0)
       : placement.cell;
-    pack.markers.push({
+    const marker = {
       i,
       cell,
       ...(subsurface
@@ -114,11 +114,12 @@ export function populateAdventureMarkers(
       dx: 50,
       dy: 50,
       adventure: placement.adventure
-    });
+    };
+    pack.markers.push(marker);
     notes.push({
       id: `marker${i}`,
       name: placement.name,
-      legend: `<p>${gt(theme.hook)}</p><p>${gf("대표 개체: {monster} · CR {cr} · {count}개체 추정", "Representative creature: {monster} · CR {cr} · estimated population {count}", { monster: gt(monster.name), cr: monster.cr, count: placement.adventure.inhabitants })}</p><p>${gt("CR은 대표 몬스터 한 개체의 값이며 거점 전체 난이도가 아닙니다. 배치·개체 수·적대 행동은 앱의 창작 설정입니다.")}</p><p><a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD ${monster.edition} · p.${monster.page}</a> · <a href="${getDungeonUrl(seed, placement.cell)}" target="_blank" rel="noopener noreferrer">Watabou</a></p>`
+      legend: `<p>${gt(theme.hook)}</p><p>${gf("대표 개체: {monster} · CR {cr} · {count}개체 추정", "Representative creature: {monster} · CR {cr} · estimated population {count}", { monster: gt(monster.name), cr: monster.cr, count: placement.adventure.inhabitants })}</p><p>${gt("CR은 대표 몬스터 한 개체의 값이며 거점 전체 난이도가 아닙니다. 배치·개체 수·적대 행동은 앱의 창작 설정입니다.")}</p><p><a href="${adventureMonsterUrl(monster)}" target="_blank" rel="noopener noreferrer">SRD ${monster.edition} · p.${monster.page}</a> · <a href="${getDungeonUrl(seed, cell, marker)}" target="_blank" rel="noopener noreferrer">Watabou</a></p>`
     });
   }
   return result;
